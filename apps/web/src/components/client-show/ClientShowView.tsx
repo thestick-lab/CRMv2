@@ -1,7 +1,12 @@
 import * as React from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { CLIENT_SHOW_TABS, ClientSummaryBar } from './ClientSummaryBar';
+import { StatutoryProfileTab } from './tabs/StatutoryProfileTab';
+import { DeadlinesTab } from './tabs/DeadlinesTab';
+import { EstimateTab } from './tabs/EstimateTab';
+import { VaultTab } from './tabs/VaultTab';
 import { cn } from '@/lib/utils';
 
 export interface ClientShowViewProps {
@@ -79,35 +84,19 @@ export function ClientShowView({
         </TabsPrimitive.List>
 
         <TabsPrimitive.Content value="profile" className="outline-none">
-          {childrenTabs?.profile ?? (
-            <div className="border border-border/80 rounded-lg p-6 bg-card/60 text-xs text-muted-foreground">
-              Statutory Profile loading...
-            </div>
-          )}
+          {childrenTabs?.profile ?? <StatutoryProfileTab client={client} />}
         </TabsPrimitive.Content>
 
         <TabsPrimitive.Content value="deadlines" className="outline-none">
-          {childrenTabs?.deadlines ?? (
-            <div className="border border-border/80 rounded-lg p-6 bg-card/60 text-xs text-muted-foreground">
-              Deadlines &amp; Tasks loading...
-            </div>
-          )}
+          {childrenTabs?.deadlines ?? <DeadlinesTab client={client} asOfDate={todayInSouthAfrica()} />}
         </TabsPrimitive.Content>
 
         <TabsPrimitive.Content value="estimate" className="outline-none">
-          {childrenTabs?.estimate ?? (
-            <div className="border border-border/80 rounded-lg p-6 bg-card/60 text-xs text-muted-foreground">
-              12-Month Fee Estimate loading...
-            </div>
-          )}
+          {childrenTabs?.estimate ?? <EstimateTab client={client} />}
         </TabsPrimitive.Content>
 
         <TabsPrimitive.Content value="vault" className="outline-none">
-          {childrenTabs?.vault ?? (
-            <div className="border border-border/80 rounded-lg p-6 bg-card/60 text-xs text-muted-foreground">
-              SharePoint Vault &amp; SLAs loading...
-            </div>
-          )}
+          {childrenTabs?.vault ?? <VaultTab client={client} />}
         </TabsPrimitive.Content>
       </TabsPrimitive.Root>
     </div>
