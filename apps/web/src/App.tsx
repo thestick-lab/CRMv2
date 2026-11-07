@@ -5,6 +5,7 @@ import { DashboardView } from '@/components/views/DashboardView';
 import { ClientsView } from '@/components/views/ClientsView';
 import { DeadlinesView } from '@/components/views/DeadlinesView';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { ClientShowView } from '@/components/client-show/ClientShowView';
 
 export default function App() {
   const [view, setView] = useState<ViewKey>('dashboard');
@@ -29,20 +30,10 @@ export default function App() {
         return <DeadlinesView onNavigate={handleNavigate} />;
       case 'client':
         return (
-          <div className="p-6 max-w-7xl mx-auto space-y-4">
-            <div className="border border-border/80 rounded-lg p-6 bg-card/60">
-              <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                <span>{activeClient?.name ?? 'Client Record'}</span>
-                <span className="font-mono text-sm text-[#c4161c] bg-[#c4161c]/10 px-2 py-0.5 rounded">
-                  {clientCode}
-                </span>
-              </h1>
-              <p className="text-xs text-muted-foreground mt-1">
-                Client record view ({activeClient?.entityType ?? 'Entity'}, Year End Month {activeClient?.yearEndMonth ?? 2}).
-                The 4-tab record show will be fully implemented in Phase 4.
-              </p>
-            </div>
-          </div>
+          <ClientShowView
+            clientCode={clientCode ?? 'MUS-875'}
+            onBack={() => handleNavigate('clients')}
+          />
         );
       default:
         return (

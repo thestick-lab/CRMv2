@@ -176,9 +176,9 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
   - Implemented TanStack Table with all 9 statutory columns: `Code`, `Client`, `Type`, `Responsible`, `Year End`, `VAT`, `Payroll`, `Services`, `Next Filing`.
   - Added multi-column sorting (Code, Legal Name, Next Deadline), global search, and entity category filter chips (Companies, CC, Trusts, Individuals).
   - Wired row click to `/clients/:code` with click-through navigation.
-- [ ] **Phase 4: Client Record Show (`/clients/:code`)**
-  - Implement top breadcrumb `Clients / Name [Code]` with back arrow.
-  - Build the 4 tabs: `Statutory Profile`, `Deadlines & Tasks`, `12-Month Fee Estimate`, `SharePoint Vault`.
+- [x] **Phase 4: Client Record Show (`/clients/:code`)**
+  - Implemented top breadcrumb `Clients / Name [Code]` with back arrow button.
+  - Built the 4 tabs: `Statutory Profile` (CIPC, Year End, VAT, SARS Profile), `Deadlines & Tasks` (holiday rollback & partner review gates), `12-Month Fee Estimate` (rolling matrix with March +6%), and `SharePoint Vault & SLAs` (Documenso contracts & tax filing packs).
 - [ ] **Phase 5: Statutory Deadlines Dashboard (`/deadlines`)**
   - Implement 4 KPI tiles (`Overdue`, `Due in 7d`, `Due in 30d`, `Missing a Date`).
   - Implement dual Kanban and Table view modes with SA holiday rollback tags (`↩`).

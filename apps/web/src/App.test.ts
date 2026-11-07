@@ -47,4 +47,10 @@ describe('App shell and view integration', () => {
     expect(clientsViewSource).toContain('ClientsRegisterTable');
     expect(clientsViewSource).toContain('enrichClientRows');
   });
+
+  it('integrates ClientShowView when navigating to a client record', () => {
+    const appSource = fs.readFileSync('src/App.tsx', 'utf8');
+    expect(appSource).toContain('ClientShowView');
+    expect(appSource).toContain('<ClientShowView');
+  });
 });
