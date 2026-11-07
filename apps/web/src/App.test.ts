@@ -32,3 +32,13 @@ describe('Workspace scripts and theme configuration', () => {
     expect(css).toContain('@theme inline');
   });
 });
+
+describe('App shell and view integration', () => {
+  it('mounts Layout and connects DashboardView, ClientsView, and DeadlinesView', () => {
+    const appSource = fs.readFileSync('src/App.tsx', 'utf8');
+    expect(appSource).toContain('<Layout');
+    expect(appSource).toContain('DashboardView');
+    expect(appSource).toContain('ClientsView');
+    expect(appSource).toContain('DeadlinesView');
+  });
+});

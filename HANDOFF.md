@@ -167,9 +167,11 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
   - Scaffolded `apps/web` with React 19, TypeScript, and Vite 7.
   - Configured Tailwind CSS v4 with exact FD on Call design tokens and shadcn UI primitives.
   - Linked `packages/domain` into `apps/web/package.json` with instant HMR and verified Vitest suite.
-- [ ] **Phase 2: Shell & Navigation (`Layout.tsx`)**
-  - Recreate Twenty CRM's exact collapsible sidebar and top-bar.
-  - Implement static brand header `[FD] FD on Call` and user footer with popover.
+- [x] **Phase 2: Shell & Navigation (`Layout.tsx`)**
+  - Recreated Twenty CRM's exact collapsible sidebar (240px / 56px) and persistent topbar (48px).
+  - Implemented static brand header `[FD] FD on Call` and user footer popover for `[EW]` Erik (Partner).
+  - Implemented `Cmd+K` command search modal with view switching and instant client searching.
+  - Verified zero-issue Impeccable craft floor detector check and synchronized dark/light mode.
 - [ ] **Phase 3: Clients Register (`/clients`)**
   - Implement TanStack Table with columns: `Code`, `Client`, `Type`, `Responsible`, `Year End`, `VAT`, `Payroll`, `Services`, `Next Filing`.
   - Wire row click to `/clients/:code`.
