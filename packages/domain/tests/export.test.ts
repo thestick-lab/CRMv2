@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import { cents, computeEstimate, suggestedMonths, type EstimateInput } from '../src/domain/estimate';
 import { xeroPlanFee } from '../src/domain/pricing';
 import { estimatePdf } from '../src/export/pdf';

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import { bandHours, cents, computeEstimate, servicesFromEstimate, suggestedMonths, withVat, type EstimateInput } from '../src/domain/estimate';
 import { XERO_PLANS, payrollBand, turnoverBand, xeroPlanFee } from '../src/domain/pricing';
 import { generateTasks } from '../src/domain/rules';

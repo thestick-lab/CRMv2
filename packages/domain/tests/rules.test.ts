@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import { addBusinessDays, businessDayOnOrBefore, easterSunday, lastBusinessDayOfMonth, publicHolidays } from '../src/domain/dates';
 import { defaultServices, generateTasks, urgency } from '../src/domain/rules';
 import { CLIENTS, STAFF } from '../src/data/seed';
