@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { todayInSouthAfrica, easterSunday } from 'fdoncall-practice/domain/dates';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
@@ -14,5 +15,20 @@ describe('App domain workspace link', () => {
     const alc = CLIENTS.find((c) => c.code === 'ALC-610');
     expect(alc).toBeDefined();
     expect(alc?.name).toBe('A & L Contracting');
+  });
+});
+
+describe('Workspace scripts and theme configuration', () => {
+  it('has root dev script and web typecheck script', () => {
+    const rootPkg = JSON.parse(fs.readFileSync('../../package.json', 'utf8'));
+    const webPkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    expect(rootPkg.scripts?.dev).toBe('npm run dev --workspace=@crmv2/web');
+    expect(webPkg.scripts?.typecheck).toBe('tsc -b');
+  });
+
+  it('configures Tailwind v4 class-based dark variant and inline theme', () => {
+    const css = fs.readFileSync('src/index.css', 'utf8');
+    expect(css).toContain('@custom-variant dark');
+    expect(css).toContain('@theme inline');
   });
 });

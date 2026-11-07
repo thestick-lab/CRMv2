@@ -7,7 +7,6 @@
     "./*": "./src/*"
   },
   "scripts": {
-    "dev": "vite",
     "build": "tsc --noEmit",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

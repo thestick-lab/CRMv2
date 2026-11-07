@@ -28,7 +28,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'dark bg-[#141414] text-[#ebebeb]' : 'bg-[#f6f5f3] text-[#1b1817]'}`}>
+    <div className="min-h-screen bg-background text-foreground">
       {/* Top Bar Header */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-card/80 backdrop-blur px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -58,7 +58,7 @@ export default function App() {
             {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             {isDark ? 'Light Mode' : 'Dark Mode'}
           </Button>
-          <Button size="sm" className="h-8 text-xs bg-[#c4161c] hover:bg-[#a01217]">
+          <Button size="sm" className="h-8 text-xs">
             Launch Workspace
           </Button>
         </div>
