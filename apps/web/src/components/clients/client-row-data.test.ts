@@ -36,4 +36,22 @@ describe('client-row-data enrichment', () => {
     expect(axe?.nextDeadline?.due).toBeDefined();
     expect(axe?.nextDeadline?.service).toBeDefined();
   });
+
+  it('includes subcontractor name in responsible staff when assigned', () => {
+    const les = rows.find((r) => r.code === 'LES-841');
+    expect(les?.staffName).toBe('Erik with Caroline');
+
+    const khe = rows.find((r) => r.code === 'KHE-615');
+    expect(khe?.staffName).toBe('Erik with Hannes');
+  });
+
+  it('renders "Yes" for payroll when employeeCount is not recorded', () => {
+    const axe = rows.find((r) => r.code === 'AXE-460');
+    expect(axe?.payrollLabel).toBe('Yes');
+  });
+
+  it('includes urgency on the next statutory deadline', () => {
+    const axe = rows.find((r) => r.code === 'AXE-460');
+    expect(axe?.nextDeadline?.urgency).toBeDefined();
+  });
 });

@@ -26,36 +26,53 @@ export function filterClientsRow(row: EnrichedClientRow, query: string): boolean
   return (
     row.code.toLowerCase().includes(q) ||
     row.name.toLowerCase().includes(q) ||
-    (row.groupName && row.groupName.toLowerCase().includes(q)) ||
+    Boolean(row.groupId?.toLowerCase().includes(q)) ||
+    Boolean(row.groupName?.toLowerCase().includes(q)) ||
     row.entityType.toLowerCase().includes(q) ||
     row.staffName.toLowerCase().includes(q)
   );
 }
 
-export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
+function SortHeader({
+  title,
+  isSorted,
+  onToggle,
+}: {
+  title: string;
+  isSorted: false | 'asc' | 'desc';
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex items-center gap-1 font-mono uppercase text-[10px] text-muted-foreground hover:text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c] rounded px-0.5"
+    >
+      <span>{title}</span>
+      {isSorted === 'asc' ? (
+        <ArrowUp className="h-3 w-3 text-foreground" />
+      ) : isSorted === 'desc' ? (
+        <ArrowDown className="h-3 w-3 text-foreground" />
+      ) : (
+        <ArrowUpDown className="h-3 w-3 opacity-60" />
+      )}
+    </button>
+  );
+}
+
+export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
   {
     id: 'code',
     accessorKey: 'code',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <button
-          onClick={() => column.toggleSorting(isSorted === 'asc')}
-          className="flex items-center gap-1 font-mono uppercase text-[10px] text-muted-foreground hover:text-foreground"
-        >
-          <span>Code</span>
-          {isSorted === 'asc' ? (
-            <ArrowUp className="h-3 w-3" />
-          ) : isSorted === 'desc' ? (
-            <ArrowDown className="h-3 w-3" />
-          ) : (
-            <ArrowUpDown className="h-3 w-3 opacity-60" />
-          )}
-        </button>
-      );
-    },
+    header: ({ column }) => (
+      <SortHeader
+        title="Code"
+        isSorted={column.getIsSorted()}
+        onToggle={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      />
+    ),
     cell: ({ row }) => (
-      <span className="font-mono font-semibold text-[#c4161c] bg-[#c4161c]/10 dark:text-[#f87171] px-1.5 py-0.5 rounded text-xs">
+      <span className="font-mono font-semibold text-[#c4161c] bg-[#c4161c]/10 dark:text-[#f87171] px-1.5 py-0.5 rounded text-xs whitespace-nowrap">
         {row.original.code}
       </span>
     ),
@@ -63,24 +80,13 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
   {
     id: 'name',
     accessorKey: 'name',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <button
-          onClick={() => column.toggleSorting(isSorted === 'asc')}
-          className="flex items-center gap-1 font-mono uppercase text-[10px] text-muted-foreground hover:text-foreground"
-        >
-          <span>Client Legal Name</span>
-          {isSorted === 'asc' ? (
-            <ArrowUp className="h-3 w-3" />
-          ) : isSorted === 'desc' ? (
-            <ArrowDown className="h-3 w-3" />
-          ) : (
-            <ArrowUpDown className="h-3 w-3 opacity-60" />
-          )}
-        </button>
-      );
-    },
+    header: ({ column }) => (
+      <SortHeader
+        title="Client Legal Name"
+        isSorted={column.getIsSorted()}
+        onToggle={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      />
+    ),
     cell: ({ row }) => (
       <div className="min-w-0">
         <div className="font-medium text-foreground text-xs truncate">
@@ -88,7 +94,7 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
         </div>
         {row.original.groupName && (
           <div className="text-[10px] font-mono text-muted-foreground truncate">
-            Group: {row.original.groupName}
+            {row.original.groupName}
           </div>
         )}
       </div>
@@ -97,7 +103,13 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
   {
     id: 'entityType',
     accessorKey: 'entityType',
-    header: 'Entity Type',
+    header: ({ column }) => (
+      <SortHeader
+        title="Entity Type"
+        isSorted={column.getIsSorted()}
+        onToggle={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      />
+    ),
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
         {row.original.entityType}
@@ -107,7 +119,13 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
   {
     id: 'staffName',
     accessorKey: 'staffName',
-    header: 'Responsible',
+    header: ({ column }) => (
+      <SortHeader
+        title="Responsible"
+        isSorted={column.getIsSorted()}
+        onToggle={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      />
+    ),
     cell: ({ row }) => (
       <span className="text-xs text-foreground font-medium">
         {row.original.staffName}
@@ -116,8 +134,14 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
   },
   {
     id: 'yearEnd',
-    accessorKey: 'yearEndLabel',
-    header: 'Year End',
+    accessorKey: 'yearEndMonth',
+    header: ({ column }) => (
+      <SortHeader
+        title="Year End"
+        isSorted={column.getIsSorted()}
+        onToggle={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      />
+    ),
     cell: ({ row }) => (
       <div className="flex items-center gap-1 text-xs">
         <span className="font-mono text-foreground">{row.original.yearEndLabel}</span>
@@ -143,7 +167,7 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
             {row.original.vatLabel}
           </Badge>
         ) : (
-          <span className="text-muted-foreground text-[11px] italic">Non-VAT</span>
+          <span className="text-muted-foreground text-[11px] font-mono">{row.original.vatLabel}</span>
         )}
       </div>
     ),
@@ -167,7 +191,7 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
         {row.original.services.slice(0, 4).map((svc) => (
           <span
             key={svc}
-            className="font-mono text-[10px] px-1 py-0.2 rounded bg-muted text-muted-foreground border border-border/60"
+            className="font-mono text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground border border-border/60"
           >
             {svc}
           </span>
@@ -183,24 +207,13 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
   {
     id: 'nextDeadline',
     accessorKey: 'nextDeadline',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <button
-          onClick={() => column.toggleSorting(isSorted === 'asc')}
-          className="flex items-center gap-1 font-mono uppercase text-[10px] text-muted-foreground hover:text-foreground"
-        >
-          <span>Next Statutory Deadline</span>
-          {isSorted === 'asc' ? (
-            <ArrowUp className="h-3 w-3" />
-          ) : isSorted === 'desc' ? (
-            <ArrowDown className="h-3 w-3" />
-          ) : (
-            <ArrowUpDown className="h-3 w-3 opacity-60" />
-          )}
-        </button>
-      );
-    },
+    header: ({ column }) => (
+      <SortHeader
+        title="Next Statutory Deadline"
+        isSorted={column.getIsSorted()}
+        onToggle={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      />
+    ),
     sortingFn: (rowA, rowB) => {
       const dateA = rowA.original.nextDeadline?.due || '9999-99-99';
       const dateB = rowB.original.nextDeadline?.due || '9999-99-99';
@@ -213,7 +226,18 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow>[] = [
       }
       return (
         <div className="flex items-center gap-1.5 font-mono text-xs">
-          <Badge variant="outline" className="text-[10px] px-1 py-0 border-[#c4161c]/30 text-[#c4161c]">
+          <Badge
+            variant={
+              deadline.urgency === 'overdue'
+                ? 'destructive'
+                : deadline.urgency === 'week'
+                ? 'crimsonSubdued'
+                : deadline.urgency === 'month'
+                ? 'warning'
+                : 'outline'
+            }
+            className="text-[10px] px-1 py-0 font-mono"
+          >
             {deadline.service}
           </Badge>
           <span className="text-foreground">{deadline.due}</span>
@@ -346,7 +370,7 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
                         : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
-                  <th className="py-2.5 px-3 text-right font-medium font-mono">Action</th>
+                  <th className="py-2.5 px-3 text-right font-medium font-mono uppercase text-[10px]">Action</th>
                 </tr>
               ))}
             </thead>
@@ -361,8 +385,17 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open ${row.original.name} (${row.original.code})`}
                     onClick={() => onRowClick(row.original.code)}
-                    className="hover:bg-muted/40 transition-colors cursor-pointer group"
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        onRowClick(row.original.code);
+                      }
+                    }}
+                    className="hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#c4161c] transition-colors cursor-pointer group"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="py-2.5 px-3">
@@ -394,7 +427,7 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
           <span>
             Displaying {table.getRowModel().rows.length} of {data.length} practice clients
           </span>
-          <span>Click any row to open 4-tab statutory record</span>
+          <span>Click row or press Enter to open statutory record</span>
         </div>
       </div>
     </div>
