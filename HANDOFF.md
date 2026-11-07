@@ -172,9 +172,10 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
   - Implemented static brand header `[FD] FD on Call` and user footer popover for `[EW]` Erik (Partner).
   - Implemented `Cmd+K` command search modal with view switching and instant client searching.
   - Verified zero-issue Impeccable craft floor detector check and synchronized dark/light mode.
-- [ ] **Phase 3: Clients Register (`/clients`)**
-  - Implement TanStack Table with columns: `Code`, `Client`, `Type`, `Responsible`, `Year End`, `VAT`, `Payroll`, `Services`, `Next Filing`.
-  - Wire row click to `/clients/:code`.
+- [x] **Phase 3: Clients Register (`/clients`)**
+  - Implemented TanStack Table with all 9 statutory columns: `Code`, `Client`, `Type`, `Responsible`, `Year End`, `VAT`, `Payroll`, `Services`, `Next Filing`.
+  - Added multi-column sorting (Code, Legal Name, Next Deadline), global search, and entity category filter chips (Companies, CC, Trusts, Individuals).
+  - Wired row click to `/clients/:code` with click-through navigation.
 - [ ] **Phase 4: Client Record Show (`/clients/:code`)**
   - Implement top breadcrumb `Clients / Name [Code]` with back arrow.
   - Build the 4 tabs: `Statutory Profile`, `Deadlines & Tasks`, `12-Month Fee Estimate`, `SharePoint Vault`.

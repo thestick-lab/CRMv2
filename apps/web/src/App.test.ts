@@ -41,4 +41,10 @@ describe('App shell and view integration', () => {
     expect(appSource).toContain('ClientsView');
     expect(appSource).toContain('DeadlinesView');
   });
+
+  it('integrates ClientsRegisterTable inside ClientsView', () => {
+    const clientsViewSource = fs.readFileSync('src/components/views/ClientsView.tsx', 'utf8');
+    expect(clientsViewSource).toContain('ClientsRegisterTable');
+    expect(clientsViewSource).toContain('enrichClientRows');
+  });
 });
