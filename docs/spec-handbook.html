@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FD on Call CRM — Full-Stack Specification &amp; Editorial Diagram Handbook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper: #f6f5f3;
+      --color-paper-2: #efedea;
+      --color-card: #ffffff;
+      --color-ink: #1b1817;
+      --color-muted: #5c5652;
+      --color-soft: #6e6762;
+      --color-rule: rgba(27,24,23,0.12);
+      --color-rule-solid: #cbc5c0;
+      --color-accent: #b8142c;
+      --color-accent-tint: rgba(184,20,44,0.08);
+      --color-link: #2c5a85;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
+    }
+    /* Layout */
+    .app-header {
+      background: var(--color-paper-2);
+      border-bottom: 1px solid var(--color-rule-solid);
+      padding: 1.25rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(8px);
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand-badge {
+      background: var(--color-accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      letter-spacing: 0.08em;
+    }
+    .brand-name {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+    .nav-links a {
+      color: var(--color-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover {
+      color: var(--color-accent);
+    }
+    .main-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 3rem 2rem 6rem;
+    }
+    /* Typography */
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 0.5rem;
+    }
+    h1.hero-title {
+      font-family: var(--font-serif);
+      font-size: clamp(2.2rem, 4vw + 1rem, 3.4rem);
+      line-height: 1.05;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+    p.hero-sub {
+      font-size: 1.1rem;
+      color: var(--color-muted);
+      max-width: 72ch;
+      margin-bottom: 2.5rem;
+      line-height: 1.55;
+    }
+    h2.section-title {
+      font-family: var(--font-serif);
+      font-size: 1.85rem;
+      font-weight: 400;
+      margin: 3.5rem 0 1rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-rule);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    h3.card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    /* Cards & Containers */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .card {
+      background: var(--color-card);
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      padding: 1.5rem;
+    }
+    /* Kepa Table */
+    .kepa-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      background: var(--color-card);
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--color-rule);
+    }
+    .kepa-table th, .kepa-table td {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--color-rule);
+    }
+    .kepa-table th {
+      background: var(--color-paper-2);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+    .badge-keep { background: #e6f4ea; color: #137333; font-weight: 600; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; }
+    .badge-adapt { background: #e8f0fe; color: #1a73e8; font-weight: 600; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; }
+    .badge-enhance { background: rgba(184,20,44,0.12); color: var(--color-accent); font-weight: 600; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; }
+    .badge-drop { background: #fce8e6; color: #c5221f; font-weight: 600; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; }
+
+    /* Diagram Showcase */
+    .diagram-showcase {
+      background: var(--color-card);
+      border: 1px solid var(--color-rule);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+    .diagram-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--color-rule);
+    }
+    .d-tab-btn {
+      background: var(--color-paper-2);
+      border: 1px solid var(--color-rule);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--color-muted);
+      transition: all 0.15s;
+    }
+    .d-tab-btn.active {
+      background: var(--color-accent);
+      color: #fff;
+      border-color: var(--color-accent);
+    }
+    .diagram-frame-wrap {
+      width: 100%;
+      height: 640px;
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--color-paper);
+    }
+    .diagram-frame-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .d-view-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--color-link);
+      text-decoration: none;
+    }
+    .d-view-link:hover { text-decoration: underline; }
+
+    /* Service Catalogue Filter */
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin: 1rem 0;
+    }
+    .search-input {
+      flex: 1;
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--color-rule-solid);
+      border-radius: 4px;
+      background: #fff;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+    }
+    .cat-btn {
+      background: var(--color-paper-2);
+      border: 1px solid var(--color-rule);
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .cat-btn.active {
+      background: var(--color-ink);
+      color: #fff;
+    }
+
+    /* Prompt Box & Copy */
+    .prompt-box {
+      background: var(--color-paper-2);
+      border: 1px solid var(--color-rule-solid);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+    .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .copy-btn {
+      background: #fff;
+      border: 1px solid var(--color-rule-solid);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--color-ink);
+    }
+    .copy-btn:hover { background: var(--color-paper); }
+    .prompt-text {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--color-ink);
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    /* Client Signoff Checklist */
+    .signoff-item {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--color-card);
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+    }
+    .signoff-item input[type="checkbox"] {
+      margin-top: 0.25rem;
+      accent-color: var(--color-accent);
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+    .signoff-content h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .signoff-content p {
+      font-size: 0.85rem;
+      color: var(--color-muted);
+    }
+
+    /* Footer */
+    footer.page-footer {
+      border-top: 1px solid var(--color-rule);
+      padding-top: 2rem;
+      margin-top: 4rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--color-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top App Bar -->
+  <header class="app-header">
+    <div class="brand-title">
+      <span class="brand-badge">FD ON CALL</span>
+      <span class="brand-name">Practice Ledger CRM Specification Hub</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#summary">Kepa Matrix</a>
+      <a href="#diagrams">Editorial Diagrams (7)</a>
+      <a href="#catalogue">Service Catalogue</a>
+      <a href="#questions">Open Questions</a>
+      <a href="#architecture">Architecture &amp; DDL</a>
+    </nav>
+  </header>
+
+  <main class="main-wrap">
+    <!-- Hero Header -->
+    <div class="hero">
+      <p class="eyebrow">Practice Ledger CRM Specification Suite · Phase 1 Deliverable</p>
+      <h1 class="hero-title">Reverse Engineering, Twenty CRM Gap Analysis &amp; Full-Stack Specification</h1>
+      <p class="hero-sub">
+        Unifying FD on Call's verified South African statutory tax, secretarial, and 12-month fee calculation engine with Twenty CRM's high-productivity shell. Designed for zero-cost Cloudflare D1 demo review and effortless Node.js + PostgreSQL deployment.
+      </p>
+    </div>
+
+    <!-- Section 1: Executive Summary & Kepa Matrix -->
+    <section id="summary">
+      <h2 class="section-title">01 · Reverse Engineering &amp; "Kepa" Gap Analysis</h2>
+      <p style="color:var(--color-muted); max-width:76ch; margin-bottom:1.5rem;">
+        We reverse-engineered all 19 TypeScript/React files in <code>Client_CRM/source.json</code> (v0.9.2) and the full architectural module graph of <code>twenty/</code>. The resulting <strong>Kepa (Keep / Enhance / Drop / Adapt)</strong> framework governs our build:
+      </p>
+
+      <table class="kepa-table">
+        <thead>
+          <tr>
+            <th>Module / Capability</th>
+            <th>Source</th>
+            <th>Verdict</th>
+            <th>Architectural Role in FD on Call CRM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>SA Public Holiday Engine &amp; Computus</strong></td>
+            <td><code>Client_CRM</code></td>
+            <td><span class="badge-keep">KEEP 100%</span></td>
+            <td>Pure ISO date math: Section 2(1) Sunday rollover, Easter Computus, and business day calculations.</td>
+          </tr>
+          <tr>
+            <td><strong>Statutory Service Rules (10 Types)</strong></td>
+            <td><code>Client_CRM</code></td>
+            <td><span class="badge-keep">KEEP 100%</span></td>
+            <td>Deterministic task generation for AFS, ITR14, ITR12, ITR12T, IRP6, VAT201, EMP201, EMP501, CIPC_AR, BO.</td>
+          </tr>
+          <tr>
+            <td><strong>12-Month Fee Engine &amp; VAT Rounding</strong></td>
+            <td><code>Client_CRM</code></td>
+            <td><span class="badge-keep">KEEP 100%</span></td>
+            <td>Cent-accurate VAT rounding, turnover/payroll bands, March escalation, and VAT-exempt CIPC recovery.</td>
+          </tr>
+          <tr>
+            <td><strong>PDF &amp; Live-Formula XLSX Exporters</strong></td>
+            <td><code>Client_CRM</code></td>
+            <td><span class="badge-keep">KEEP 100%</span></td>
+            <td>Client-side A4 landscape PDF quotes and formula-driven Excel workbooks generated via <code>pako</code> ZIP deflate.</td>
+          </tr>
+          <tr>
+            <td><strong>Navigation Drawer &amp; Cmd+K Palette</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-adapt">ADAPT UX</span></td>
+            <td>Replaces simple 4-link navbar with Twenty's collapsible left sidebar and global instant command menu.</td>
+          </tr>
+          <tr>
+            <td><strong>Dual Record Table &amp; Kanban Board</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-adapt">ADAPT UX</span></td>
+            <td>High-density spreadsheet tables with inline cell edits, plus Kanban drag-and-drop for tasks and lead stages.</td>
+          </tr>
+          <tr>
+            <td><strong>3-Pane Record Show Page</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-adapt">ADAPT UX</span></td>
+            <td>Left client summary &amp; signals, center tabbed workspace (Tasks, Estimates, Notes, Timeline), right inspector.</td>
+          </tr>
+          <tr>
+            <td><strong>Entity vs Contact Relational Split</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-adapt">ADAPT UX</span></td>
+            <td>First-class <code>Person</code> model linked via <code>client_people_roles</code> for directors, trustees, and billing contacts.</td>
+          </tr>
+          <tr>
+            <td><strong>Twenty CRM Application Stack</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-keep">KEEP 100%</span></td>
+            <td>Official Twenty CRM monorepo (React 19, NestJS, TypeORM, PostgreSQL 16, Redis 7, GraphQL Yoga).</td>
+          </tr>
+          <tr>
+            <td><strong>Single Practice Workspace [FD on Call]</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-adapt">ADAPT UX</span></td>
+            <td>Lockdown to single tenant (<code>IS_MULTIWORKSPACE_ENABLED=false</code>); removes switcher and generic admin tabs.</td>
+          </tr>
+          <tr>
+            <td><strong>SA Public Holidays Calendar Overlay</strong></td>
+            <td><code>Client_CRM</code> / New</td>
+            <td><span class="badge-enhance">ENHANCE</span></td>
+            <td>Visual calendar day badges and rollback pills; dynamically updated via <code>core.sa_public_holidays</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Open-Source E-Signature (Documenso)</strong></td>
+            <td><code>SPEC-04</code></td>
+            <td><span class="badge-adapt">ADAPT UX</span></td>
+            <td>Self-hosted Documenso dual-signature SLA flow (Client + Partner) with auto-conversion webhook.</td>
+          </tr>
+          <tr>
+            <td><strong>SharePoint Client Vault (MS Graph)</strong></td>
+            <td><code>SPEC-05</code></td>
+            <td><span class="badge-enhance">ENHANCE</span></td>
+            <td>Headless MSAL daemon provisions standard <code>/Clients/{code}/</code> directory trees in M365 SharePoint.</td>
+          </tr>
+          <tr>
+            <td><strong>Xero SA 15% VAT Invoicing &amp; Retainers</strong></td>
+            <td><code>SPEC-06</code></td>
+            <td><span class="badge-enhance">ENHANCE</span></td>
+            <td>Retainer hours depletion, out-of-scope work capture, Xero <code>OUTPUT2</code> 15% VAT draft invoices, and Paystack.</td>
+          </tr>
+          <tr>
+            <td><strong>twenty.com External Links</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-drop">DROP</span></td>
+            <td>Remove external twenty.com/docs and marketing links; point help menu to internal practice handbook.</td>
+          </tr>
+          <tr>
+            <td><strong>Generic B2B Sales Tools &amp; ARR Metrics</strong></td>
+            <td><code>twenty</code></td>
+            <td><span class="badge-drop">DROP</span></td>
+            <td>Prune deals pipeline, customer success ARR metrics, and Stripe billing redirect via navigation config.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Section 2: Editorial SVG Diagrams Showcase -->
+    <section id="diagrams">
+      <h2 class="section-title">02 · Publication-Grade Editorial SVG Diagram Suite</h2>
+      <p style="color:var(--color-muted); max-width:76ch; margin-bottom:1.5rem;">
+        9 rich interactive HTML+SVG diagrams built strictly adhering to the <code>diagram-design</code> skill's 4px grid pitch, orthogonal rounded connectors, masked arrow labels, and WCAG 2.x contrast standards:
+      </p>
+
+      <div class="diagram-showcase">
+        <div class="diagram-tabs" id="diagramTabs">
+          <button class="d-tab-btn active" onclick="loadDiagram('01-architecture-delta-twenty-to-fdoncall.html', this)">01 · Architecture Delta</button>
+          <button class="d-tab-btn" onclick="loadDiagram('02-practice-data-flow.html', this)">02 · Practice Data Flow</button>
+          <button class="d-tab-btn" onclick="loadDiagram('03-compliance-rule-flowchart.html', this)">03 · Compliance Flowchart</button>
+          <button class="d-tab-btn" onclick="loadDiagram('04-client-onboarding-and-compliance-journey.html', this)">04 · Onboarding Journey</button>
+          <button class="d-tab-btn" onclick="loadDiagram('05-task-and-lead-state-machines.html', this)">05 · State Machines</button>
+          <button class="d-tab-btn" onclick="loadDiagram('06-database-schema-and-cloud-architecture.html', this)">06 · DB Schema &amp; Cloud</button>
+          <button class="d-tab-btn" onclick="loadDiagram('07-as-is-vs-to-be-workflow.html', this)">07 · Workflow Audit</button>
+          <button class="d-tab-btn" onclick="loadDiagram('08-api-plugin-integrations.html', this)">08 · API Plugin Topology</button>
+          <button class="d-tab-btn" onclick="loadDiagram('09-ui-information-architecture-and-screen-flows.html', this)">09 · UI IA &amp; Screen Flows</button>
+        </div>
+
+        <div class="diagram-frame-wrap">
+          <iframe id="diagramFrame" src="diagrams/01-architecture-delta-twenty-to-fdoncall.html" title="Interactive Diagram"></iframe>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <a id="standaloneLink" class="d-view-link" href="diagrams/01-architecture-delta-twenty-to-fdoncall.html" target="_blank">
+            Open Standalone Diagram in Full Tab &rarr;
+          </a>
+          <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--color-muted);">
+            VERIFIED VIA SELF_CHECK.PY &amp; VERIFY-GEOMETRY.PY
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Interactive Service Catalogue & Xero Matrix -->
+    <section id="catalogue">
+      <h2 class="section-title">03 · Service Catalogue &amp; Xero Item Code Matrix</h2>
+      <p style="color:var(--color-muted); max-width:76ch;">
+        Complete practice service inventory (21 total line items) across Statutory Compliance, Hourly Bookkeeping, Annual Accounts, Software Recharges, and Once-Off Registrations. Filter by category or search:
+      </p>
+
+      <div class="filter-bar">
+        <input type="text" id="svcSearch" class="search-input" placeholder="Search service name, Xero item code, or fee..." onkeyup="filterServices()">
+        <button class="cat-btn active" onclick="setCategory('all', this)">All (21)</button>
+        <button class="cat-btn" onclick="setCategory('statutory', this)">Statutory (10)</button>
+        <button class="cat-btn" onclick="setCategory('regular', this)">Regular Work</button>
+        <button class="cat-btn" onclick="setCategory('recharge', this)">Recharges</button>
+        <button class="cat-btn" onclick="setCategory('once-off', this)">Once-Off</button>
+      </div>
+
+      <table class="kepa-table" id="svcTable">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Service Name</th>
+            <th>Category</th>
+            <th>Xero Item Code</th>
+            <th>Fee Amount (ZAR)</th>
+            <th>Review Gate</th>
+            <th>Statutory Recurrence</th>
+          </tr>
+        </thead>
+        <tbody id="svcBody">
+          <tr data-cat="statutory"><td><strong>AFS</strong></td><td>Annual Financial Statements</td><td>Statutory</td><td><code>ACC (hourly)</code></td><td>R625/hr (12h–28h by band)</td><td><span class="badge-enhance">ALWAYS (Partner)</span></td><td>Annual (FYE + 6m)</td></tr>
+          <tr data-cat="statutory"><td><strong>ITR14</strong></td><td>Company Income Tax Return</td><td>Statutory</td><td><code>ITR14</code></td><td>R1,500</td><td><span class="badge-enhance">ALWAYS (Partner)</span></td><td>Annual (FYE + 12m)</td></tr>
+          <tr data-cat="statutory"><td><strong>ITR12</strong></td><td>Individual Income Tax Return</td><td>Statutory</td><td><code>ITR12</code></td><td>R1,050</td><td><span class="badge-enhance">ALWAYS (Partner)</span></td><td>Annual (SARS Season Oct/Jan)</td></tr>
+          <tr data-cat="statutory"><td><strong>ITR12T</strong></td><td>Trust Income Tax Return</td><td>Statutory</td><td><code>IT12TR</code></td><td>R1,500</td><td><span class="badge-enhance">ALWAYS (Partner)</span></td><td>Annual (SARS Season Jan)</td></tr>
+          <tr data-cat="statutory"><td><strong>IRP6</strong></td><td>Provisional Tax (1st &amp; 2nd)</td><td>Statutory</td><td><code>IRP6N</code> / <code>IRP6P</code></td><td>R575 (Nil) / R650 (Payable)</td><td><span class="badge-adapt">WHEN PAYABLE</span></td><td>Bi-annual (Month 6 &amp; FYE)</td></tr>
+          <tr data-cat="statutory"><td><strong>VAT201</strong></td><td>Value Added Tax Return</td><td>Statutory</td><td><code>vat</code></td><td>R545</td><td><span class="badge-keep">NEVER</span></td><td>Cats A–F (End of next month)</td></tr>
+          <tr data-cat="statutory"><td><strong>EMP201</strong></td><td>Monthly Employer Return</td><td>Statutory</td><td><code>EMP</code></td><td>R495</td><td><span class="badge-keep">NEVER</span></td><td>Monthly (7th of next month)</td></tr>
+          <tr data-cat="statutory"><td><strong>EMP501</strong></td><td>Employer Reconciliation</td><td>Statutory</td><td><code>EMP5 Small/Med/Lrg</code></td><td>R1,900 / R2,500 / R3,250</td><td><span class="badge-enhance">ALWAYS (Partner)</span></td><td>Bi-annual (31 Oct &amp; 31 May)</td></tr>
+          <tr data-cat="statutory"><td><strong>CIPC_AR</strong></td><td>CIPC Annual Return &amp; FAS</td><td>Statutory</td><td><code>CIPC-FAS</code> + <code>CIPC-AR</code></td><td>R525 firm + R100–R3,000 disburse</td><td><span class="badge-keep">NEVER</span></td><td>Annual (Anniversary + 30 bus days)</td></tr>
+          <tr data-cat="statutory"><td><strong>BO</strong></td><td>Beneficial Ownership Register</td><td>Statutory</td><td><code>BOC</code></td><td>R2,000</td><td><span class="badge-keep">NEVER</span></td><td>Annual or on ownership change</td></tr>
+          <tr data-cat="regular"><td><strong>BOOKKEEPING</strong></td><td>Monthly Accounting &amp; Recons</td><td>Regular</td><td><code>ACC</code></td><td>R625/hr (2h, 4h, 6h, 12h by band)</td><td><span class="badge-keep">NEVER</span></td><td>Monthly or VAT cycle</td></tr>
+          <tr data-cat="regular"><td><strong>PAYROLL</strong></td><td>Monthly Payroll Processing</td><td>Regular</td><td><code>ACC</code></td><td>R625/hr (0.5h–1.25h by staff band)</td><td><span class="badge-keep">NEVER</span></td><td>Monthly (12 months)</td></tr>
+          <tr data-cat="regular"><td><strong>MGMT</strong></td><td>Management Accounts &amp; FD</td><td>Regular</td><td><code>ACC</code></td><td>R625/hr (custom hours)</td><td><span class="badge-adapt">WHEN QUOTED</span></td><td>Monthly or quarterly</td></tr>
+          <tr data-cat="regular"><td><strong>REVIEW</strong></td><td>Independent Review</td><td>Regular</td><td><code>ACC</code></td><td>R625/hr (2h, 4h, 6h, 12h by band)</td><td><span class="badge-enhance">ALWAYS (Partner)</span></td><td>Annual (AFS month)</td></tr>
+          <tr data-cat="regular"><td><strong>COIDA</strong></td><td>Return of Earnings (ROE)</td><td>Regular</td><td><code>COIDA</code> (Confirm)</td><td>R545</td><td><span class="badge-keep">NEVER</span></td><td>Annual (May)</td></tr>
+          <tr data-cat="recharge"><td><strong>XERO</strong></td><td>Xero Subscription Recharge</td><td>Recharge</td><td><code>XERO-SUB</code></td><td>R391.30 / R691.30 / R952.17 excl.</td><td><span class="badge-keep">NEVER</span></td><td>Monthly (Exempt from March escalation)</td></tr>
+          <tr data-cat="recharge"><td><strong>SIMPLEPAY</strong></td><td>SimplePay Subscription</td><td>Recharge</td><td><code>SIMPLEPAY</code></td><td>R167.50 / R235.50 / R345.50 / R675.50</td><td><span class="badge-keep">NEVER</span></td><td>Monthly (Exempt from March escalation)</td></tr>
+          <tr data-cat="once-off"><td><strong>ITREG</strong></td><td>SARS Income Tax Registration</td><td>Once-off</td><td><code>ITREG</code></td><td>R1,050</td><td><span class="badge-keep">NEVER</span></td><td>Onboarding Month 1</td></tr>
+          <tr data-cat="once-off"><td><strong>CIPC_REG</strong></td><td>Company Incorporation</td><td>Once-off</td><td><code>CIPC_REG</code></td><td>R1,950 firm + R210 disbursement</td><td><span class="badge-keep">NEVER</span></td><td>Onboarding Month 1</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <!-- Section 4: MoSCoW Prioritization & CRUD Specification -->
+    <section id="moscow-crud" style="margin-bottom:3rem;">
+      <h2 class="section-title">04 · MoSCoW Requirements &amp; Entity CRUD Matrix</h2>
+      <p style="color:var(--color-muted); max-width:76ch; margin-bottom:1.5rem;">
+        Clear scope boundaries distinguishing essential operational requirements from secondary automations and unneeded generic B2B features, alongside complete entity CRUD permissions.
+      </p>
+
+      <div class="grid-2" style="margin-bottom:2rem;">
+        <div style="background:#fff; border:1px solid var(--color-rule); border-radius:8px; padding:1.25rem;">
+          <h3 style="font-family:var(--font-mono); font-size:0.85rem; font-weight:600; color:var(--color-accent); margin-bottom:0.75rem;">MUST HAVE (Core Operational Foundation)</h3>
+          <ul style="font-size:0.85rem; line-height:1.6; color:var(--color-muted); padding-left:1.25rem;">
+            <li>Official Twenty CRM local monorepo (:3000, :3001) with Docker PostgreSQL 16 &amp; Redis 7.</li>
+            <li>Extended Company &amp; Task models holding South African statutory attributes.</li>
+            <li>10 statutory deadline algorithms with Easter Computus &amp; weekend rollbacks.</li>
+            <li>Blocker signal engine (missing incorporation date, unrecorded FYE).</li>
+            <li>Hard Partner Review Gate enforcement (Erik / Wouter sign-off).</li>
+            <li>12-Month Fee Estimator matrix with client-side PDF/XLSX downloads.</li>
+            <li>5-stage Onboarding Kanban board for lead management.</li>
+          </ul>
+        </div>
+        <div style="background:#fff; border:1px solid var(--color-rule); border-radius:8px; padding:1.25rem;">
+          <h3 style="font-family:var(--font-mono); font-size:0.85rem; font-weight:600; color:var(--color-link); margin-bottom:0.75rem;">SHOULD HAVE (Automations &amp; Storage)</h3>
+          <ul style="font-size:0.85rem; line-height:1.6; color:var(--color-muted); padding-left:1.25rem;">
+            <li>Self-hosted Documenso e-signature integration (dual-signing workflow).</li>
+            <li>Documenso webhook bridge auto-converting won leads to active clients.</li>
+            <li>Microsoft Graph API daemon for automated SharePoint client vault directories.</li>
+            <li>Xero API draft invoice synchronization with 15% South African VAT (OUTPUT2).</li>
+            <li>Paystack instant payment links for ad-hoc filings.</li>
+            <li>Hourly time tracking and monthly retainer hours depletion.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 style="font-family:var(--font-serif); font-size:1.35rem; margin-bottom:1rem; color:var(--color-ink);">Entity CRUD Permissions Matrix</h3>
+      <table class="kepa-table">
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th>Create (C)</th>
+            <th>Read (R)</th>
+            <th>Update (U)</th>
+            <th>Delete (D)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Client (Company)</strong></td>
+            <td>UI modal, CSV import, or lead auto-conversion.</td>
+            <td>Directory table, 3-pane show view, timeline.</td>
+            <td>Edit statutory parameters; recalculates signals.</td>
+            <td>Soft archive (Dormant/Resigned); Partners only.</td>
+          </tr>
+          <tr>
+            <td><strong>Contact (Person)</strong></td>
+            <td>UI modal or Documenso signatory extraction.</td>
+            <td>Client profile Contacts tab, global directory.</td>
+            <td>Edit contact info, provisional taxpayer flag, ID.</td>
+            <td>Unlink from company or delete if no active tasks.</td>
+          </tr>
+          <tr>
+            <td><strong>Compliance Task</strong></td>
+            <td>Auto-materialized for 12 months on activation.</td>
+            <td>Practice calendar, Kanban, client tasks tab.</td>
+            <td>Update status, assignee, SARS ref; Review Gate.</td>
+            <td>Statutory obligations cannot be deleted.</td>
+          </tr>
+          <tr>
+            <td><strong>Proposal / Estimate</strong></td>
+            <td>Created in 12-Month Fee Estimator module.</td>
+            <td>Columns C–P matrix, PDF quote, formula XLSX.</td>
+            <td>Adjust hours, override fees (touched), 15% VAT.</td>
+            <td>Discard draft quote or archive version.</td>
+          </tr>
+          <tr>
+            <td><strong>Contract (Documenso)</strong></td>
+            <td>Dispatched via REST API from approved proposal.</td>
+            <td>Client Contracts tab with audit certificate.</td>
+            <td>Status updated via webhook (sent/signed/done).</td>
+            <td>Canceled in Documenso if proposal rejected.</td>
+          </tr>
+          <tr>
+            <td><strong>Vault Attachment</strong></td>
+            <td>Uploaded via UI or filed by Graph API daemons.</td>
+            <td>Client Documents tab via secure Graph URLs.</td>
+            <td>Rename file, change document category.</td>
+            <td>Deleted from SharePoint and database index.</td>
+          </tr>
+          <tr>
+            <td><strong>Practice Rules &amp; Tables</strong></td>
+            <td>Partner creates ad-hoc rules or annual tax years in Settings.</td>
+            <td>Evaluated automatically across all tasks; viewable in Settings.</td>
+            <td>Edit hourly rates, turnover thresholds, and review gates.</td>
+            <td>Core statutory rules cannot be deleted; annual brackets archived.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Section 5: Dual-Track Open Questions -->
+    <section id="questions">
+      <h2 class="section-title">05 · Dual-Track Open Questions &amp; Research Register</h2>
+      <p style="color:var(--color-muted); max-width:76ch; margin-bottom:1.5rem;">
+        Unknowns are divided into two operational tracks: <strong>Track 1</strong> provides copyable research prompts for autonomous agents to verify statutory citations; <strong>Track 2</strong> provides interactive sign-off checkboxes for Partners Erik and Wouter.
+      </p>
+
+      <div class="grid-2">
+        <!-- Track 1 -->
+        <div>
+          <h3 style="font-family:var(--font-serif); font-size:1.35rem; margin-bottom:1rem; color:var(--color-ink);">
+            Track 1: Research-Agent Solvable Prompts
+          </h3>
+          
+          <div class="prompt-box">
+            <div class="prompt-header">
+              <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:600;">PROMPT 1 · SARS FILING SEASON &amp; IRP6</span>
+              <button class="copy-btn" onclick="copyPrompt('p1')">Copy Prompt</button>
+            </div>
+            <div class="prompt-text" id="p1">Verify official gazetted SARS filing season deadlines for 2024, 2025, and 2026 tax years from sars.gov.za. Document exact statutory submission dates for ITR12 (non-provisional and provisional) and ITR12T (Trusts). Verify statutory rules for 3rd provisional tax top-up payments under Paragraph 21 of the Fourth Schedule to the Income Tax Act.</div>
+          </div>
+
+          <div class="prompt-box">
+            <div class="prompt-header">
+              <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:600;">PROMPT 2 · CIPC AR &amp; BENEFICIAL OWNERSHIP</span>
+              <button class="copy-btn" onclick="copyPrompt('p2')">Copy Prompt</button>
+            </div>
+            <div class="prompt-text" id="p2">Verify official CIPC Annual Return fee tiers for Companies vs Close Corporations under Companies Act s33 and CIPC Regulations. Confirm whether the 30-business-day window starts from anniversary date or month start. Document mandatory Beneficial Ownership filing triggers under General Laws Amendment Act 2022.</div>
+          </div>
+
+          <div class="prompt-box">
+            <div class="prompt-header">
+              <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:600;">PROMPT 3 · XERO SA, SIMPLEPAY &amp; DOCUMENSO</span>
+              <button class="copy-btn" onclick="copyPrompt('p3')">Copy Prompt</button>
+            </div>
+            <div class="prompt-text" id="p3">Verify published pricing in ZAR for Xero South Africa (Starter, Standard, Premium excl and incl 15% VAT). Verify SimplePay per-employee pricing tiers and document standard billing formula for payrolls exceeding 50 employees.</div>
+          </div>
+        </div>
+
+        <!-- Track 2 -->
+        <div>
+          <h3 style="font-family:var(--font-serif); font-size:1.35rem; margin-bottom:1rem; color:var(--color-ink);">
+            Track 2: Client Sign-Off Register (Erik &amp; Wouter)
+          </h3>
+
+          <div class="signoff-item">
+            <input type="checkbox" id="so1" onchange="toggleSignoff(this)">
+            <div class="signoff-content">
+              <h4>Q2.1 · 5 Pricing Discrepancies Resolution</h4>
+              <p>Confirm whether Xero Item List (27 Oct 2026) or Pricing.xlsx schedule wins: EMP201 (R495 vs R545), EMP501 (Tiers vs R1,500), ITR12 (R1,050 vs R1,250), CIPC_AR fee (R525 vs R545), and COIDA placeholder fee.</p>
+            </div>
+          </div>
+
+          <div class="signoff-item">
+            <input type="checkbox" id="so2" onchange="toggleSignoff(this)">
+            <div class="signoff-content">
+              <h4>Q2.2 · Payroll &gt; 50 Staff Hours Formula</h4>
+              <p>Confirm practice hour calculation when client payroll exceeds 50 employees (e.g. +0.25 hours per 25 additional employees vs partner custom quote).</p>
+            </div>
+          </div>
+
+          <div class="signoff-item">
+            <input type="checkbox" id="so3" onchange="toggleSignoff(this)">
+            <div class="signoff-content">
+              <h4>Q2.3 · Confirm 9 Assumed February Year-Ends</h4>
+              <p>Confirm legal financial year-ends for ALB-207, AXE-460, BLA-465, KHE-615, MUS-875, TOP-435, and trusts (BEN-585, CLU-614, THE-153) currently marked assumed (*).</p>
+            </div>
+          </div>
+
+          <div class="signoff-item">
+            <input type="checkbox" id="so4" onchange="toggleSignoff(this)">
+            <div class="signoff-content">
+              <h4>Q2.4 · Missing Incorporation Dates &amp; Turnover</h4>
+              <p>Provide missing incorporation dates for companies to resolve CIPC AR deadline blockers, and confirm turnover for unbanded clients CLU-614 and LES-841.</p>
+            </div>
+          </div>
+
+          <div class="signoff-item">
+            <input type="checkbox" id="so5" onchange="toggleSignoff(this)">
+            <div class="signoff-content">
+              <h4>Q2.5 · Partner Review Approval Permissions</h4>
+              <p>Confirm whether Senior Tax Specialists (Nikita, Willem) are authorized to sign off on specific returns (e.g. nil IRP6, ITR12), or if review approval ('In review' &rarr; 'Submitted') is strictly restricted to Partners (Erik, Wouter).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Technical Architecture & DDL -->
+    <section id="architecture">
+      <h2 class="section-title">05 · Technical Architecture &amp; Database DDL</h2>
+      <p style="color:var(--color-muted); max-width:76ch; margin-bottom:1.5rem;">
+        FD on Call CRM is structured as a TypeScript monorepo using Hono and Drizzle ORM, ensuring identical business logic runs serverless on Cloudflare D1 (Target A) or on a dedicated Node.js + PostgreSQL host (Target B):
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3 class="card-title">apps/web (Frontend)</h3>
+          <p style="font-size:0.85rem; color:var(--color-muted); margin-bottom:0.75rem;">
+            React 19, Vite, Tailwind CSS, Twenty CRM UX shell (Sidebar, Cmd+K, Table, Kanban, 3-Pane Record Show), and client-side PDF/XLSX generation.
+          </p>
+          <span style="font-family:var(--font-mono); font-size:0.72rem; color:var(--color-link);">100% Client-Side Reactive</span>
+        </div>
+        <div class="card">
+          <h3 class="card-title">packages/domain (Shared Core)</h3>
+          <p style="font-size:0.85rem; color:var(--color-muted); margin-bottom:0.75rem;">
+            Pure TypeScript calculation engine lifted directly from Client_CRM. Zero external dependencies; shared between browser and server without drift.
+          </p>
+          <span style="font-family:var(--font-mono); font-size:0.72rem; color:var(--color-link);">Mathematically Verified</span>
+        </div>
+        <div class="card">
+          <h3 class="card-title">apps/api &amp; packages/db</h3>
+          <p style="font-size:0.85rem; color:var(--color-muted); margin-bottom:0.75rem;">
+            Hono Web Standards REST/RPC API with Drizzle ORM managing 14 relational tables (including <code>document_attachments</code> and <code>sars_tax_brackets</code>). Deploys to Cloudflare D1 ($0/mo) or Node.js + PostgreSQL.
+          </p>
+          <span style="font-family:var(--font-mono); font-size:0.72rem; color:var(--color-link);">Dual SQL Dialect Ready</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1.5rem; border-left: 4px solid var(--color-accent); background: var(--color-card);">
+        <h3 class="card-title">docs/05 · UI Information Architecture &amp; Screen Flows (BABOK Blueprint)</h3>
+        <p style="font-size:0.85rem; color:var(--color-muted); margin-bottom:0.75rem;">
+          Bridges statutory business capabilities to the Twenty CRM visual shell: Persistent Shell (Topbar, Sidebar, Breadcrumb), Master Registers (<code>/clients</code> with dedicated client code column <code>MUS-875</code>), the 4-Tab Client Record Show View (Statutory Profile, Deadlines, 12-Month Fee Estimate, SharePoint Vault), and external quote/e-sign/invoice integrations. Accompanied by interactive publication-grade Diagram 09.
+        </p>
+        <div style="display:flex; gap:1rem; align-items:center;">
+          <a href="05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--color-accent); font-weight:600; text-decoration:none;">Read Full Markdown Spec &rarr;</a>
+          <a href="diagrams/09-ui-information-architecture-and-screen-flows.html" target="_blank" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--color-link); text-decoration:none;">View Diagram 09 &rarr;</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      <span>FD ON CALL PRACTICE LEDGER CRM · SPECIFICATION HUB</span>
+      <span>PHASE 1 SPECIFICATION COMPLETE · PHASE 2 READY</span>
+    </footer>
+  </main>
+
+  <script>
+    function loadDiagram(filename, btn) {
+      document.getElementById('diagramFrame').src = 'diagrams/' + filename;
+      document.getElementById('standaloneLink').href = 'diagrams/' + filename;
+      const buttons = document.querySelectorAll('.d-tab-btn');
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function filterServices() {
+      const q = document.getElementById('svcSearch').value.toLowerCase();
+      const rows = document.querySelectorAll('#svcBody tr');
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+
+    function setCategory(cat, btn) {
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const rows = document.querySelectorAll('#svcBody tr');
+      rows.forEach(r => {
+        if (cat === 'all' || r.getAttribute('data-cat') === cat) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+
+    function copyPrompt(id) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text);
+      alert('Prompt copied to clipboard!');
+    }
+
+    function toggleSignoff(cb) {
+      const parent = cb.closest('.signoff-item');
+      if (cb.checked) {
+        parent.style.opacity = '0.6';
+        parent.style.background = 'var(--color-paper-2)';
+      } else {
+        parent.style.opacity = '1';
+        parent.style.background = 'var(--color-card)';
+      }
+    }
+  </script>
+</body>
+</html>

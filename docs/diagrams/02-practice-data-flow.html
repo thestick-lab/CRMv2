@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practice Data Flow · FD on Call Practice Ledger</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper: #f6f5f3;
+      --color-paper-2: #ffffff;
+      --color-ink: #1b1817;
+      --color-muted: #5c5652;
+      --color-soft: #6e6762;
+      --color-rule: rgba(27,24,23,0.12);
+      --color-rule-solid: #d8d6d2;
+      --color-accent: #c4161c;
+      --color-accent-tint: rgba(196,22,28,0.08);
+      --color-link: #2c5a85;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { min-height: 100vh; padding: 3rem 2rem; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); }
+    .container { width: 100%; max-width: 1200px; margin: 0 auto; }
+    .eyebrow { margin-bottom: 0.5rem; color: var(--color-muted); font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; }
+    h1 { margin-bottom: 0.5rem; color: var(--color-ink); font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; }
+    .subtitle { max-width: 76ch; color: var(--color-muted); font-size: 0.9375rem; line-height: 1.6; margin-bottom: 2rem; }
+    .diagram-container { overflow-x: auto; padding: 1.5rem; background: var(--color-paper); border: 1px solid var(--color-rule); border-radius: 8px; }
+    svg { display: block; width: 100%; min-width: 768px; }
+    .step-number, .step-label, .lane-label, .role-text, .chip-text, .legend-label { font-family: var(--font-mono); text-anchor: middle; }
+    .step-number { fill: var(--color-ink); font-size: 7px; font-weight: 600; }
+    .step-label { fill: var(--color-muted); font-size: 7px; font-weight: 500; letter-spacing: 0.12em; }
+    .lane-label { fill: var(--color-muted); font-size: 8px; font-weight: 500; letter-spacing: 0.14em; }
+    .role-text { fill: var(--color-ink); font-size: 6px; font-weight: 600; }
+    .node-title { fill: var(--color-ink); font-family: var(--font-sans); font-size: 9px; font-weight: 600; text-anchor: middle; }
+    .node-sub { fill: var(--color-muted); font-family: var(--font-mono); font-size: 6.5px; font-weight: 400; text-anchor: middle; }
+    .node-tool { fill: var(--color-soft); font-family: var(--font-mono); font-size: 6.5px; font-weight: 400; text-anchor: middle; }
+    .chip-text { fill: #fff; font-size: 5px; font-weight: 700; }
+    .focal-text { fill: var(--color-accent); }
+    .legend-label { fill: var(--color-muted); font-size: 7px; font-weight: 500; letter-spacing: 0.12em; text-anchor: end; }
+    .legend-text { fill: var(--color-muted); font-family: var(--font-sans); font-size: 7px; font-weight: 400; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.75rem; border-top: 1px solid var(--color-rule); padding-top: 1.75rem; }
+    .card h2 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .card p { font-size: 0.8125rem; line-height: 1.6; color: var(--color-muted); }
+    .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: 2rem; color: var(--color-soft); font-family: var(--font-mono); font-size: 0.66rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <p class="eyebrow">Data Flow · FD on Call Practice Ledger</p>
+      <h1>Practice Compliance Lifecycle &amp; Role-Scoped Data Flow</h1>
+      <p class="subtitle">End-to-end data lifecycle across Client, Accountant, Partner, Documenso, SharePoint Vault, and External Tax/Secretarial Authorities—showing typed artifacts from lead onboarding to submission and billing.</p>
+    </header>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 768 456" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="data-flow-title data-flow-desc">
+        <title id="data-flow-title">FD on Call Role-Scoped Practice Data Flow</title>
+        <desc id="data-flow-desc">Four swimlanes representing Client, Accountant, Partner, and External Connected Systems across five pipeline steps from Intake &amp; Estimate to Documenso E-Sign, Compliance Execution, and SharePoint &amp; Xero Finalization.</desc>
+        <defs>
+          <pattern id="flow-dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="0.8" fill="rgba(27,24,23,0.08)"/></pattern>
+          <marker id="arr-muted" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M 0 0 L 6 3 L 0 6 z" fill="#5c5652"/></marker>
+          <marker id="arr-accent" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M 0 0 L 6 3 L 0 6 z" fill="#c4161c"/></marker>
+          <marker id="arr-link" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M 0 0 L 6 3 L 0 6 z" fill="#2c5a85"/></marker>
+        </defs>
+
+        <rect width="768" height="456" fill="#f6f5f3"/>
+        <rect width="768" height="456" fill="url(#flow-dots)"/>
+
+        <!-- Swimlane Backgrounds -->
+        <g id="lanes">
+          <rect x="36" y="44" width="700" height="74" rx="4" fill="rgba(255,255,255,0.7)" stroke="#d8d6d2" stroke-width="0.8"/>
+          <text x="24" y="85" class="lane-label" transform="rotate(-90 24 85)">CLIENT</text>
+
+          <rect x="36" y="124" width="700" height="74" rx="4" fill="rgba(255,255,255,0.7)" stroke="#d8d6d2" stroke-width="0.8"/>
+          <text x="24" y="165" class="lane-label" transform="rotate(-90 24 165)">ACCOUNTANT</text>
+
+          <rect x="36" y="204" width="700" height="74" rx="4" fill="rgba(255,255,255,0.7)" stroke="#d8d6d2" stroke-width="0.8"/>
+          <text x="24" y="245" class="lane-label" transform="rotate(-90 24 245)">PARTNER</text>
+
+          <rect x="36" y="284" width="700" height="74" rx="4" fill="rgba(255,255,255,0.7)" stroke="#d8d6d2" stroke-width="0.8"/>
+          <text x="24" y="325" class="lane-label" transform="rotate(-90 24 325)">EXTERNAL</text>
+        </g>
+
+        <!-- Pipeline Step Markers (Top) -->
+        <g id="pipeline-steps">
+          <text x="180" y="24" class="step-label">01 · INTAKE &amp; ESTIMATE</text>
+          <text x="320" y="24" class="step-label">02 · DOCUMENSO E-SIGN</text>
+          <text x="460" y="24" class="step-label">03 · COMPLIANCE SCHEDULE</text>
+          <text x="600" y="24" class="step-label">04 · REVIEW GATE</text>
+          <text x="680" y="24" class="step-label">05 · FILING &amp; XERO</text>
+        </g>
+
+        <!-- Connectors (behind nodes) -->
+        <!-- Step 1 CLI -> Step 1 ACC -->
+        <path d="M 230 80 H 260 Q 268 80 268 88 V 134 Q 268 142 276 142 H 284" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#arr-muted)"/>
+        
+        <!-- Step 1 ACC -> Step 2 CLI (proposal to Documenso) -->
+        <path d="M 336 142 H 348 Q 356 142 356 134 V 88 Q 356 80 348 80 H 336" fill="none" stroke="#2c5a85" stroke-width="1" marker-end="url(#arr-link)"/>
+        
+        <!-- Step 2 CLI -> Step 2 PTR (client signs, partner countersigns) -->
+        <path d="M 336 80 H 380 Q 388 80 388 88 V 224 Q 388 232 396 232 H 410" fill="none" stroke="#c4161c" stroke-width="1.2" marker-end="url(#arr-accent)"/>
+        
+        <!-- Step 2 PTR -> Step 3 ACC (Documenso completed -> auto-activate & materialize tasks) -->
+        <path d="M 462 232 H 474 Q 482 232 482 214 V 168 Q 482 160 490 160 H 500" fill="none" stroke="#c4161c" stroke-width="1.2" marker-end="url(#arr-accent)"/>
+        
+        <!-- Step 3 ACC -> Step 4 PTR (hand-off return to Partner Review Queue) -->
+        <path d="M 552 182 V 220" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#arr-muted)"/>
+        
+        <!-- Step 4 PTR -> Step 5 EXT (approved -> submit SARS/CIPC & draft Xero invoice) -->
+        <path d="M 604 242 H 630 Q 638 242 638 250 V 300 Q 638 308 646 308 H 654" fill="none" stroke="#2c5a85" stroke-width="1.2" marker-end="url(#arr-link)"/>
+        <path d="M 604 242 H 630 Q 638 242 638 250 V 370 Q 638 378 646 378 H 654" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#arr-muted)"/>
+
+        <!-- Nodes -->
+        <!-- Node 1: Client Intake (CLI) -->
+        <g transform="translate(130 58)">
+          <rect width="100" height="44" rx="4" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="50" y="14" class="node-title">Intake &amp; KYC</text>
+          <text x="50" y="25" class="node-sub">statutory profile &amp; docs</text>
+          <text x="50" y="36" class="node-tool">Twenty Contacts · WB</text>
+          <rect x="4" y="30" width="14" height="10" rx="2" fill="#5c5652"/><text x="11" y="38" class="chip-text">WB</text>
+          <rect x="82" y="30" width="14" height="10" rx="2" fill="#2c5a85"/><text x="89" y="38" class="chip-text">DB</text>
+        </g>
+
+        <!-- Node 2: Fee Proposal (ACC) -->
+        <g transform="translate(236 138)">
+          <rect width="100" height="44" rx="4" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="50" y="14" class="node-title">12-Mo Proposal</text>
+          <text x="50" y="25" class="node-sub">turnover &amp; payroll bands</text>
+          <text x="50" y="36" class="node-tool">Fee Estimator Matrix</text>
+          <rect x="4" y="30" width="14" height="10" rx="2" fill="#2c5a85"/><text x="11" y="38" class="chip-text">DB</text>
+          <rect x="82" y="30" width="14" height="10" rx="2" fill="#c4161c"/><text x="89" y="38" class="chip-text">FL</text>
+        </g>
+
+        <!-- Node 3: Client Documenso Sign (CLI) -->
+        <g transform="translate(236 58)">
+          <rect width="100" height="44" rx="4" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="50" y="14" class="node-title">Client Signs SLA</text>
+          <text x="50" y="25" class="node-sub">digital mobile signature</text>
+          <text x="50" y="36" class="node-tool">Documenso (ECTA s13)</text>
+          <rect x="4" y="30" width="14" height="10" rx="2" fill="#c4161c"/><text x="11" y="38" class="chip-text">FL</text>
+          <rect x="82" y="30" width="14" height="10" rx="2" fill="#5c5652"/><text x="89" y="38" class="chip-text">WB</text>
+        </g>
+
+        <!-- Node 4: Partner Countersign (PTR) -->
+        <g transform="translate(410 218)">
+          <rect width="104" height="44" rx="4" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="52" y="14" class="node-title">Countersign SLA</text>
+          <text x="52" y="25" class="node-sub">Managing Partner sign</text>
+          <text x="52" y="36" class="node-tool">Documenso Completed</text>
+          <rect x="4" y="30" width="14" height="10" rx="2" fill="#c4161c"/><text x="11" y="38" class="chip-text">FL</text>
+          <rect x="86" y="30" width="14" height="10" rx="2" fill="#2c5a85"/><text x="93" y="38" class="chip-text">DB</text>
+        </g>
+
+        <!-- Node 5: Statutory Engine (ACC, Focal) -->
+        <g transform="translate(500 138)">
+          <rect width="104" height="44" rx="4" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2"/>
+          <text x="52" y="14" class="node-title" fill="#c4161c">Deadline Engine</text>
+          <text x="52" y="25" class="node-sub">materialize 12-mo tasks</text>
+          <text x="52" y="36" class="node-tool">Twenty Task Scheduler</text>
+          <rect x="4" y="30" width="14" height="10" rx="2" fill="#2c5a85"/><text x="11" y="38" class="chip-text">DB</text>
+          <rect x="86" y="30" width="14" height="10" rx="2" fill="#5c5652"/><text x="93" y="38" class="chip-text">TB</text>
+        </g>
+
+        <!-- Node 6: Partner Review Gate (PTR) -->
+        <g transform="translate(500 218)">
+          <rect width="104" height="44" rx="4" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="52" y="14" class="node-title">Review Gate</text>
+          <text x="52" y="25" class="node-sub">always / when-payable</text>
+          <text x="52" y="36" class="node-tool">Erik / Wouter Gate</text>
+          <rect x="4" y="30" width="14" height="10" rx="2" fill="#c4161c"/><text x="11" y="38" class="chip-text">FL</text>
+          <rect x="86" y="30" width="14" height="10" rx="2" fill="#2c5a85"/><text x="93" y="38" class="chip-text">DB</text>
+        </g>
+
+        <!-- Node 7: SARS / CIPC Submission (EXT) -->
+        <g transform="translate(654 288)">
+          <rect width="90" height="42" rx="4" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="45" y="14" class="node-title">Submit Return</text>
+          <text x="45" y="25" class="node-sub">SARS / CIPC filing</text>
+          <text x="45" y="35" class="node-tool">eFiling / CIPC API</text>
+          <rect x="4" y="28" width="14" height="10" rx="2" fill="#2c5a85"/><text x="11" y="36" class="chip-text">DB</text>
+          <rect x="72" y="28" width="14" height="10" rx="2" fill="#5c5652"/><text x="79" y="36" class="chip-text">WB</text>
+        </g>
+
+        <!-- Node 8: SharePoint & Xero (EXT) -->
+        <g transform="translate(654 358)">
+          <rect width="90" height="42" rx="4" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="45" y="14" class="node-title">Vault &amp; Xero</text>
+          <text x="45" y="25" class="node-sub">SharePoint + 15% VAT</text>
+          <text x="45" y="35" class="node-tool">SPEC-05 &amp; SPEC-06</text>
+          <rect x="4" y="28" width="14" height="10" rx="2" fill="#5c5652"/><text x="11" y="36" class="chip-text">WB</text>
+          <rect x="72" y="28" width="14" height="10" rx="2" fill="#2c5a85"/><text x="79" y="36" class="chip-text">DB</text>
+        </g>
+
+        <!-- Legend -->
+        <g id="data-legend" transform="translate(36, 416)">
+          <rect x="0" y="0" width="700" height="28" rx="4" fill="#ffffff" stroke="#d8d6d2" stroke-width="0.8"/>
+          <rect x="16" y="9" width="14" height="10" rx="2" fill="#5c5652"/><text x="23" y="17" class="chip-text">WB</text>
+          <text x="36" y="18" class="legend-text">Web Browser UI / View</text>
+
+          <rect x="180" y="9" width="14" height="10" rx="2" fill="#2c5a85"/><text x="187" y="17" class="chip-text">DB</text>
+          <text x="200" y="18" class="legend-text">PostgreSQL 16 Relational State</text>
+
+          <rect x="360" y="9" width="14" height="10" rx="2" fill="#c4161c"/><text x="367" y="17" class="chip-text">FL</text>
+          <text x="380" y="18" class="legend-text">Focal Decision / Document Flow</text>
+
+          <rect x="540" y="9" width="14" height="10" rx="2" fill="#6e6762"/><text x="547" y="17" class="chip-text">TB</text>
+          <text x="560" y="18" class="legend-text">Task Board / Calendar</text>
+        </g>
+      </svg>
+    </div>
+
+    <section class="cards">
+      <div class="card">
+        <h2>01 · Dual-Signature SLA Acceptance</h2>
+        <p>Engagement contracts generated from the 12-month Fee Estimator require digital execution from both the Client Representative and Managing Partner Erik in Documenso (ECTA s13) before client activation.</p>
+      </div>
+      <div class="card">
+        <h2>02 · Materialized Compliance Engine</h2>
+        <p>Upon digital contract execution, Twenty's task scheduler automatically materializes 12 months of statutory obligations with weekend rollbacks and partner review tags.</p>
+      </div>
+      <div class="card">
+        <h2>03 · Automated Vaulting &amp; Invoicing</h2>
+        <p>Completed returns and contracts stream directly into the client's SharePoint directory via Microsoft Graph API daemons, while billable time triggers compliant 15% South African VAT invoices in Xero.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>FD on Call Practice CRM · Data Flow Specification</span>
+      <span>Diagram 02 of 07 · diagram-design profile: fdoncall</span>
+    </footer>
+  </main>
+</body>
+</html>

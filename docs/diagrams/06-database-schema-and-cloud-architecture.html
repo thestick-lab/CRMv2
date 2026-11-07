@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Database Schema &amp; Deployment Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper: #f6f5f3;
+      --color-paper-2: #efedea;
+      --color-ink: #1b1817;
+      --color-muted: #5c5652;
+      --color-soft: #6e6762;
+      --color-rule: rgba(27,24,23,0.12);
+      --color-rule-solid: #cbc5c0;
+      --color-accent: #c4161c;
+      --color-accent-tint: rgba(196,22,28,0.08);
+      --color-link: #2c5a85;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1240px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 0.9375rem; line-height: 1.6; color: var(--color-muted); max-width: 68ch; }
+    .diagram-container { background: var(--color-paper); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 1100px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.75rem; border-top: 1px solid var(--color-rule); padding-top: 1.75rem; }
+    .card h2 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.6; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-rule); font-family: var(--font-mono); font-size: 0.66rem; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Database Schema &amp; Infrastructure · Diagram Design</p>
+      <h1>Relational Schema &amp; Dual-Target Deployment</h1>
+      <p class="subtitle">Physical Drizzle ORM schema with column-to-column foreign key anchors, cascading compliance task rules, and zero-drift deployment across Cloudflare D1 (Free Demo) and Node.js + PostgreSQL (Production).</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1140 680" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="db-schema-title db-schema-desc">
+        <title id="db-schema-title">FD on Call Relational Database Schema and Deployment Architecture</title>
+        <desc id="db-schema-desc">Physical SQL database schema illustrating five tables: clients, people, client_people_roles, compliance_tasks, and fee_estimates, with column-anchored foreign key connectors and a dual-target deployment section.</desc>
+        <defs>
+          <marker id="db-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
+          <marker id="db-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c4161c"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f6f5f3"/>
+
+        <!-- SCHEMA ENCLOSURE -->
+        <rect x="24" y="24" width="1092" height="428" rx="8" fill="rgba(27,24,23,0.015)" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+        <text x="36" y="44" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">PART A · PHYSICAL RELATIONAL SCHEMA (SQL DDL)</text>
+
+        <!-- FK CONNECTORS (Drawn behind boxes) -->
+        <!-- FK 1: client_people_roles.client_code -> clients.code · ON DELETE CASCADE -->
+        <path d="M 400 136 H 360 Q 352 136 352 128 V 96 Q 352 88 344 88 H 280" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
+        
+        <!-- FK 2: client_people_roles.person_id -> people.id · ON DELETE CASCADE -->
+        <path d="M 640 160 H 680 Q 688 160 688 152 V 96 Q 688 88 696 88 H 740" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
+
+        <!-- FK 3: compliance_tasks.client_code -> clients.code · ON DELETE CASCADE (FOCAL) -->
+        <path d="M 400 320 H 340 Q 332 320 332 200 Q 332 88 300 88 H 280" fill="none" stroke="#b8142c" stroke-width="1.2" marker-end="url(#db-arrow-accent)"/>
+
+        <!-- FK 4: fee_estimates.client_code -> clients.code · ON DELETE SET NULL -->
+        <path d="M 740 320 H 680 Q 672 320 672 200 Q 672 88 320 88 H 280" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
+
+        <!-- FK LABELS (Masked) -->
+        <rect x="330" y="68" width="88" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="374" y="77" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">CASCADE</text>
+
+        <rect x="660" y="68" width="88" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="704" y="77" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">CASCADE</text>
+
+        <rect x="320" y="240" width="108" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="374" y="249" fill="#b8142c" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">ON DELETE CASCADE</text>
+
+        <rect x="630" y="240" width="108" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="684" y="249" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">ON DELETE SET NULL</text>
+
+                <!-- FK 5: document_attachments.client_code -> clients.code · ON DELETE CASCADE -->
+        <path d="M 160 272 V 260" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
+        <!-- TABLE 1: clients -->
+        <g transform="translate(40 64)">
+          <rect width="240" height="196" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+          <!-- Header -->
+          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
+          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
+          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">clients</text>
+          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
+          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+          
+          <!-- Rows (24px height) -->
+          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">code</text>
+          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
+          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">name</text>
+          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">entity_type</text>
+          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">year_end_month</text>
+          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">integer</text>
+
+          <rect y="124" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="140" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">turnover_cents</text>
+          <text x="228" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+
+          <text x="12" y="164" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">status</text>
+          <rect x="140" y="154" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="163" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="164" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="186" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ 14 more columns</text>
+        </g>
+
+        <!-- TABLE 2: client_people_roles (Junction) -->
+        <g transform="translate(400 88)">
+          <rect width="240" height="148" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
+          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
+          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">client_people_roles</text>
+          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
+          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+
+          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
+          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
+          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+
+          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
+          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
+          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">person_id</text>
+          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
+          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+
+          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">role</text>
+          <rect x="140" y="106" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="115" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="138" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ ownership_pct, is_tax_incl</text>
+        </g>
+
+        <!-- TABLE 3: people -->
+        <g transform="translate(740 64)">
+          <rect width="240" height="148" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
+          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
+          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">people</text>
+          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
+          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+
+          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
+          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
+          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+
+          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">first_name</text>
+          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">last_name</text>
+          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">email</text>
+          <rect x="140" y="106" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="115" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">UQ</text>
+          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="138" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ phone, linked_individual_code</text>
+        </g>
+
+        <!-- TABLE 4: compliance_tasks (Focal Cascaded Table) -->
+        <g transform="translate(400 272)">
+          <rect width="240" height="172" rx="6" fill="#ffffff" stroke="#b8142c" stroke-width="1.2"/>
+          <rect width="240" height="28" rx="6" fill="rgba(184,20,44,0.08)"/>
+          <line x1="0" y1="28" x2="240" y2="28" stroke="#b8142c" stroke-width="1"/>
+          <text x="12" y="18" fill="#b8142c" font-size="11" font-weight="600" font-family="'Geist', sans-serif">compliance_tasks</text>
+          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(184,20,44,0.4)" stroke-width="0.8"/>
+          <text x="208" y="17" fill="#b8142c" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+
+          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
+          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
+          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
+          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(184,20,44,0.4)" stroke-width="0.8"/>
+          <text x="150" y="67" fill="#b8142c" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
+          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">service_code</text>
+          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">due_date</text>
+          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="124" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="140" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">status</text>
+          <rect x="140" y="130" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="139" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="162" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ review_rule, assignee, sars_ref</text>
+        </g>
+
+                <!-- TABLE 6: document_attachments (Historical Documents & KYC) -->
+        <g transform="translate(40 272)">
+          <rect width="240" height="172" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
+          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
+          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">document_attachments</text>
+          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
+          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+
+          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
+          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
+          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+
+          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
+          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
+          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">task_id</text>
+          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">category</text>
+          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="124" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="140" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">file_name</text>
+          <text x="228" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="162" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ file_url, uploaded_at</text>
+        </g>
+
+        <!-- TABLE 5: fee_estimates -->
+        <g transform="translate(740 272)">
+          <rect width="240" height="148" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
+          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
+          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">fee_estimates</text>
+          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
+          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+
+          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
+          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
+          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+
+          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
+          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
+          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
+          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">avg_monthly_cents</text>
+          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+
+          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">status</text>
+          <rect x="140" y="106" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+          <text x="150" y="115" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
+          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+          <text x="12" y="138" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ input_json, computed_json</text>
+        </g>
+
+        <!-- PART B: DUAL-TARGET DEPLOYMENT ARCHITECTURE STRIP -->
+        <g transform="translate(24 472)">
+          <rect width="1092" height="196" rx="8" fill="rgba(27,24,23,0.015)" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+          <text x="12" y="20" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">PART B · DUAL-TARGET DEPLOYMENT ARCHITECTURE (ZERO DRIFT)</text>
+
+          <!-- Shared Codebase Core Box -->
+          <rect x="40" y="44" width="300" height="128" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+          <text x="56" y="68" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Shared TypeScript Monorepo</text>
+          <text x="56" y="86" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">apps/web: React 19 + Twenty UI Shell</text>
+          <text x="56" y="104" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">apps/api: Hono Web Standards Router</text>
+          <text x="56" y="122" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">packages/domain: Pure SARS / CIPC Rules</text>
+          <text x="56" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">packages/db: Drizzle Schema (inc. sars_tax_brackets)</text>
+
+          <!-- Branch to Target A (Cloudflare Free Tier) -->
+          <path d="M 340 88 H 430" fill="none" stroke="#b8142c" stroke-width="1.2" marker-end="url(#db-arrow-accent)"/>
+          <rect x="440" y="44" width="300" height="128" rx="6" fill="rgba(184,20,44,0.08)" stroke="#b8142c" stroke-width="1.2"/>
+          <text x="456" y="68" fill="#b8142c" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Target A · Free Cloud Demo ($0/mo)</text>
+          <text x="456" y="86" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Host: Cloudflare Pages + Workers</text>
+          <text x="456" y="104" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Database: Cloudflare D1 (Serverless SQLite)</text>
+          <text x="456" y="122" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Instant global URL for Erik &amp; Wouter</text>
+          <text x="456" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Seeded with 13 clients &amp; 9 team members</text>
+
+          <!-- Branch to Target B (Dedicated Production) -->
+          <path d="M 340 148 H 770" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#db-arrow)"/>
+          <rect x="780" y="44" width="280" height="128" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+          <text x="796" y="68" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Target B · Production Server</text>
+          <text x="796" y="86" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Host: Node.js (@hono/node-server)</text>
+          <text x="796" y="104" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Database: PostgreSQL 16 (or SQLite)</text>
+          <text x="796" y="122" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Self-hosted Docker / VPS deployment</text>
+          <text x="796" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Zero route or business logic rewriting</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h2>01 · Column-Level Integrity</h2>
+        <p>Foreign keys enforce explicit referential integrity, such as cascading task deletion when a client is purged, and preserving orphan-safe estimates.</p>
+      </div>
+      <div class="card">
+        <h2>02 · Person ↔ Entity Model</h2>
+        <p>The `client_people_roles` junction decouples directors, trustees, and primary contacts from corporate entities, allowing individuals to hold multiple roles.</p>
+      </div>
+      <div class="card">
+        <h2>03 · Zero-Lockin Dual Target</h2>
+        <p>Hono's Web Standard Request/Response model allows the exact same code to run serverless on Cloudflare D1 for demos or on Node.js + PostgreSQL for production.</p>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>FD ON CALL PRACTICE LEDGER · DATABASE &amp; CLOUD ARCHITECTURE</span>
+      <span>VALIDATED VIA DIAGRAM-DESIGN SELF-CHECK</span>
+    </footer>
+  </div>
+</body>
+</html>
