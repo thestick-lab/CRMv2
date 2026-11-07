@@ -137,6 +137,7 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
                   {/* Period */}
                   <td className="py-2.5 px-3 font-sans text-muted-foreground truncate max-w-[140px]">
                     {task.period}
+                    {task.part ? ` (${task.part})` : ''}
                   </td>
 
                   {/* Due Date */}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregatePracticeTasks, filterPracticeTasks } from './practice-tasks';
+import { aggregatePracticeTasks, computePracticeKpi, filterPracticeTasks } from './practice-tasks';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
 
 describe('Practice-wide statutory task aggregator and KPI counts', () => {
@@ -36,5 +36,18 @@ describe('Practice-wide statutory task aggregator and KPI counts', () => {
     for (const t of erikTasks) {
       expect(t.staffId).toBe('erik');
     }
+  });
+
+  it('matches subcontractor when filtering by subcontractor staffId', () => {
+    const carolineTasks = filterPracticeTasks(summary.tasks, { staffId: 'caroline', asOfDate: asOf });
+    expect(carolineTasks.length).toBeGreaterThan(0);
+    const codes = new Set(carolineTasks.map((t) => t.clientCode));
+    expect(codes.has('LES-841') || codes.has('TOP-435')).toBe(true);
+  });
+
+  it('computes dynamic KPI counts for any filtered subset of tasks', () => {
+    const subset = summary.tasks.slice(0, 10);
+    const kpi = computePracticeKpi(subset, asOf);
+    expect(kpi.overdue + kpi.due7Days + kpi.due30Days + kpi.missingDate).toBeGreaterThan(0);
   });
 });

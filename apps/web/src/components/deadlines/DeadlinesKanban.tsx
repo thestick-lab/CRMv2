@@ -41,9 +41,10 @@ export interface DeadlinesKanbanProps {
   tasks: PracticeTaskItem[];
   asOfDate: string;
   onSelectClient: (code: string) => void;
+  horizon?: '30' | '90' | '365';
 }
 
-export function DeadlinesKanban({ tasks, asOfDate, onSelectClient }: DeadlinesKanbanProps) {
+export function DeadlinesKanban({ tasks, asOfDate, onSelectClient, horizon = '30' }: DeadlinesKanbanProps) {
   const buckets = bucketKanbanTasks(tasks, asOfDate);
 
   const columns = [
@@ -65,7 +66,7 @@ export function DeadlinesKanban({ tasks, asOfDate, onSelectClient }: DeadlinesKa
     },
     {
       id: 'due30',
-      title: 'Due in 30 Days',
+      title: horizon === '30' ? 'Due in 8–30 Days' : horizon === '90' ? 'Upcoming (≤ 90 Days)' : 'Upcoming (≤ 365 Days)',
       count: buckets.due30Days.length,
       items: buckets.due30Days,
       badgeVariant: 'outline' as const,
@@ -140,6 +141,7 @@ export function DeadlinesKanban({ tasks, asOfDate, onSelectClient }: DeadlinesKa
                     </Badge>
                     <span className="text-[11px] text-muted-foreground truncate font-sans">
                       {task.period}
+                      {task.part ? ` (${task.part})` : ''}
                     </span>
                   </div>
 

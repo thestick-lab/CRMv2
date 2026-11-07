@@ -3,6 +3,7 @@ import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import {
   aggregatePracticeTasks,
+  computePracticeKpi,
   filterPracticeTasks,
 } from './practice-tasks';
 import { DeadlinesKanban } from './DeadlinesKanban';
@@ -46,12 +47,15 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
       asOfDate: today,
     });
   }, [summary.tasks, horizon, selectedStaff, selectedService, today]);
+  // Compute dynamic KPI metrics reacting to active horizon and filters
+  const displayedKpi = React.useMemo(() => {
+    return computePracticeKpi(filteredTasks, today);
+  }, [filteredTasks, today]);
 
   // Available unique service codes
   const availableServices = React.useMemo(() => {
     return Array.from(new Set(summary.tasks.map((t) => t.service))).sort();
   }, [summary.tasks]);
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header & View Mode Switcher */}
@@ -108,13 +112,13 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
         <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-1">
           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>Overdue Filings</span>
-            <AlertTriangle className={cn('h-4 w-4', summary.kpi.overdue > 0 ? 'text-destructive' : 'text-muted-foreground')} />
+            <AlertTriangle className={cn('h-4 w-4', displayedKpi.overdue > 0 ? 'text-destructive' : 'text-muted-foreground')} />
           </div>
-          <div className={cn('text-2xl font-bold font-mono tracking-tight', summary.kpi.overdue > 0 ? 'text-destructive' : 'text-emerald-500')}>
-            {summary.kpi.overdue}
+          <div className={cn('text-2xl font-bold font-mono tracking-tight', displayedKpi.overdue > 0 ? 'text-destructive' : 'text-emerald-500')}>
+            {displayedKpi.overdue}
           </div>
           <div className="text-[11px] text-muted-foreground">
-            {summary.kpi.overdue === 0 ? 'Zero overdue filings' : 'Requires immediate filing'}
+            {displayedKpi.overdue === 0 ? 'Zero overdue filings' : 'Requires immediate filing'}
           </div>
         </div>
 
@@ -125,7 +129,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
             <Clock className="h-4 w-4 text-[#c4161c]" />
           </div>
           <div className="text-2xl font-bold font-mono tracking-tight text-[#c4161c] dark:text-[#f87171]">
-            {summary.kpi.due7Days}
+            {displayedKpi.due7Days}
           </div>
           <div className="text-[11px] text-muted-foreground">
             Urgent SARS / CIPC obligations
@@ -139,7 +143,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-2xl font-bold font-mono tracking-tight text-foreground">
-            {summary.kpi.due30Days}
+            {displayedKpi.due30Days}
           </div>
           <div className="text-[11px] text-muted-foreground">
             Current operational horizon
@@ -153,7 +157,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
             <UserCheck className="h-4 w-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold font-mono tracking-tight text-amber-500">
-            {summary.kpi.missingDate}
+            {displayedKpi.missingDate}
           </div>
           <div className="text-[11px] text-muted-foreground">
             Needs CIPC or SARS transfer
@@ -245,6 +249,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
           tasks={filteredTasks}
           asOfDate={today}
           onSelectClient={onSelectClient}
+          horizon={horizon}
         />
       ) : (
         <DeadlinesTable

@@ -17,6 +17,7 @@ export interface PracticeTaskItem {
   urgency: Urgency;
   status: TaskStatus;
   staffId: string;
+  subcontractorId?: string;
   staffName: string;
   daysUntilDue?: number;
 }
@@ -31,6 +32,35 @@ export interface PracticeKpi {
 export interface PracticeTaskSummary {
   tasks: PracticeTaskItem[];
   kpi: PracticeKpi;
+}
+
+export function computePracticeKpi(tasks: PracticeTaskItem[], asOfDate: string): PracticeKpi {
+  let overdue = 0;
+  let due7Days = 0;
+  let due30Days = 0;
+  let missingDate = 0;
+
+  for (const t of tasks) {
+    if (!t.due) {
+      missingDate++;
+    } else if (t.due < asOfDate) {
+      overdue++;
+    } else if (t.daysUntilDue !== undefined) {
+      if (t.daysUntilDue <= 7) {
+        due7Days++;
+        due30Days++;
+      } else if (t.daysUntilDue <= 30) {
+        due30Days++;
+      }
+    }
+  }
+
+  return {
+    overdue,
+    due7Days,
+    due30Days,
+    missingDate,
+  };
 }
 
 export function aggregatePracticeTasks(clients: Client[], asOfDate: string): PracticeTaskSummary {
@@ -64,41 +94,18 @@ export function aggregatePracticeTasks(clients: Client[], asOfDate: string): Pra
         urgency: urgency(t, 'Not started', asOfDate),
         status: 'Not started',
         staffId: client.staffId,
+        subcontractorId: client.subcontractorId,
         staffName,
         daysUntilDue,
       });
     }
   }
 
-  // Calculate practice-wide KPI metrics
-  let overdue = 0;
-  let due7Days = 0;
-  let due30Days = 0;
-  let missingDate = 0;
-
-  for (const t of tasks) {
-    if (!t.due) {
-      missingDate++;
-    } else if (t.due < asOfDate) {
-      overdue++;
-    } else if (t.daysUntilDue !== undefined) {
-      if (t.daysUntilDue <= 7) {
-        due7Days++;
-        due30Days++;
-      } else if (t.daysUntilDue <= 30) {
-        due30Days++;
-      }
-    }
-  }
+  const kpi = computePracticeKpi(tasks, asOfDate);
 
   return {
     tasks,
-    kpi: {
-      overdue,
-      due7Days,
-      due30Days,
-      missingDate,
-    },
+    kpi,
   };
 }
 
@@ -113,9 +120,11 @@ export function filterPracticeTasks(tasks: PracticeTaskItem[], options: TaskFilt
   const { horizon = '365', staffId, serviceCode, asOfDate } = options;
 
   return tasks.filter((t) => {
-    // Staff filter
-    if (staffId && staffId !== 'all' && t.staffId !== staffId) {
-      return false;
+    // Staff filter (matches either primary staff or assigned subcontractor)
+    if (staffId && staffId !== 'all') {
+      if (t.staffId !== staffId && t.subcontractorId !== staffId) {
+        return false;
+      }
     }
 
     // Service filter
