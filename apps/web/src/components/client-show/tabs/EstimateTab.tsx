@@ -10,6 +10,8 @@ import {
 } from 'fdoncall-practice/domain/estimate';
 import { payrollBand, turnoverBand } from 'fdoncall-practice/domain/pricing';
 import { defaultServices } from 'fdoncall-practice/domain/rules';
+import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
+import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -86,6 +88,9 @@ export function EstimateTab({
     [client, startMonth]
   );
 
+  const handlePdf = onDownloadPdf ?? (() => downloadPdfQuote(client, estimate, todayInSouthAfrica()));
+  const handleExcel = onDownloadExcel ?? (() => downloadExcelQuote(client, estimate, todayInSouthAfrica()));
+
   return (
     <div className="space-y-6">
       {/* Retainer KPI Summary Banner */}
@@ -137,27 +142,23 @@ export function EstimateTab({
           </div>
 
           <div className="flex items-center gap-2 pt-1 border-t border-border/50">
-            {onDownloadExcel && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onDownloadExcel}
-                className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
-              >
-                <FileSpreadsheet className="h-3 w-3 text-emerald-500" />
-                Excel (.xlsx)
-              </Button>
-            )}
-            {onDownloadPdf && (
-              <Button
-                size="sm"
-                onClick={onDownloadPdf}
-                className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
-              >
-                <Download className="h-3 w-3" />
-                PDF Quote
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExcel}
+              className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
+            >
+              <FileSpreadsheet className="h-3 w-3 text-emerald-500" />
+              Excel (.xlsx)
+            </Button>
+            <Button
+              size="sm"
+              onClick={handlePdf}
+              className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
+            >
+              <Download className="h-3 w-3" />
+              PDF Quote
+            </Button>
           </div>
         </div>
       </div>

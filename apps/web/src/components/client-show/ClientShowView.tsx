@@ -5,8 +5,9 @@ import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { CLIENT_SHOW_TABS, ClientSummaryBar } from './ClientSummaryBar';
 import { StatutoryProfileTab } from './tabs/StatutoryProfileTab';
 import { DeadlinesTab } from './tabs/DeadlinesTab';
-import { EstimateTab } from './tabs/EstimateTab';
+import { EstimateTab, buildEstimateForClient } from './tabs/EstimateTab';
 import { VaultTab } from './tabs/VaultTab';
+import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
 import { cn } from '@/lib/utils';
 
 export interface ClientShowViewProps {
@@ -30,7 +31,19 @@ export function ClientShowView({
   const [activeTab, setActiveTab] = React.useState<string>(initialTab);
 
   const client = CLIENTS.find((c) => c.code === clientCode);
+  const estimate = React.useMemo(() => (client ? buildEstimateForClient(client) : undefined), [client]);
 
+  const handlePdf = () => {
+    if (client && estimate) {
+      downloadPdfQuote(client, estimate, todayInSouthAfrica());
+    }
+  };
+
+  const handleExcel = () => {
+    if (client && estimate) {
+      downloadExcelQuote(client, estimate, todayInSouthAfrica());
+    }
+  };
   if (!client) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-4">
@@ -53,7 +66,12 @@ export function ClientShowView({
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Client Summary Header */}
-      <ClientSummaryBar client={client} onBack={onBack} />
+      <ClientSummaryBar
+        client={client}
+        onBack={onBack}
+        onDownloadPdf={handlePdf}
+        onDownloadExcel={handleExcel}
+      />
 
       {/* 4-Tab Navigation */}
       <TabsPrimitive.Root
