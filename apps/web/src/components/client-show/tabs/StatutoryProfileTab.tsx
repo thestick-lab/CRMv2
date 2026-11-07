@@ -122,6 +122,11 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
             </div>
 
             <div>
+              <div className="text-muted-foreground text-[11px]">CIPC Incorporation Date</div>
+              <div className="font-mono text-foreground mt-0.5">{client.incorporationDate ?? 'Pre-1994 / Unrecorded'}</div>
+            </div>
+
+            <div>
               <div className="text-muted-foreground text-[11px]">Last Annual Financial Statements (AFS)</div>
               <div className="font-mono text-foreground mt-0.5">FY {p.lastAfsYear}</div>
             </div>

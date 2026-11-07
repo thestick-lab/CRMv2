@@ -1,5 +1,5 @@
 import type { Client, ServiceCode, TaskStatus } from 'fdoncall-practice/domain/types';
-import { defaultServices, generateTasks, urgency, type Urgency } from 'fdoncall-practice/domain/rules';
+import { defaultServices, generateTasks, needsReview, urgency, type Urgency } from 'fdoncall-practice/domain/rules';
 import { Badge } from '@/components/ui/badge';
 import { CalendarClock, UserCheck } from 'lucide-react';
 
@@ -21,13 +21,8 @@ export function buildClientDeadlines(client: Client, asOfDate: string): ClientDe
   const tasks = generateTasks(client, services, asOfDate);
 
   return tasks.map((task) => {
-    // Partner review gate required for AFS, ITR14, and payable IRP6
-    const needsPartnerReview =
-      task.service === 'AFS' ||
-      task.service === 'ITR14' ||
-      task.service === 'BO' ||
-      (task.service === 'IRP6' && task.review !== 'never');
-
+    // Partner review gate determined by domain governance rules (AFS, ITR14, ITR12, ITR12T, EMP501, payable IRP6)
+    const needsPartnerReview = Boolean(needsReview(task, true));
     return {
       id: task.id,
       service: task.service,

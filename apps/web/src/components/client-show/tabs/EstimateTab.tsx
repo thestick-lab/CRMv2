@@ -29,19 +29,19 @@ export function buildEstimateForClient(client: Client, startMonth = '2026-12'): 
   const pBand = payrollBand(employeeCount);
 
   const services = defaultServices(client);
-  const selected: Partial<Record<EstimateKey, boolean>> = {};
-  for (const s of services) {
-    if (s === 'AFS') selected.AFS = true;
-    if (s === 'ITR14') selected.ITR = true;
-    if (s === 'IRP6') selected.IRP6 = true;
-    if (s === 'VAT201') selected.VAT201 = true;
-    if (s === 'EMP201') selected.EMP201 = true;
-    if (s === 'EMP501') selected.EMP501 = true;
-    if (s === 'CIPC_AR') selected.CIPC_AR = true;
-    if (s === 'BO') selected.BO = true;
-  }
-  selected.BOOKKEEPING = true;
-  if (client.payroll) selected.PAYROLL = true;
+  const serviceSet = new Set(services);
+  const selected: Partial<Record<EstimateKey, boolean>> = {
+    BOOKKEEPING: client.entityType !== 'Individual',
+    PAYROLL: client.payroll,
+    AFS: serviceSet.has('AFS'),
+    ITR: serviceSet.has('ITR14') || serviceSet.has('ITR12') || serviceSet.has('ITR12T'),
+    IRP6: serviceSet.has('IRP6'),
+    VAT201: serviceSet.has('VAT201'),
+    EMP201: serviceSet.has('EMP201'),
+    EMP501: serviceSet.has('EMP501'),
+    CIPC_AR: serviceSet.has('CIPC_AR'),
+    BO: serviceSet.has('BO'),
+  };
 
   const input: EstimateInput = {
     startMonth,

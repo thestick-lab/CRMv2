@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle2,
+  Clock,
   ExternalLink,
   FileText,
   Folder,
@@ -164,10 +165,14 @@ export function VaultTab({ client }: { client: Client }) {
 
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <Badge
-                      variant={file.status === 'Signed & Executed' ? 'success' : 'outline'}
+                      variant={file.status === 'Signed & Executed' ? 'success' : file.status === 'Pending Signature' ? 'warning' : 'outline'}
                       className="text-[10px] py-0 px-1.5 gap-1 font-mono"
                     >
-                      <CheckCircle2 className="h-3 w-3" />
+                      {file.status === 'Pending Signature' ? (
+                        <Clock className="h-3 w-3" />
+                      ) : (
+                        <CheckCircle2 className="h-3 w-3" />
+                      )}
                       {file.status}
                     </Badge>
                   </div>
