@@ -162,10 +162,11 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
 
 ## 6. Phase-by-Phase Execution Checklist
 
-- [ ] **Phase 1: Project Scaffolding**
-  - Run `npm create vite@latest apps/web -- --template react-ts`
-  - Install Tailwind CSS + shadcn/ui primitives.
-  - Link `packages/domain` into `apps/web/package.json` (`"workspace:*"`).
+- [x] **Phase 1: Project Scaffolding**
+  - Configured npm multi-package workspace (`apps/*`, `packages/*`).
+  - Scaffolded `apps/web` with React 19, TypeScript, and Vite 7.
+  - Configured Tailwind CSS v4 with exact FD on Call design tokens and shadcn UI primitives.
+  - Linked `packages/domain` into `apps/web/package.json` with instant HMR and verified Vitest suite.
 - [ ] **Phase 2: Shell & Navigation (`Layout.tsx`)**
   - Recreate Twenty CRM's exact collapsible sidebar and top-bar.
   - Implement static brand header `[FD] FD on Call` and user footer with popover.

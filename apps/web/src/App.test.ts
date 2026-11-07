@@ -1,0 +1,18 @@
+import { describe, expect, it } from 'vitest';
+import { todayInSouthAfrica, easterSunday } from 'fdoncall-practice/domain/dates';
+import { CLIENTS } from 'fdoncall-practice/data/seed';
+
+describe('App domain workspace link', () => {
+  it('resolves date functions from domain engine', () => {
+    const today = todayInSouthAfrica();
+    expect(today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(easterSunday(2026)).toBe('2026-04-05');
+  });
+
+  it('resolves seeded practice clients from domain engine', () => {
+    expect(CLIENTS.length).toBe(13);
+    const alc = CLIENTS.find((c) => c.code === 'ALC-610');
+    expect(alc).toBeDefined();
+    expect(alc?.name).toBe('A & L Contracting');
+  });
+});
