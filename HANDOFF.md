@@ -179,9 +179,10 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
 - [x] **Phase 4: Client Record Show (`/clients/:code`)**
   - Implemented top breadcrumb `Clients / Name [Code]` with back arrow button.
   - Built the 4 tabs: `Statutory Profile` (CIPC, Year End, VAT, SARS Profile), `Deadlines & Tasks` (holiday rollback & partner review gates), `12-Month Fee Estimate` (rolling matrix with March +6%), and `SharePoint Vault & SLAs` (Documenso contracts & tax filing packs).
-- [ ] **Phase 5: Statutory Deadlines Dashboard (`/deadlines`)**
-  - Implement 4 KPI tiles (`Overdue`, `Due in 7d`, `Due in 30d`, `Missing a Date`).
-  - Implement dual Kanban and Table view modes with SA holiday rollback tags (`↩`).
+- [x] **Phase 5: Statutory Deadlines Dashboard (`/deadlines`)**
+  - Implemented 4 KPI tiles: `Overdue Filings`, `Due in 7 Days`, `Due in 30 Days`, `Missing a Date (Blockers)`.
+  - Implemented dual Kanban (4 lane columns) and Table view modes with SA holiday rollback tags (`↩`).
+  - Added multi-horizon filter controls (30d, 90d, 365d), staff assignee filter, and statutory return type filter.
 - [ ] **Phase 6: Quote Exporter & Integrations**
   - Connect client-side PDF quote streaming (`pdf-lib`) and formula Excel generation.
   - Add Documenso REST API dispatch and Xero 15% VAT invoice draft sync.

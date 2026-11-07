@@ -53,4 +53,9 @@ describe('App shell and view integration', () => {
     expect(appSource).toContain('ClientShowView');
     expect(appSource).toContain('<ClientShowView');
   });
+
+  it('integrates DeadlinesDashboard with Kanban and Table views inside DeadlinesView', () => {
+    const deadlinesViewSource = fs.readFileSync('src/components/views/DeadlinesView.tsx', 'utf8');
+    expect(deadlinesViewSource).toContain('DeadlinesDashboard');
+  });
 });
