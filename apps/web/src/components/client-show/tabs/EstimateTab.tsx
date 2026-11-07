@@ -12,6 +12,7 @@ import { payrollBand, turnoverBand } from 'fdoncall-practice/domain/pricing';
 import { defaultServices } from 'fdoncall-practice/domain/rules';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
+import { XeroSyncDialog } from '@/components/integrations/XeroSyncDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,7 @@ import {
   Coins,
   Download,
   FileSpreadsheet,
+  RefreshCw,
   TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -83,6 +85,7 @@ export function EstimateTab({
   onDownloadExcel?: () => void;
 }) {
   const [startMonth] = React.useState('2026-12');
+  const [xeroOpen, setXeroOpen] = React.useState(false);
   const estimate = React.useMemo(
     () => buildEstimateForClient(client, startMonth),
     [client, startMonth]
@@ -149,7 +152,7 @@ export function EstimateTab({
               className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
             >
               <FileSpreadsheet className="h-3 w-3 text-emerald-500" />
-              Excel (.xlsx)
+              Excel
             </Button>
             <Button
               size="sm"
@@ -157,7 +160,16 @@ export function EstimateTab({
               className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
             >
               <Download className="h-3 w-3" />
-              PDF Quote
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setXeroOpen(true)}
+              className="h-7 text-[11px] gap-1 px-2 font-mono flex-1 text-[#13b5ea] hover:text-[#13b5ea] border-[#13b5ea]/30 hover:bg-[#13b5ea]/10"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Xero
             </Button>
           </div>
         </div>
@@ -270,6 +282,12 @@ export function EstimateTab({
           </table>
         </div>
       </div>
+      <XeroSyncDialog
+        open={xeroOpen}
+        onOpenChange={setXeroOpen}
+        client={client}
+        estimate={estimate}
+      />
     </div>
   );
 }

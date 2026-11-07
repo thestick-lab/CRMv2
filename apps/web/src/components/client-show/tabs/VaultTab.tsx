@@ -1,4 +1,6 @@
+import * as React from 'react';
 import type { Client } from 'fdoncall-practice/domain/types';
+import { DocumensoDispatchDialog } from '@/components/integrations/DocumensoDispatchDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -86,6 +88,7 @@ export function buildVaultFolders(client: Client): VaultFolder[] {
 }
 
 export function VaultTab({ client }: { client: Client }) {
+  const [documensoOpen, setDocumensoOpen] = React.useState(false);
   const folders = buildVaultFolders(client);
 
   return (
@@ -103,13 +106,21 @@ export function VaultTab({ client }: { client: Client }) {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDocumensoOpen(true)}
+            className="h-7 text-xs gap-1.5 font-mono text-[#c4161c] hover:text-[#c4161c] border-[#c4161c]/30 hover:bg-[#c4161c]/10"
+          >
+            Dispatch Documenso SLA
+          </Button>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 font-mono">
             <ExternalLink className="h-3 w-3" />
-            Open in SharePoint
+            SharePoint
           </Button>
           <Button size="sm" className="h-7 text-xs gap-1.5 font-mono">
             <Upload className="h-3 w-3" />
-            Upload File
+            Upload
           </Button>
         </div>
       </div>
@@ -182,6 +193,11 @@ export function VaultTab({ client }: { client: Client }) {
           </div>
         ))}
       </div>
+      <DocumensoDispatchDialog
+        open={documensoOpen}
+        onOpenChange={setDocumensoOpen}
+        client={client}
+      />
     </div>
   );
 }
