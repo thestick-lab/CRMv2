@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
-import { ChevronRight, KeyRound, LogOut, Settings, ShieldCheck, User } from 'lucide-react';
+import { ChevronRight, KeyRound, LogOut, ShieldCheck, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface UserProfile {
