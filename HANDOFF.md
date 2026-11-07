@@ -183,9 +183,10 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
   - Implemented 4 KPI tiles: `Overdue Filings`, `Due in 7 Days`, `Due in 30 Days`, `Missing a Date (Blockers)`.
   - Implemented dual Kanban (4 lane columns) and Table view modes with SA holiday rollback tags (`↩`).
   - Added multi-horizon filter controls (30d, 90d, 365d), staff assignee filter, and statutory return type filter.
-- [ ] **Phase 6: Quote Exporter & Integrations**
-  - Connect client-side PDF quote streaming (`pdf-lib`) and formula Excel generation.
-  - Add Documenso REST API dispatch and Xero 15% VAT invoice draft sync.
+- [x] **Phase 6: Quote Exporter & Integrations**
+  - Connected client-side streaming A4 landscape PDF quote generation (`pdf-lib`) and live formula Excel generation (`.xlsx`).
+  - Implemented Documenso REST API electronic signature dispatch modal with dual-signers (Managing Partner & Director) and SHA-256 audit log.
+  - Implemented Xero API v2 repeating monthly draft invoice synchronization modal with chart of accounts mapping and 15% South African VAT.
 
 ---
 

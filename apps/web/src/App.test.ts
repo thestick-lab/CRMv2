@@ -58,4 +58,17 @@ describe('App shell and view integration', () => {
     const deadlinesViewSource = fs.readFileSync('src/components/views/DeadlinesView.tsx', 'utf8');
     expect(deadlinesViewSource).toContain('DeadlinesDashboard');
   });
+
+  it('connects PDF and Excel quote export streaming actions', () => {
+    const showSource = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+    expect(showSource).toContain('downloadPdfQuote');
+    expect(showSource).toContain('downloadExcelQuote');
+  });
+
+  it('connects Documenso SLA and Xero repeating invoice sync dialogs', () => {
+    const vaultSource = fs.readFileSync('src/components/client-show/tabs/VaultTab.tsx', 'utf8');
+    const estimateSource = fs.readFileSync('src/components/client-show/tabs/EstimateTab.tsx', 'utf8');
+    expect(vaultSource).toContain('DocumensoDispatchDialog');
+    expect(estimateSource).toContain('XeroSyncDialog');
+  });
 });
