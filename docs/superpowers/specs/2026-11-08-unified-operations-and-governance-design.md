@@ -190,7 +190,27 @@ Refactored into a clear Twenty-CRM-style settings hierarchy:
 
 ---
 
-## 5. Implementation Sequence & Next Steps
+## 5. Builder Check Resolutions & Architectural Decisions
+
+1. **Partner Review Gate Eligibility:**
+   - Only statutory returns flagged with `needsPartnerReview: true` under SAICA regulations (`AFS`, `ITR14`, and payable `IRP6` / `VAT201`) enter the Partner Review Gate and appear in the `/inbox` queue.
+   - Routine compliance returns (`EMP201`, `CIPC_AR`, `BO`, and nil `IRP6`) do not require Partner review and can advance directly from `In Progress` to `Submitted` once filed.
+
+2. **Fee Estimator Deep Persistence & Synchronization:**
+   - Saving an estimate updates the client's commercial retainer, turnover, and statutory service toggles.
+   - Detailed custom hours and recharges are preserved in `PracticeStoreContext.savedEstimates[clientCode]` so re-opening `/estimator` for an existing client hydrates their custom workings.
+   - Converting a prospect in Tab 2 initializes the active client with all configured fields (`yearEndMonth`, `turnover`, `vatCategory`, `payroll`, `employeeCount`, `staffId`).
+
+3. **Pricing Matrix & Domain Engine Link:**
+   - `packages/domain/src/domain/estimate.ts` continues to drive calculations via pure functions.
+   - Practice-level rates (`standardHourlyRate`, `marchEscalationPct`, and editable fixed fees) stored in `PracticeStoreContext` are passed directly into `computeEstimate` and `EstimateInput`.
+
+4. **SARS Filing Season Dates Refresh:**
+   - Client-side data refresh utilizing the verified gazetted dates in `packages/domain/src/domain/sars.ts` with direct links to official SARS gazette publications.
+
+---
+
+## 6. Implementation Sequence
 
 1. **Step 1: Layout & Header Refinement (`Sidebar.tsx`, `Topbar.tsx`, `Layout.tsx`):**
    - Move collapse button left next to brand logo.
