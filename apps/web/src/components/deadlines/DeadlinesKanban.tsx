@@ -46,6 +46,7 @@ export interface WorkflowBuckets {
   notStarted: PracticeTaskItem[];
   inProgress: PracticeTaskItem[];
   partnerReviewGate: PracticeTaskItem[];
+  approvedReadyToLodge: PracticeTaskItem[];
   submitted: PracticeTaskItem[];
 }
 
@@ -56,12 +57,15 @@ export function bucketWorkflowTasks(
   const notStarted: PracticeTaskItem[] = [];
   const inProgress: PracticeTaskItem[] = [];
   const partnerReviewGate: PracticeTaskItem[] = [];
+  const approvedReadyToLodge: PracticeTaskItem[] = [];
   const submitted: PracticeTaskItem[] = [];
 
   for (const t of tasks) {
     const effectiveStatus = overrides[t.id]?.status || t.status || 'Not Started';
     if (effectiveStatus === 'Submitted') {
       submitted.push(t);
+    } else if (effectiveStatus === 'Approved (Ready to Lodge)') {
+      approvedReadyToLodge.push(t);
     } else if (effectiveStatus === 'Partner Review Gate') {
       partnerReviewGate.push(t);
     } else if (effectiveStatus === 'In Progress') {
@@ -75,6 +79,7 @@ export function bucketWorkflowTasks(
     notStarted,
     inProgress,
     partnerReviewGate,
+    approvedReadyToLodge,
     submitted,
   };
 }
@@ -183,6 +188,14 @@ export function DeadlinesKanban({
             borderColor: 'border-amber-500/40',
           },
           {
+            id: 'Approved (Ready to Lodge)',
+            title: 'Approved (Ready to Lodge)',
+            count: workflowBuckets.approvedReadyToLodge.length,
+            items: workflowBuckets.approvedReadyToLodge,
+            badgeVariant: 'secondary' as const,
+            borderColor: 'border-emerald-500/30',
+          },
+          {
             id: 'Submitted',
             title: 'Submitted to SARS / CIPC',
             count: workflowBuckets.submitted.length,
@@ -233,7 +246,10 @@ export function DeadlinesKanban({
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start select-none">
+      <div className={cn(
+        'grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start select-none',
+        groupBy === 'workflow' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'
+      )}>
         {columns.map((col) => {
           const isDropActive = activeDropColumn === col.id;
 

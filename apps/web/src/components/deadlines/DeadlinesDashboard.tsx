@@ -31,6 +31,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
   const [selectedStaff, setSelectedStaff] = React.useState<string>('all');
   const [selectedService, setSelectedService] = React.useState<string>('all');
   const [groupBy, setGroupBy] = React.useState<'workflow' | 'urgency'>('workflow');
+  const [activeKpiFilter, setActiveKpiFilter] = React.useState<'all' | 'overdue' | 'due7' | 'due30' | 'missing'>('all');
   const today = todayInSouthAfrica();
   const { clients, staff } = usePracticeStore();
 
@@ -54,6 +55,17 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
     return computePracticeKpi(filteredTasks, today);
   }, [filteredTasks, today]);
 
+
+  const displayedTasks = React.useMemo(() => {
+    if (activeKpiFilter === 'all') return filteredTasks;
+    if (activeKpiFilter === 'overdue') return filteredTasks.filter((t) => t.due && t.due < today);
+    if (activeKpiFilter === 'due7')
+      return filteredTasks.filter((t) => t.due && t.due >= today && t.daysUntilDue !== undefined && t.daysUntilDue <= 7);
+    if (activeKpiFilter === 'due30')
+      return filteredTasks.filter((t) => t.due && t.due >= today && t.daysUntilDue !== undefined && t.daysUntilDue <= 30);
+    if (activeKpiFilter === 'missing') return filteredTasks.filter((t) => !t.due);
+    return filteredTasks;
+  }, [filteredTasks, activeKpiFilter, today]);
   // Available unique service codes
   const availableServices = React.useMemo(() => {
     return Array.from(new Set(summary.tasks.map((t) => t.service))).sort();
@@ -66,11 +78,20 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <CalendarClock className="h-5 w-5 text-[#c4161c]" />
-              Statutory Deadlines Dashboard
+              Deadlines
             </h1>
-            <Badge variant="crimsonSubdued" className="font-mono text-xs py-0 px-1.5 h-5">
-              Practice Horizon: {horizon} Days
-            </Badge>
+            {activeKpiFilter !== 'all' && (
+              <Badge variant="outline" className="font-mono text-xs py-0 px-2 h-5 text-primary border-primary/30 flex items-center gap-1">
+                <span>Filter: {activeKpiFilter}</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActiveKpiFilter('all'); }}
+                  className="cursor-pointer font-bold text-muted-foreground hover:text-foreground ml-1"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Real-time compliance monitoring across South African statutory tax returns (SARS s25 TAA &amp; Companies Act s30).
@@ -138,7 +159,14 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
       {/* 4 Statutory KPI Tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Overdue */}
-        <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-1">
+        <button
+          type="button"
+          onClick={() => setActiveKpiFilter(activeKpiFilter === 'overdue' ? 'all' : 'overdue')}
+          className={cn(
+            'text-left border rounded-lg p-4 bg-card/60 space-y-1 transition-all cursor-pointer',
+            activeKpiFilter === 'overdue' ? 'ring-2 ring-destructive border-destructive' : 'border-border/80 hover:border-destructive/60'
+          )}
+        >
           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>Overdue Filings</span>
             <AlertTriangle className={cn('h-4 w-4', displayedKpi.overdue > 0 ? 'text-destructive' : 'text-muted-foreground')} />
@@ -149,10 +177,17 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
           <div className="text-[11px] text-muted-foreground">
             {displayedKpi.overdue === 0 ? 'Zero overdue filings' : 'Requires immediate filing'}
           </div>
-        </div>
+        </button>
 
         {/* Due in 7 Days */}
-        <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-1">
+        <button
+          type="button"
+          onClick={() => setActiveKpiFilter(activeKpiFilter === 'due7' ? 'all' : 'due7')}
+          className={cn(
+            'text-left border rounded-lg p-4 bg-card/60 space-y-1 transition-all cursor-pointer',
+            activeKpiFilter === 'due7' ? 'ring-2 ring-[#c4161c] border-[#c4161c]' : 'border-border/80 hover:border-[#c4161c]/60'
+          )}
+        >
           <div className="text-[10px] font-mono uppercase tracking-wider text-[#c4161c] flex items-center justify-between">
             <span>Due in 7 Days</span>
             <Clock className="h-4 w-4 text-[#c4161c]" />
@@ -163,10 +198,17 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
           <div className="text-[11px] text-muted-foreground">
             Urgent SARS / CIPC obligations
           </div>
-        </div>
+        </button>
 
         {/* Due in 30 Days */}
-        <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-1">
+        <button
+          type="button"
+          onClick={() => setActiveKpiFilter(activeKpiFilter === 'due30' ? 'all' : 'due30')}
+          className={cn(
+            'text-left border rounded-lg p-4 bg-card/60 space-y-1 transition-all cursor-pointer',
+            activeKpiFilter === 'due30' ? 'ring-2 ring-primary border-primary' : 'border-border/80 hover:border-primary/60'
+          )}
+        >
           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>Due in 30 Days</span>
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
@@ -177,10 +219,17 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
           <div className="text-[11px] text-muted-foreground">
             Current operational horizon
           </div>
-        </div>
+        </button>
 
         {/* Missing a Date */}
-        <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-1">
+        <button
+          type="button"
+          onClick={() => setActiveKpiFilter(activeKpiFilter === 'missing' ? 'all' : 'missing')}
+          className={cn(
+            'text-left border rounded-lg p-4 bg-card/60 space-y-1 transition-all cursor-pointer',
+            activeKpiFilter === 'missing' ? 'ring-2 ring-amber-500 border-amber-500' : 'border-border/80 hover:border-amber-500/60'
+          )}
+        >
           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>Missing A Date (Blockers)</span>
             <UserCheck className="h-4 w-4 text-amber-500" />
@@ -191,7 +240,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
           <div className="text-[11px] text-muted-foreground">
             Needs CIPC or SARS transfer
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Filter Controls Bar */}
@@ -275,7 +324,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
       {/* Render Active View */}
       {viewMode === 'kanban' ? (
         <DeadlinesKanban
-          tasks={filteredTasks}
+          tasks={displayedTasks}
           asOfDate={today}
           onSelectClient={onSelectClient}
           horizon={horizon}
@@ -283,7 +332,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
         />
       ) : (
         <DeadlinesTable
-          tasks={filteredTasks}
+          tasks={displayedTasks}
           onSelectClient={onSelectClient}
         />
       )}

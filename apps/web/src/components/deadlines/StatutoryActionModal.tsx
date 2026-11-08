@@ -17,6 +17,7 @@ export const WORKFLOW_STATUSES = [
   'Not Started',
   'In Progress',
   'Partner Review Gate',
+  'Approved (Ready to Lodge)',
   'Submitted',
 ] as const;
 
@@ -39,6 +40,11 @@ export function validateStatutorySubmission({
   partnerSignOff,
   needsPartnerReview,
 }: StatutoryValidationParams): { valid: boolean; error?: string } {
+  if (status === 'Approved (Ready to Lodge)') {
+    if (needsPartnerReview && !partnerSignOff) {
+      return { valid: false, error: 'PARTNER_REVIEW_REQUIRED' };
+    }
+  }
   if (status === 'Submitted') {
     if (needsPartnerReview && !partnerSignOff) {
       return { valid: false, error: 'PARTNER_REVIEW_REQUIRED' };
