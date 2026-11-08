@@ -72,11 +72,11 @@ export function SaicaGovernanceLogPane() {
         list.push({
           id: `saica-live-${taskId}`,
           timestamp: `${override.submissionDate || '2026-11-08'} 09:00 SAST`,
-          partnerName: 'Erik (CA(SA))',
+          partnerName: override.approvedBy ? `${override.approvedBy} (CA(SA))` : 'Partner (CA(SA))',
           clientCode: code,
-          clientName: client?.name || code,
-          returnType: parts[2] || 'Statutory Return',
-          period: '2026/2027',
+          clientName: override.clientName || client?.name || code,
+          returnType: override.service || parts[parts.length - 2] || 'Statutory Return',
+          period: override.period || '2026/2027',
           sarsReference: override.sarsReference,
           auditHash: `sha256-${taskId.slice(0, 8)}...${override.sarsReference.slice(-4)}`,
         });

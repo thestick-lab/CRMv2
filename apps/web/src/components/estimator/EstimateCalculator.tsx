@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export function EstimateCalculator() {
-  const { clients, rates, updateClient } = usePracticeStore();
+  const { clients, rates, updateClient, savedEstimates, saveEstimate } = usePracticeStore();
   const [selectedClientCode, setSelectedClientCode] = React.useState<string>('new');
   const [documensoOpen, setDocumensoOpen] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
@@ -48,8 +48,8 @@ export function EstimateCalculator() {
   const [afsHours, setAfsHours] = React.useState(16);
   const [reviewHours] = React.useState(0);
   const [afsMonth, setAfsMonth] = React.useState(8);
-  const [itrMonth] = React.useState(9);
-  const [cipcMonth] = React.useState(8);
+  const [itrMonth, setItrMonth] = React.useState(9);
+  const [cipcMonth, setCipcMonth] = React.useState(8);
   const [xeroPlan, setXeroPlan] = React.useState<'Starter' | 'Standard' | 'Premium'>('Standard');
   const [simplePayFee, setSimplePayFee] = React.useState(235.5);
 
@@ -98,6 +98,18 @@ export function EstimateCalculator() {
       setPayroll(Boolean(c.payroll));
       setEmployeeCount(c.employeeCount || 8);
       setStaffId(c.staffId);
+      const saved = savedEstimates[code];
+      if (saved) {
+        if (saved.hours?.BOOKKEEPING !== undefined) setBookkeepingHours(saved.hours.BOOKKEEPING);
+        if (saved.hours?.PAYROLL !== undefined) setPayrollHours(saved.hours.PAYROLL);
+        if (saved.hours?.MGMT !== undefined) setMgmtHours(saved.hours.MGMT);
+        if (saved.hours?.AFS !== undefined) setAfsHours(saved.hours.AFS);
+        if (saved.months?.AFS !== undefined) setAfsMonth(saved.months.AFS);
+        if (saved.months?.ITR !== undefined) setItrMonth(saved.months.ITR);
+        if (saved.months?.CIPC_AR !== undefined) setCipcMonth(saved.months.CIPC_AR);
+        if (saved.selected) setSelected(saved.selected);
+        if (saved.recharges?.SIMPLEPAY !== undefined) setSimplePayFee(saved.recharges.SIMPLEPAY);
+      }
     }
   };
 
@@ -197,6 +209,40 @@ export function EstimateCalculator() {
 
   const handleSaveToClient = () => {
     if (selectedClientCode !== 'new') {
+      const currentInput: EstimateInput = {
+        startMonth,
+        entityType,
+        yearEndMonth,
+        vatCategory,
+        turnover,
+        payroll,
+        employeeCount,
+        provisionalTaxpayer,
+        directors,
+        rate: rates.standardHourlyRate,
+        marchIncreasePct: rates.marchEscalationPct,
+        irp6Payable: true,
+        selected,
+        hours: {
+          BOOKKEEPING: bookkeepingHours,
+          PAYROLL: payrollHours,
+          MGMT: mgmtHours,
+          AFS: afsHours,
+          REVIEW: reviewHours,
+        },
+        months: {
+          AFS: afsMonth,
+          REVIEW: reviewHours > 0 ? afsMonth : 10,
+          ITR: itrMonth,
+          CIPC_AR: cipcMonth,
+        },
+        recharges: {
+          XERO: selected.XERO ? xeroFee : 0,
+          SIMPLEPAY: selected.SIMPLEPAY ? simplePayFee : 0,
+        },
+      };
+
+      saveEstimate(selectedClientCode, currentInput);
       updateClient(selectedClientCode, {
         turnover,
         yearEndMonth,

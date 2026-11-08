@@ -144,11 +144,14 @@ export function DeadlinesKanban({
 
     if (groupBy === 'workflow') {
       const targetStatus = targetStatusOrCol as WorkflowStatus;
-      if (targetStatus === 'Partner Review Gate' || targetStatus === 'Submitted') {
+      if (targetStatus === 'Not Started' || targetStatus === 'In Progress') {
+        updateTaskStatus(taskId, targetStatus);
+      } else if (targetStatus === 'Partner Review Gate') {
+        updateTaskStatus(taskId, 'Partner Review Gate');
+      } else if (targetStatus === 'Approved (Ready to Lodge)' || targetStatus === 'Submitted') {
         setSelectedTask(task);
         setPendingTargetStatus(targetStatus);
         setModalOpen(true);
-        updateTaskStatus(taskId, targetStatus);
       }
     }
   };

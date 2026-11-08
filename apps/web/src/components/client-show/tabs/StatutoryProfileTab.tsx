@@ -161,14 +161,14 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
       label: 'VAT return (VAT201)',
       fee: 'R545 each',
       enabled: Boolean(client.vatCategory),
-      disabled: !client.vatCategory,
+      disabled: false,
     },
     {
       code: 'EMP201',
       label: 'Monthly employer declaration (EMP201)',
       fee: 'R495 each',
       enabled: Boolean(client.payroll),
-      disabled: !client.payroll,
+      disabled: false,
     },
     {
       code: 'CIPC_AR',
@@ -392,6 +392,8 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                       if (svc.code === 'VAT201') handleVatToggle(e.target.checked);
                       else if (svc.code === 'EMP201') handlePayrollToggle(e.target.checked);
                       else if (svc.code === 'IRP6') updateClient(client.code, { provisionalTaxpayer: e.target.checked });
+                      else if (svc.code === 'AFS' || svc.code === 'ITR14') updateClient(client.code, { taxElsewhere: !e.target.checked });
+                      else if (svc.code === 'BO') updateClient(client.code, { beneficialOwnershipFiled: e.target.checked });
                     }}
                     className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
                   />

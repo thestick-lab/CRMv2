@@ -12,6 +12,7 @@ import { TeamRbacPane } from './panes/TeamRbacPane';
 import { ServicePricingMatrixPane } from './panes/ServicePricingMatrixPane';
 import { SaicaGovernanceLogPane } from './panes/SaicaGovernanceLogPane';
 import { AiIntegrationsPane } from './panes/AiIntegrationsPane';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
 
 export type SettingsPaneKey = 'profile' | 'ai' | 'team' | 'matrix' | 'saica';
@@ -23,7 +24,15 @@ export interface SettingsViewProps {
 export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
   const [activePane, setActivePane] = React.useState<SettingsPaneKey>(initialPane);
   // User role state
+  const { currentUser } = usePracticeStore();
+  const isPartnerOrAdmin =
+    currentUser.role === 'Partner' || currentUser.role === 'Compliance Officer';
 
+  React.useEffect(() => {
+    if (!isPartnerOrAdmin && (activePane === 'team' || activePane === 'matrix' || activePane === 'saica')) {
+      setActivePane('profile');
+    }
+  }, [isPartnerOrAdmin, activePane]);
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 text-xs">
       {/* Unified Clean Header */}
@@ -76,52 +85,54 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
             </button>
           </div>
 
-          {/* Admin Panel (Founders & Technicians) */}
-          <div className="space-y-1 pt-1 border-t border-border/60">
-            <div className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-medium flex items-center justify-between">
-              <span>Admin Panel</span>
-              <span className="text-[9px] text-primary font-bold">CA(SA)</span>
+          {/* Admin Panel (Founders & Technicians only) */}
+          {isPartnerOrAdmin && (
+            <div className="space-y-1 pt-1 border-t border-border/60">
+              <div className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-medium flex items-center justify-between">
+                <span>Admin Panel</span>
+                <span className="text-[9px] text-primary font-bold">CA(SA)</span>
+              </div>
+
+              <button
+                onClick={() => setActivePane('team')}
+                className={cn(
+                  'w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors text-xs font-medium cursor-pointer',
+                  activePane === 'team'
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <Users className="h-3.5 w-3.5 shrink-0" />
+                <span>Team &amp; Staff Database</span>
+              </button>
+
+              <button
+                onClick={() => setActivePane('matrix')}
+                className={cn(
+                  'w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors text-xs font-medium cursor-pointer',
+                  activePane === 'matrix'
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
+                <span>Service &amp; Pricing Matrix</span>
+              </button>
+
+              <button
+                onClick={() => setActivePane('saica')}
+                className={cn(
+                  'w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors text-xs font-medium cursor-pointer',
+                  activePane === 'saica'
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <span>SAICA Governance Log</span>
+              </button>
             </div>
-
-            <button
-              onClick={() => setActivePane('team')}
-              className={cn(
-                'w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors text-xs font-medium cursor-pointer',
-                activePane === 'team'
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <Users className="h-3.5 w-3.5 shrink-0" />
-              <span>Team &amp; Staff Database</span>
-            </button>
-
-            <button
-              onClick={() => setActivePane('matrix')}
-              className={cn(
-                'w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors text-xs font-medium cursor-pointer',
-                activePane === 'matrix'
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
-              <span>Service &amp; Pricing Matrix</span>
-            </button>
-
-            <button
-              onClick={() => setActivePane('saica')}
-              className={cn(
-                'w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors text-xs font-medium cursor-pointer',
-                activePane === 'saica'
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-              <span>SAICA Governance Log</span>
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Right Content Pane */}

@@ -46,6 +46,7 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
   const handleApprove = (taskId: string) => {
     updateTaskStatus(taskId, 'Approved (Ready to Lodge)', {
       partnerSignOff: true,
+      approvedBy: currentUser.name,
       submissionDate: today,
     });
   };

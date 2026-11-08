@@ -126,7 +126,11 @@ export function StatutoryActionModal({
     updateTaskStatus(task.id, status, {
       sarsReference: sarsReference.trim() || undefined,
       partnerSignOff,
+      approvedBy: partnerSignOff ? (override?.approvedBy || currentUser.name) : undefined,
       submissionDate,
+      service: task.service,
+      clientName: task.clientName,
+      period: task.period,
     });
 
     onOpenChange(false);

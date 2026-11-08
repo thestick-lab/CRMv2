@@ -23,9 +23,11 @@ import { cn } from '@/lib/utils';
 
 export interface DeadlinesDashboardProps {
   onSelectClient: (code: string) => void;
+  clientFilter?: string;
+  onClearClientFilter?: () => void;
 }
 
-export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) {
+export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClientFilter }: DeadlinesDashboardProps) {
   const [viewMode, setViewMode] = React.useState<'kanban' | 'table'>('kanban');
   const [horizon, setHorizon] = React.useState<'30' | '90' | '365'>('30');
   const [selectedStaff, setSelectedStaff] = React.useState<string>('all');
@@ -57,15 +59,19 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
 
 
   const displayedTasks = React.useMemo(() => {
-    if (activeKpiFilter === 'all') return filteredTasks;
-    if (activeKpiFilter === 'overdue') return filteredTasks.filter((t) => t.due && t.due < today);
+    let result = filteredTasks;
+    if (clientFilter) {
+      result = result.filter((t) => t.clientCode === clientFilter);
+    }
+    if (activeKpiFilter === 'all') return result;
+    if (activeKpiFilter === 'overdue') return result.filter((t) => t.due && t.due < today);
     if (activeKpiFilter === 'due7')
-      return filteredTasks.filter((t) => t.due && t.due >= today && t.daysUntilDue !== undefined && t.daysUntilDue <= 7);
+      return result.filter((t) => t.due && t.due >= today && t.daysUntilDue !== undefined && t.daysUntilDue <= 7);
     if (activeKpiFilter === 'due30')
-      return filteredTasks.filter((t) => t.due && t.due >= today && t.daysUntilDue !== undefined && t.daysUntilDue <= 30);
-    if (activeKpiFilter === 'missing') return filteredTasks.filter((t) => !t.due);
-    return filteredTasks;
-  }, [filteredTasks, activeKpiFilter, today]);
+      return result.filter((t) => t.due && t.due >= today && t.daysUntilDue !== undefined && t.daysUntilDue <= 30);
+    if (activeKpiFilter === 'missing') return result.filter((t) => !t.due);
+    return result;
+  }, [filteredTasks, clientFilter, activeKpiFilter, today]);
   // Available unique service codes
   const availableServices = React.useMemo(() => {
     return Array.from(new Set(summary.tasks.map((t) => t.service))).sort();
@@ -86,6 +92,18 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setActiveKpiFilter('all'); }}
+                  className="cursor-pointer font-bold text-muted-foreground hover:text-foreground ml-1"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            {clientFilter && (
+              <Badge variant="outline" className="font-mono text-xs py-0 px-2 h-5 text-primary border-primary/30 flex items-center gap-1">
+                <span>Client: {clientFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => onClearClientFilter?.()}
                   className="cursor-pointer font-bold text-muted-foreground hover:text-foreground ml-1"
                 >
                   ×

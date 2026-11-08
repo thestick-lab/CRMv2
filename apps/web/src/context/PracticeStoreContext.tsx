@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
 import type { Client, StaffMember } from 'fdoncall-practice/domain/types';
+import type { EstimateInput } from 'fdoncall-practice/domain/estimate';
 
 export interface PipelineLead {
   id: string;
@@ -39,6 +40,10 @@ export interface TaskStatusOverride {
   sarsReference?: string;
   partnerSignOff?: boolean;
   submissionDate?: string;
+  approvedBy?: string;
+  service?: string;
+  clientName?: string;
+  period?: string;
   updatedAt?: string;
 }
 
@@ -53,6 +58,7 @@ export interface PracticeState {
   aiKeys: AiApiKeys;
   division: Division;
   taskStatusOverrides: Record<string, TaskStatusOverride>;
+  savedEstimates: Record<string, EstimateInput>;
 }
 
 export const INITIAL_LEADS: PipelineLead[] = [
@@ -137,6 +143,7 @@ export function getInitialPracticeState(): PracticeState {
     aiKeys: { ...INITIAL_AI_KEYS },
     division: 'fd-on-call',
     taskStatusOverrides: {},
+    savedEstimates: {},
   };
 }
 
@@ -144,6 +151,7 @@ export type PracticeAction =
   | { type: 'CONVERT_LEAD'; payload: { leadId: string; clientData?: Partial<Client> } }
   | { type: 'ADD_CLIENT'; payload: Client }
   | { type: 'UPDATE_CLIENT'; payload: { clientCode: string; patch: Partial<Client> } }
+  | { type: 'SAVE_ESTIMATE'; payload: { clientCode: string; input: EstimateInput } }
   | {
       type: 'UPDATE_TASK_STATUS';
       payload: {
@@ -153,6 +161,10 @@ export type PracticeAction =
           sarsReference?: string;
           partnerSignOff?: boolean;
           submissionDate?: string;
+          approvedBy?: string;
+          service?: string;
+          clientName?: string;
+          period?: string;
         };
       };
     }
@@ -239,6 +251,16 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
         leads: updatedLeads,
       };
     }
+    case 'SAVE_ESTIMATE': {
+      return {
+        ...state,
+        savedEstimates: {
+          ...state.savedEstimates,
+          [action.payload.clientCode]: action.payload.input,
+        },
+      };
+    }
+
     case 'UPDATE_CLIENT': {
       return {
         ...state,
@@ -408,11 +430,20 @@ export function savePracticeState(state: PracticeState): void {
 export interface PracticeStoreContextValue extends PracticeState {
   addClient: (client: Client) => void;
   updateClient: (clientCode: string, patch: Partial<Client>) => void;
+  saveEstimate: (clientCode: string, input: EstimateInput) => void;
   convertLead: (leadId: string, clientData?: Partial<Client>) => Client | undefined;
   updateTaskStatus: (
     taskId: string,
     status: string,
-    metadata?: { sarsReference?: string; partnerSignOff?: boolean; submissionDate?: string }
+    metadata?: {
+      sarsReference?: string;
+      partnerSignOff?: boolean;
+      submissionDate?: string;
+      approvedBy?: string;
+      service?: string;
+      clientName?: string;
+      period?: string;
+    }
   ) => void;
   inviteTeamMember: (member: {
     name: string;
@@ -537,6 +568,10 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
   const updateClient = React.useCallback((clientCode: string, patch: Partial<Client>) => {
     dispatch({ type: 'UPDATE_CLIENT', payload: { clientCode, patch } });
   }, []);
+  const saveEstimate = React.useCallback((clientCode: string, input: EstimateInput) => {
+    dispatch({ type: 'SAVE_ESTIMATE', payload: { clientCode, input } });
+  }, []);
+
 
 
   const value = React.useMemo<PracticeStoreContextValue>(
@@ -546,6 +581,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       updateClient,
       convertLead,
       updateTaskStatus,
+      saveEstimate,
       inviteTeamMember,
       updateStaffRole,
       updateRates,
@@ -566,6 +602,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       inviteTeamMember,
       updateStaffRole,
       updateRates,
+      saveEstimate,
       setCurrentUser,
       setDivision,
       setAiKeys,

@@ -36,7 +36,13 @@ function AppContent() {
       case 'people':
         return <PeopleView onNavigate={handleNavigate} />;
       case 'deadlines':
-        return <DeadlinesView onNavigate={handleNavigate} />;
+        return (
+          <DeadlinesView
+            onNavigate={handleNavigate}
+            clientFilter={clientCode}
+            onClearClientFilter={() => setClientCode(undefined)}
+          />
+        );
       case 'estimator':
       case 'quote':
       case 'pipeline':
