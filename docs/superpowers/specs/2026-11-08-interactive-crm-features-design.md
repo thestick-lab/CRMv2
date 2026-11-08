@@ -34,25 +34,38 @@ FD on Call CRMv2 has successfully implemented its core statutory engine, 12-mont
 
 ---
 
-## 3. Approaches Considered & Selected
+## 3. Builder Rulings & Architecture Decisions (Post-Check)
 
-### Approach A: Heavy Full-Stack Monorepo Clones (Rejected)
-Bring back Twenty CRM’s `@dnd-kit` multi-package trees, Linaria CSS, and complex backend models.
-*Why rejected:* Twenty’s bloated setup was the exact reason CRMv1 failed. Adding 50 packages would re-introduce slow HMR and fragile builds.
+1. **State Persistence (`PracticeStoreContext`):**
+   - Application state is managed via a lightweight React Context backed by `localStorage` (`crmv2_practice_state`).
+   - On first boot, state hydrates from `CLIENTS`, `STAFF`, and default pipeline leads.
+   - Converting a prospect in `/pipeline` automatically adds the new client to the store and updates `/clients`, `/deadlines`, and `/people`.
+   - Editing practice rates in Settings (R625 standard rate, 6% March escalation) dynamically recomputes quote estimates across views.
+   - "Export My Practice Data" downloads a comprehensive JSON snapshot of clients, leads, tasks, and settings.
+   - "Delete My Data / Reset Practice" resets `localStorage` back to pristine seed defaults with a confirmation dialog.
 
-### Approach B: Minimal Standalone Placeholders (Rejected)
-Render static read-only cards and forms without drag-and-drop or modal interactions.
-*Why rejected:* The user explicitly wants a fully functional, interactive CRM where cards move, double-clicking triggers actions, team members can be invited with RBAC, and AI keys can be managed.
+2. **Deadlines Kanban Grouping:**
+   - The Deadlines board supports dual grouping: `Group by: Workflow Status` (`Not Started` → `In Progress` → `Partner Review Gate` → `Submitted`) and `Group by: Date Urgency` (`Overdue`, `7 Days`, `30 Days`, `Missing Date`).
+   - Dragging a card to `Partner Review Gate` or `Submitted` automatically opens the **Statutory Action Modal** if required fields (e.g. SARS reference) or partner sign-off is needed.
 
-### Approach C: Lightweight Idiomatic React 19 + HTML5 Drag-and-Drop + Vercel AI SDK (Selected)
-- Use standard React state and HTML5 drag events (`onDragStart`, `onDragOver`, `onDrop`) for butter-smooth Kanban interactions with zero external bundle bloat.
-- Clean relational design: `people` data structure linked to `clients` via `company_contacts` relationships.
-- Two-pane Settings view using existing Radix primitives and Tailwind CSS v4 tokens.
-- In-app AI Assistant using the official `ai` (Vercel AI SDK) core protocol.
+3. **RBAC & Active Session Switcher:**
+   - Active user session is switchable in the footer `UserPopover` between:
+     - `Erik (Partner)`: Full access, sign-off on review gates, rate edits, AI key configuration.
+     - `Chrizelle (Compliance Officer)`: Filing submissions, SARS reference logging, read rates.
+     - `André (Accountant)`: Task drafting, bookkeeping, client record inspection.
+   - Non-partners attempting to sign off a review gate receive a clear `PARTNER_REVIEW_REQUIRED` indicator.
+
+4. **AI Copilot Execution Model:**
+   - Runs purely client-side using the Vercel AI SDK (`ai` package) with provider adapters.
+   - User API keys (Anthropic, OpenAI, Gemini) are stored securely in `localStorage`.
+   - When no API key is provided, the copilot executes a fast rule-based local practice responder answering questions about deadlines, client turnover, and fee calculations using local practice state.
+
+5. **Division Switcher:**
+   - Toggling between *FD on Call* (Advisory) and *Accountant on Call* (Compliance) in the workspace popover updates the header logo to `accountant-on-call-logo.png` vs `fd-on-call-logo.png`, the workspace badge, and filters view context accordingly.
 
 ---
 
-## 4. Architectural & UI Specifications
+## 4. UI Component Specifications
 
 ### 4.1. Top-Left Workspace Header & Collapsed Sidebar Bug Fix
 - **Expanded (`w-60` / 240px):**
@@ -64,31 +77,34 @@ Render static read-only cards and forms without drag-and-drop or modal interacti
   - Right: `PanelLeftClose` toggle button.
 - **Collapsed (`w-14` / 56px):**
   - Single centered container with logo icon.
-  - Hover or click reveals `PanelLeftOpen` tooltip/action to expand.
-  - **Zero layout collision.**
+  - Clicking logo expands the sidebar cleanly with **zero layout collision**.
 
 ### 4.2. People & Directors Directory (`/people`)
-- **Data Source:** `apps/web/src/components/people/people-data.ts` combining `STAFF` (9) and client directors/contacts (9):
-  - *Staff:* Erik (Partner), Wouter (Partner), André, Lungani, Mia, Chrizelle, Juan, Hannes, Caroline.
-  - *Client Directors:* Lesley Faull (LES-841), Bendre Rathbone (BEN-585 / Axe Group), Albert Coetzee (ALB-207), etc.
+- **Data Model:** Normalized `Person` interface with relational links:
+  ```ts
+  interface Person {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    isPracticeStaff: boolean;
+    practiceRole?: 'Partner' | 'Accountant' | 'Compliance Officer' | 'Subcontractor';
+    companyLinks: Array<{ clientCode: string; clientName: string; title: string }>;
+  }
+  ```
 - **Filters:** `All (18)`, `Practice Team (9)`, `Company Directors (9)`.
 - **Search:** Instant filter across name, role, email, phone, and linked company code.
 - **Contact Card:** Name, Role badge, linked Company pills (`ALC-610`, `MUS-875`) with click-to-navigate, direct `mailto:` and phone triggers.
 
 ### 4.3. 5-Stage Onboarding Pipeline (`/pipeline`)
-- **5 Stages:**
-  1. `Lead` (Inquiry, initial intake)
-  2. `Discovery` (Scoping turnover and payroll)
-  3. `Estimate Sent` (Proposal / quote generated)
-  4. `KYC & eFiling Transfer` (FICA documents and SARS profile migration)
-  5. `Active Client` (Signed engagement, active in practice register)
+- **5 Stages:** `Lead` → `Discovery` → `Estimate Sent` → `KYC & eFiling Transfer` → `Active Client`.
 - **Interactivity:**
   - Drag-and-drop cards across columns.
   - Card metrics: Prospect Legal Name, Estimated Turnover (ZAR), Estimated Monthly Retainer (ZAR), Assignee Partner.
   - Quick action: `[+ New Prospect]` modal, and `[Convert to Practice Client]` when moving to Active.
 
 ### 4.4. Interactive Deadlines Kanban & Action Modal (`/deadlines`)
-- **Mouse Drag-and-Drop:** Move task cards between `Not Started`, `In Progress`, `Partner Review Gate`, and `Submitted / Done`.
+- **Mouse Drag-and-Drop:** Move task cards between workflow columns.
 - **Double-Click Action Modal:**
   - Shows task details: Service code (`IRP6`, `ITR14`, `AFS`, `VAT201`), Filing period, Due date with rollback `↩`.
   - Partner Review Gate sign-off section (authenticated as Erik/Wouter).
@@ -102,7 +118,7 @@ Render static read-only cards and forms without drag-and-drop or modal interacti
   - `🇿🇦 SA Public Holidays & Rules`
   - `AI Subscriptions & Providers`
 - **Right Content Panes:**
-  - *Profile:* First Name, Last Name, Email, Password, Data Export (`Download My Practice Data JSON`), Account Deletion (`Delete My Account`).
+  - *Profile:* First Name, Last Name, Email, Password, Data Export (`Download My Practice Data JSON`), Account Deletion / Reset (`Reset Practice State`).
   - *Team & RBAC:* Team member table with Role dropdowns (`Partner`, `Compliance Officer`, `Accountant`), and `[+ Invite Team Member]` modal.
   - *SA Public Holidays:* Table of all 2026 and 2027 South African statutory public holidays with Computus Easter and Sunday observed substitution dates, plus practice rates editor (R625 standard rate, 6% March escalation).
   - *AI Providers:* API Key inputs for Anthropic Claude (`sk-ant-...`), OpenAI ChatGPT (`sk-...`), and Google Gemini (`AIza...`) with connection test badges.
@@ -113,9 +129,10 @@ Render static read-only cards and forms without drag-and-drop or modal interacti
 ## 5. Verification Plan
 
 1. **Automated Unit & Integration Tests:**
+   - Practice store persistence and cross-view synchronization.
    - People & Directors directory filtering, search, and company relationship links.
    - Onboarding pipeline stage transitions and deal value totals.
    - Kanban drag-and-drop status update and double-click action modal handlers.
    - Settings RBAC permissions, SA holiday gazette builder, and AI provider key storage.
 2. **Impeccable Craft Detector:** Zero violations across all new/modified UI files.
-3. **Live Browser Verification:** Verify rendering at `http://localhost:3000/` and in the companion server at `http://localhost:65166/`.
+3. **Live Browser Verification:** Verify rendering at `http://localhost:3000/`.
