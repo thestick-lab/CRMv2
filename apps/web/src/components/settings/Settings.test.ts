@@ -16,37 +16,50 @@ describe('Settings view panes and AI assistant engine', () => {
 
     const h2027 = publicHolidays(2027);
     expect(h2027.get('2027-01-01')).toBe("New Year's Day");
-    expect(h2027.has('2027-03-26')).toBe(true); // 2027 Good Friday
+    expect(h2027.has('2027-03-26')).toBe(true);
   });
 
   it('answers practice assistant queries using local practice state when offline', () => {
     const state = getInitialPracticeState();
 
-    // Query about clients
     const clientResponse = answerPracticeAssistantQuery('how many clients do we have?', state);
     expect(clientResponse).toContain('13');
     expect(clientResponse).toContain('active clients');
 
-    // Query about rates
     const rateResponse = answerPracticeAssistantQuery('what is our standard hourly rate?', state);
     expect(rateResponse).toContain('R 625');
     expect(rateResponse).toContain('6%');
 
-    // Query about staff or partners
     const staffResponse = answerPracticeAssistantQuery('who are the partners in the firm?', state);
     expect(staffResponse).toContain('Erik');
     expect(staffResponse).toContain('Wouter');
   });
 
-  it('verifies SettingsView and panes component structure', () => {
+  it('verifies SettingsView implements clean title and Twenty-style section hierarchy', () => {
     const settingsSrc = fs.readFileSync('src/components/settings/SettingsView.tsx', 'utf8');
+
+    // Clean unified title
+    expect(settingsSrc).not.toContain('Practice Settings & Configuration');
     expect(settingsSrc).toContain('ProfilePane');
     expect(settingsSrc).toContain('TeamRbacPane');
-    expect(settingsSrc).toContain('PublicHolidaysPane');
+    expect(settingsSrc).toContain('ServicePricingMatrixPane');
+    expect(settingsSrc).toContain('SaicaGovernanceLogPane');
     expect(settingsSrc).toContain('AiIntegrationsPane');
+    expect(settingsSrc).toContain('Admin Panel');
+  });
 
-    const aiDrawerSrc = fs.readFileSync('src/components/ai/AiPracticeAssistantDrawer.tsx', 'utf8');
-    expect(aiDrawerSrc).toContain('AiPracticeAssistantDrawer');
-    expect(aiDrawerSrc).toContain('usePracticeStore');
+  it('verifies ServicePricingMatrixPane and SaicaGovernanceLogPane file existence and contracts', () => {
+    const matrixSrc = fs.readFileSync('src/components/settings/panes/ServicePricingMatrixPane.tsx', 'utf8');
+    const saicaSrc = fs.readFileSync('src/components/settings/panes/SaicaGovernanceLogPane.tsx', 'utf8');
+
+    // Matrix pane contents
+    expect(matrixSrc).toContain('Service Catalogue');
+    expect(matrixSrc).toContain('Turnover bands');
+    expect(matrixSrc).toContain('Sync from sars.gov.za');
+
+    // SAICA Governance Log contents
+    expect(saicaSrc).toContain('SAICA Governance Audit Log');
+    expect(saicaSrc).toContain('Export Audit Report');
+    expect(saicaSrc).toContain('SARS eFiling Confirmation');
   });
 });
