@@ -52,7 +52,7 @@ describe('Layout navigation helpers and breadcrumbs', () => {
     ]);
     expect(buildBreadcrumbs('estimator')).toEqual([
       { label: 'Operations & Growth' },
-      { label: 'Fee Estimator & Quotes' },
+      { label: 'Estimator' },
     ]);
   });
 });

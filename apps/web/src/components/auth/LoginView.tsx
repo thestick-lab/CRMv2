@@ -48,11 +48,8 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
             FD
           </div>
           <h1 className="text-xl font-bold tracking-tight text-foreground font-serif italic">
-            FD on Call Practice Operating System
+            FD on Call
           </h1>
-          <p className="text-xs text-muted-foreground font-mono">
-            South African Chartered Accountancy CRMv2
-          </p>
         </div>
 
         {error && (
@@ -64,7 +61,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground block">Staff Email</label>
+            <label className="text-xs font-medium text-foreground block">Email</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
@@ -106,11 +103,10 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         {/* Demo Credentials Box */}
         <div className="p-3.5 rounded-xl border border-border/80 bg-muted/30 space-y-2.5 text-xs">
           <div className="flex items-center justify-between font-mono font-semibold text-[11px] text-foreground">
-            <span>Demo Credentials (Better-Auth)</span>
-            <span className="text-emerald-500 text-[10px]">Active D1 SQLite</span>
+            <span>Demo Credentials</span>
           </div>
           <div className="text-[11px] text-muted-foreground font-mono">
-            <div>Password for all demo accounts: <code className="text-primary font-bold">{DEMO_PASSWORD}</code></div>
+            <div>Password: <code className="text-primary font-bold">{DEMO_PASSWORD}</code></div>
           </div>
           <div className="pt-1 flex flex-wrap gap-1.5">
             <button

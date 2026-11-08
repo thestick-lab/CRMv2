@@ -114,6 +114,7 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
         </div>
 
         {/* Right Controls Container */}
+        {/* Right Controls Container - both groups always mounted to prevent toggle jumping */}
         <div className="flex items-center gap-2 self-start md:self-center shrink-0">
           <div className="flex items-center p-0.5 rounded-lg border border-border bg-card">
             <button
@@ -142,32 +143,35 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
             </button>
           </div>
 
-          {viewMode === 'kanban' && (
-            <div className="flex items-center p-0.5 rounded-lg border border-border bg-card text-xs">
-              <button
-                onClick={() => setGroupBy('workflow')}
-                className={cn(
-                  'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
-                  groupBy === 'workflow'
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Workflow Status
-              </button>
-              <button
-                onClick={() => setGroupBy('urgency')}
-                className={cn(
-                  'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
-                  groupBy === 'urgency'
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Date Urgency
-              </button>
-            </div>
-          )}
+          <div
+            className={cn(
+              'flex items-center p-0.5 rounded-lg border border-border bg-card text-xs transition-opacity duration-150',
+              viewMode === 'kanban' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            )}
+          >
+            <button
+              onClick={() => setGroupBy('workflow')}
+              className={cn(
+                'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                groupBy === 'workflow'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Workflow Status
+            </button>
+            <button
+              onClick={() => setGroupBy('urgency')}
+              className={cn(
+                'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                groupBy === 'urgency'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Date Urgency
+            </button>
+          </div>
         </div>
       </div>
 

@@ -461,7 +461,21 @@ export function loadPracticeState(): PracticeState {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Ensure default rates.serviceFees exists if loaded from older localStorage state
+        const initial = getInitialPracticeState();
+        return {
+          ...initial,
+          ...parsed,
+          rates: {
+            ...initial.rates,
+            ...(parsed.rates || {}),
+            serviceFees: {
+              ...initial.rates.serviceFees,
+              ...(parsed.rates?.serviceFees || {}),
+            },
+          },
+        };
       }
     } catch (e) {
       console.error('Failed to load practice state from localStorage', e);

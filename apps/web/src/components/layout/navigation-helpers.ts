@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'clients', label: 'Clients', section: 'PRACTICE REGISTERS', icon: Building2 },
   { id: 'people', label: 'People', section: 'PRACTICE REGISTERS', icon: Users2 },
   { id: 'deadlines', label: 'Deadlines', section: 'OPERATIONS & GROWTH', icon: CalendarDays, badge: 4 },
-  { id: 'estimator', label: 'Fee Estimator & Quotes', section: 'OPERATIONS & GROWTH', icon: Calculator },
+  { id: 'estimator', label: 'Estimator', section: 'OPERATIONS & GROWTH', icon: Calculator },
 ];
 
 export interface BreadcrumbCrumb {
@@ -54,7 +54,7 @@ export function buildBreadcrumbs(view: ViewKey, clientCode?: string, clientName?
     case 'estimator':
     case 'quote':
     case 'pipeline':
-      return [{ label: 'Operations & Growth' }, { label: 'Fee Estimator & Quotes' }];
+      return [{ label: 'Operations & Growth' }, { label: 'Estimator' }];
     default:
       return [{ label: 'Home' }];
   }

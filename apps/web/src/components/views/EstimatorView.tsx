@@ -22,7 +22,7 @@ export function EstimatorView({ onNavigate, initialTab = 'calculator' }: Estimat
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <Calculator className="h-5 w-5 text-[#c4161c]" />
-              Fee Estimator &amp; Quotes
+              Estimator
             </h1>
           </div>
         </div>
