@@ -1,18 +1,10 @@
 import * as React from 'react';
-import type { Client, EntityType, VatCategory, TurnoverSource } from 'fdoncall-practice/domain/types';
+import type { Client } from 'fdoncall-practice/domain/types';
 import { MONTHS_LONG } from 'fdoncall-practice/domain/dates';
 import { STAFF, GROUPS } from 'fdoncall-practice/data/seed';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
-import {
-  Building2,
-  Calendar,
-  CheckCircle2,
-  DollarSign,
-  FileText,
-  ShieldCheck,
-  Users,
-} from 'lucide-react';
+import { Building2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ProfileDetails {
@@ -91,7 +83,6 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
   const { updateClient } = usePracticeStore();
 
   const isCompany = client.entityType === 'Company' || client.entityType === 'Close corporation';
-  const isIndividual = client.entityType === 'Individual';
 
   const [turnoverInput, setTurnoverInput] = React.useState(client.turnover?.toString() || '');
   const [incDate, setIncDate] = React.useState(client.incorporationDate || '');

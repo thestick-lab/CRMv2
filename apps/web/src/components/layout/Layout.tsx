@@ -51,7 +51,7 @@ export function Layout({
     const viewItems: CommandItem[] = NAV_ITEMS.map((item) => ({
       id: item.id,
       label: item.label,
-      section: item.section === 'top' ? 'Navigation' : item.section,
+      section: item.section,
       icon: item.icon,
     }));
 

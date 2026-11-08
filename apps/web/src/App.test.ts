@@ -72,11 +72,12 @@ describe('App shell and view integration', () => {
     expect(estimateSource).toContain('XeroSyncDialog');
   });
 
-  it('mounts PracticeStoreProvider and integrates PeopleView, PipelineView, and SettingsView', () => {
+  it('mounts PracticeStoreProvider and integrates InboxView, EstimatorView, PeopleView, and SettingsView', () => {
     const appSource = fs.readFileSync('src/App.tsx', 'utf8');
     expect(appSource).toContain('PracticeStoreProvider');
+    expect(appSource).toContain('InboxView');
+    expect(appSource).toContain('EstimatorView');
     expect(appSource).toContain('PeopleView');
-    expect(appSource).toContain('PipelineView');
     expect(appSource).toContain('SettingsView');
   });
 

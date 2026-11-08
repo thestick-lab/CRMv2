@@ -4,7 +4,7 @@ import type { ViewKey } from '@/types/navigation';
 import { EstimateCalculator } from '@/components/estimator/EstimateCalculator';
 import { SentQuotesPipeline } from '@/components/estimator/SentQuotesPipeline';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, FileCheck2, TrendingUp } from 'lucide-react';
+import { Calculator, FileCheck2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface EstimatorViewProps {

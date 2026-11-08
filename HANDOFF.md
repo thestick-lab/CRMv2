@@ -196,6 +196,14 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
   - Implemented interactive Deadlines Kanban with card drag-and-drop, dual workflow/urgency grouping, and double-click `StatutoryActionModal` with partner sign-off gates.
   - Built Two-Pane Settings (`/settings`) covering Profile (export/reset), Team RBAC invites, SA Public Holidays 2026/2027 Gazette, and AI provider key configuration.
   - Built topbar AI Practice Assistant drawer powered by Vercel AI SDK with zero-token local practice responder fallback.
+- [x] **Phase 8: Unified Practice Operations, Governance & Linear Workflow**
+  - Streamlined sidebar header with left-aligned collapse button (`PanelLeftClose`), horizontal icon utility bar (`Home`, `Inbox`, `Settings`) with hover tooltips and unread badge.
+  - Interactive Client Record configuration (`/clients/:code`) with editable `Details` card and `Services` checkboxes live-toggling compliance deadlines, plus deep-link to Deadlines board.
+  - Converted People directory (`/people`) into a dense TanStack Table of client directors and contacts with search and role-gated contact creation.
+  - Transformed Deadlines board (`/deadlines`) into a Linear-style Kanban with 5 workflow lanes (`Not Started` ➔ `In Progress` ➔ `Partner Review Gate` ➔ `Approved (Ready to Lodge)` ➔ `Submitted`) and live clickable KPI filter buttons.
+  - Built dedicated Partner Review Queue (`/inbox`) for Erik & Wouter with 1-click statutory approval (`Approved (Ready to Lodge)`) and revision requests.
+  - Built 2-tab Unified Fee Estimator (`/estimator`) combining prospective/client 12-month retainer calculator (PDF/Excel exports + Documenso SLA dispatch) and Sent Quotes onboarding pipeline.
+  - Built Twenty-CRM-style Settings (`/settings`) with User Profile/Security, Workspace AI, and Admin Panel (`Team & Staff Database`, `Service Catalogue & Pricing Matrix` with live SARS filing season sync, and immutable `SAICA Governance Log`).
 ---
 
 *Verified & approved for immediate development in `/home/hein/Projects/CRMv2`.*

@@ -2,11 +2,9 @@ import * as React from 'react';
 import {
   User,
   ShieldCheck,
-  Cpu,
   Settings as SettingsIcon,
   FileSpreadsheet,
   Users,
-  Shield,
   Bot,
 } from 'lucide-react';
 import { ProfilePane } from './panes/ProfilePane';
@@ -14,7 +12,6 @@ import { TeamRbacPane } from './panes/TeamRbacPane';
 import { ServicePricingMatrixPane } from './panes/ServicePricingMatrixPane';
 import { SaicaGovernanceLogPane } from './panes/SaicaGovernanceLogPane';
 import { AiIntegrationsPane } from './panes/AiIntegrationsPane';
-import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
 
 export type SettingsPaneKey = 'profile' | 'ai' | 'team' | 'matrix' | 'saica';
@@ -25,10 +22,7 @@ export interface SettingsViewProps {
 
 export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
   const [activePane, setActivePane] = React.useState<SettingsPaneKey>(initialPane);
-  const { currentUser } = usePracticeStore();
-
-  const isPartnerOrAdmin =
-    currentUser.role === 'Partner' || currentUser.role === 'Compliance Officer';
+  // User role state
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 text-xs">

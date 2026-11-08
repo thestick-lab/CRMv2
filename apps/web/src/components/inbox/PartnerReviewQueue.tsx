@@ -11,9 +11,6 @@ import {
   Calendar,
   UserCheck,
   RotateCcw,
-  Building2,
-  ExternalLink,
-  Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

@@ -19,15 +19,11 @@ import {
   Send,
   Save,
   Check,
-  Building2,
-  Calendar,
-  DollarSign,
   TrendingUp,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export function EstimateCalculator() {
-  const { clients, staff, rates, updateClient } = usePracticeStore();
+  const { clients, rates, updateClient } = usePracticeStore();
   const [selectedClientCode, setSelectedClientCode] = React.useState<string>('new');
   const [documensoOpen, setDocumensoOpen] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
@@ -40,20 +36,20 @@ export function EstimateCalculator() {
   const [vatCategory, setVatCategory] = React.useState<VatCategory | undefined>('B');
   const [payroll, setPayroll] = React.useState(true);
   const [employeeCount, setEmployeeCount] = React.useState(8);
-  const [provisionalTaxpayer, setProvisionalTaxpayer] = React.useState(true);
-  const [directors, setDirectors] = React.useState(1);
+  const [provisionalTaxpayer] = React.useState(true);
+  const [directors] = React.useState(1);
   const [staffId, setStaffId] = React.useState('erik');
-  const [startMonth, setStartMonth] = React.useState('2026-12');
+  const [startMonth] = React.useState('2026-12');
 
   // Services Hours & Toggles
   const [bookkeepingHours, setBookkeepingHours] = React.useState(4);
   const [payrollHours, setPayrollHours] = React.useState(0.75);
   const [mgmtHours, setMgmtHours] = React.useState(0);
   const [afsHours, setAfsHours] = React.useState(16);
-  const [reviewHours, setReviewHours] = React.useState(0);
+  const [reviewHours] = React.useState(0);
   const [afsMonth, setAfsMonth] = React.useState(8);
-  const [itrMonth, setItrMonth] = React.useState(9);
-  const [cipcMonth, setCipcMonth] = React.useState(8);
+  const [itrMonth] = React.useState(9);
+  const [cipcMonth] = React.useState(8);
   const [xeroPlan, setXeroPlan] = React.useState<'Starter' | 'Standard' | 'Premium'>('Standard');
   const [simplePayFee, setSimplePayFee] = React.useState(235.5);
 
@@ -132,6 +128,7 @@ export function EstimateCalculator() {
       },
       months: {
         AFS: afsMonth,
+        REVIEW: reviewHours > 0 ? afsMonth : 10,
         ITR: itrMonth,
         CIPC_AR: cipcMonth,
       },
@@ -174,13 +171,19 @@ export function EstimateCalculator() {
       name,
       entityType,
       yearEndMonth,
+      yearEndAssumed: false,
       turnover,
       vatCategory,
       payroll,
       employeeCount,
       staffId,
-      status: 'Pending',
+      status: 'Active',
       efilingProfile: 'client',
+      lastAfsYear: null,
+      lastIncomeTaxYear: null,
+      lastAnnualReturnYear: null,
+      beneficialOwnershipFiled: null,
+      taxElsewhere: false,
     };
   }, [selectedClientCode, clients, name, entityType, yearEndMonth, turnover, vatCategory, payroll, employeeCount, staffId]);
 
@@ -655,17 +658,17 @@ export function EstimateCalculator() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {estimateResult.months.map((m, idx) => (
-                    <tr key={m.monthKey} className="hover:bg-muted/20">
-                      <td className="py-2 px-2.5 font-semibold text-foreground">{m.monthKey}</td>
+                  {estimateResult.months.map((m: string, idx: number) => (
+                    <tr key={m} className="hover:bg-muted/20">
+                      <td className="py-2 px-2.5 font-semibold text-foreground">{m}</td>
                       <td className="py-2 px-2.5 font-sans text-muted-foreground">
                         {idx === 2 ? 'Provisional Tax (IRP6)' : idx === 8 ? 'AFS & Annual Return' : 'Monthly Retainer'}
                       </td>
                       <td className="py-2 px-2.5 text-right font-tnum">
-                        R {m.total.toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        R {estimateResult.totals[idx]?.toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </td>
                       <td className="py-2 px-2.5 text-right font-tnum text-primary font-medium">
-                        R {m.totalInclVat.toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        R {estimateResult.totalsInclVat[idx]?.toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </td>
                     </tr>
                   ))}

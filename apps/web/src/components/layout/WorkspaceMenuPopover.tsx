@@ -12,7 +12,7 @@ export interface WorkspaceMenuPopoverProps {
 
 export function WorkspaceMenuPopover({ onViewChange, className }: WorkspaceMenuPopoverProps) {
   const [open, setOpen] = React.useState(false);
-  const { clients, staff, division, setDivision } = usePracticeStore();
+  const { division, setDivision } = usePracticeStore();
 
   const isFd = division === 'fd-on-call';
   const activeLogo = isFd ? '/fd-on-call-logo.png' : '/accountant-on-call-logo.png';

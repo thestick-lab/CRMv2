@@ -5,3 +5,4 @@ dist
 .omp/
 mcp.json
 .mcp.json
+.stitch.json

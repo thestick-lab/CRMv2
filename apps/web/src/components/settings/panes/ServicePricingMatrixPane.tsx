@@ -1,11 +1,11 @@
 import * as React from 'react';
+import { SERVICE_TYPES } from 'fdoncall-practice/domain/catalogue';
 import {
-  SERVICE_TYPES,
   TURNOVER_BANDS,
-  PAYROLL_BANDS,
   XERO_PLANS,
-  PRICE_DIFFERENCES,
-} from 'fdoncall-practice/domain/catalogue';
+  type TurnoverBand,
+} from 'fdoncall-practice/domain/pricing';
+import { cn } from '@/lib/utils';
 import { FILING_SEASONS } from 'fdoncall-practice/domain/sars';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
@@ -179,7 +179,7 @@ export function ServicePricingMatrixPane() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {TURNOVER_BANDS.map((b) => (
+                {TURNOVER_BANDS.map((b: TurnoverBand) => (
                   <tr key={b.label} className="hover:bg-muted/20">
                     <td className="py-2 px-2.5 font-sans font-medium text-foreground">{b.label}</td>
                     <td className="py-2 px-2.5">{b.accountingHours} h</td>

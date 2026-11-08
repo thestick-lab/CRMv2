@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { usePracticeStore, type PipelineLead } from '@/context/PracticeStoreContext';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,10 +6,7 @@ import {
   CheckCircle2,
   Sparkles,
   FileCheck2,
-  Mail,
   User,
-  Clock,
-  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +24,7 @@ export const QUOTE_STAGES = [
 ] as const;
 
 export function SentQuotesPipeline({ onConvertClient, className }: SentQuotesPipelineProps) {
-  const { leads, clients, convertLead, updateLeadStage } = usePracticeStore();
+  const { leads, clients, convertLead } = usePracticeStore();
 
   const handleConvert = (leadId: string) => {
     const created = convertLead(leadId);

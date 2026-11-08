@@ -3,10 +3,11 @@ import type { ViewKey } from '@/types/navigation';
 import { PracticeStoreProvider, usePracticeStore } from '@/context/PracticeStoreContext';
 import { Layout } from '@/components/layout/Layout';
 import { DashboardView } from '@/components/views/DashboardView';
+import { InboxView } from '@/components/views/InboxView';
 import { ClientsView } from '@/components/views/ClientsView';
 import { DeadlinesView } from '@/components/views/DeadlinesView';
 import { PeopleView } from '@/components/views/PeopleView';
-import { PipelineView } from '@/components/views/PipelineView';
+import { EstimatorView } from '@/components/views/EstimatorView';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { ClientShowView } from '@/components/client-show/ClientShowView';
 
@@ -28,14 +29,18 @@ function AppContent() {
     switch (view) {
       case 'dashboard':
         return <DashboardView onNavigate={handleNavigate} />;
+      case 'inbox':
+        return <InboxView onNavigate={handleNavigate} />;
       case 'clients':
         return <ClientsView onNavigate={handleNavigate} />;
       case 'people':
         return <PeopleView onNavigate={handleNavigate} />;
       case 'deadlines':
         return <DeadlinesView onNavigate={handleNavigate} />;
+      case 'estimator':
+      case 'quote':
       case 'pipeline':
-        return <PipelineView onNavigate={handleNavigate} />;
+        return <EstimatorView onNavigate={handleNavigate} />;
       case 'settings':
         return <SettingsView />;
       case 'client':
@@ -47,18 +52,7 @@ function AppContent() {
           />
         );
       default:
-        return (
-          <div className="p-6 max-w-7xl mx-auto">
-            <div className="border border-border/80 rounded-lg p-6 bg-card/60">
-              <h1 className="text-lg font-semibold text-foreground capitalize">
-                {view.replace('-', ' ')}
-              </h1>
-              <p className="text-xs text-muted-foreground mt-1">
-                Module scheduled for development in subsequent sprint phases.
-              </p>
-            </div>
-          </div>
-        );
+        return <DashboardView onNavigate={handleNavigate} />;
     }
   };
 

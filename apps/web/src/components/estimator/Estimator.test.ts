@@ -36,6 +36,7 @@ describe('Unified Fee Estimator and Sent Quotes pipeline', () => {
       },
       months: {
         AFS: 8,
+        REVIEW: 10,
         ITR: 9,
         CIPC_AR: 8,
       },

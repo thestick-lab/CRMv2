@@ -5,10 +5,7 @@ import { Button } from '@/components/ui/button';
 import {
   ShieldCheck,
   Download,
-  FileCheck2,
   Lock,
-  Calendar,
-  Building2,
   Check,
 } from 'lucide-react';
 
