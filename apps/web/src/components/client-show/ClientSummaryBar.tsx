@@ -14,15 +14,13 @@ import {
 } from 'lucide-react';
 
 export interface TabConfig {
-  id: 'profile' | 'deadlines' | 'estimate' | 'vault';
+  id: 'details' | 'vault' | 'profile' | 'deadlines' | 'estimate';
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
 export const CLIENT_SHOW_TABS: TabConfig[] = [
-  { id: 'profile', label: 'Statutory Profile', icon: Building2 },
-  { id: 'deadlines', label: 'Deadlines & Tasks', icon: CalendarDays },
-  { id: 'estimate', label: '12-Month Fee Estimate', icon: Calculator },
+  { id: 'details', label: 'Details & Statutory Services', icon: Building2 },
   { id: 'vault', label: 'SharePoint Vault & SLAs', icon: FolderLock },
 ];
 

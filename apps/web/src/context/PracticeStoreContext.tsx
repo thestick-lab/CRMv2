@@ -143,6 +143,7 @@ export function getInitialPracticeState(): PracticeState {
 export type PracticeAction =
   | { type: 'CONVERT_LEAD'; payload: { leadId: string; clientData?: Partial<Client> } }
   | { type: 'ADD_CLIENT'; payload: Client }
+  | { type: 'UPDATE_CLIENT'; payload: { clientCode: string; patch: Partial<Client> } }
   | {
       type: 'UPDATE_TASK_STATUS';
       payload: {
@@ -238,6 +239,15 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
         leads: updatedLeads,
       };
     }
+    case 'UPDATE_CLIENT': {
+      return {
+        ...state,
+        clients: state.clients.map((c) =>
+          c.code === action.payload.clientCode ? { ...c, ...action.payload.patch } : c
+        ),
+      };
+    }
+
 
     case 'ADD_CLIENT': {
       if (state.clients.some((c) => c.code === action.payload.code)) {
@@ -397,6 +407,7 @@ export function savePracticeState(state: PracticeState): void {
 
 export interface PracticeStoreContextValue extends PracticeState {
   addClient: (client: Client) => void;
+  updateClient: (clientCode: string, patch: Partial<Client>) => void;
   convertLead: (leadId: string, clientData?: Partial<Client>) => Client | undefined;
   updateTaskStatus: (
     taskId: string,
@@ -523,11 +534,16 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     }
     dispatch({ type: 'RESET_DATA' });
   }, []);
+  const updateClient = React.useCallback((clientCode: string, patch: Partial<Client>) => {
+    dispatch({ type: 'UPDATE_CLIENT', payload: { clientCode, patch } });
+  }, []);
+
 
   const value = React.useMemo<PracticeStoreContextValue>(
     () => ({
       ...state,
       addClient,
+      updateClient,
       convertLead,
       updateTaskStatus,
       inviteTeamMember,
@@ -544,6 +560,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     [
       state,
       addClient,
+      updateClient,
       convertLead,
       updateTaskStatus,
       inviteTeamMember,

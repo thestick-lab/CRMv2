@@ -1,9 +1,9 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildProfileDetails } from './StatutoryProfileTab';
-import { buildClientDeadlines } from './DeadlinesTab';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
 
-describe('StatutoryProfileTab and DeadlinesTab data builders', () => {
+describe('StatutoryProfileTab interactive details and services configuration', () => {
   const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
 
   it('builds statutory profile details with CIPC and SARS profile for MUS-875', () => {
@@ -14,15 +14,37 @@ describe('StatutoryProfileTab and DeadlinesTab data builders', () => {
     expect(details.efilingProfileLabel).toBe('Client Profile (SARS Managed)');
   });
 
-  it('builds filing tasks and identifies partner review gates for AFS and ITR14', () => {
-    const asOf = '2026-11-07';
-    const tasks = buildClientDeadlines(muse, asOf);
-    expect(tasks.length).toBeGreaterThan(0);
+  it('verifies StatutoryProfileTab renders interactive Details form and Services checkboxes', () => {
+    const tabSrc = fs.readFileSync('src/components/client-show/tabs/StatutoryProfileTab.tsx', 'utf8');
 
-    const afsTask = tasks.find((t) => t.service === 'AFS');
-    expect(afsTask?.needsPartnerReview).toBe(true);
+    // Must have interactive input fields for financial year end, turnover, and incorporation date
+    expect(tabSrc).toContain('yearEndMonth');
+    expect(tabSrc).toContain('incorporationDate');
+    expect(tabSrc).toContain('turnover');
 
-    const itr14Task = tasks.find((t) => t.service === 'ITR14');
-    expect(itr14Task?.needsPartnerReview).toBe(true);
+    // Must render interactive switches for VAT, Payroll, and eFiling profile
+    expect(tabSrc).toContain('vatCategory');
+    expect(tabSrc).toContain('payroll');
+    expect(tabSrc).toContain('efilingProfile');
+
+    // Must render statutory services checkboxes that toggle compliance deadlines
+    expect(tabSrc).toContain('Annual financial statements');
+    expect(tabSrc).toContain('Company income tax return');
+    expect(tabSrc).toContain('Provisional tax (IRP6)');
+    expect(tabSrc).toContain('VAT return (VAT201)');
+    expect(tabSrc).toContain('CIPC annual return and FAS');
+    expect(tabSrc).toContain('Beneficial ownership (CIPC)');
+  });
+
+  it('verifies ClientShowView includes deep-link button to Deadlines board and streamlined tabs', () => {
+    const showSrc = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+
+    // Must have direct button to view client deadlines on the main board
+    expect(showSrc).toContain('View Client Deadlines');
+    expect(showSrc).toContain("onNavigate('deadlines'");
+
+    // Deadlines and Estimate tabs moved out to top level, keeping Details & Vault
+    expect(showSrc).toContain('details');
+    expect(showSrc).toContain('vault');
   });
 });

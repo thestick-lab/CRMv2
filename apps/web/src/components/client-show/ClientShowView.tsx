@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
+import type { ViewKey } from '@/types/navigation';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { CLIENT_SHOW_TABS, ClientSummaryBar } from './ClientSummaryBar';
@@ -13,19 +14,22 @@ import { cn } from '@/lib/utils';
 export interface ClientShowViewProps {
   clientCode: string;
   onBack: () => void;
-  initialTab?: 'profile' | 'deadlines' | 'estimate' | 'vault';
+  onNavigate?: (view: ViewKey, clientCode?: string) => void;
+  initialTab?: 'details' | 'vault' | 'profile' | 'deadlines' | 'estimate';
   childrenTabs?: {
+    details?: React.ReactNode;
+    vault?: React.ReactNode;
     profile?: React.ReactNode;
     deadlines?: React.ReactNode;
     estimate?: React.ReactNode;
-    vault?: React.ReactNode;
   };
 }
 
 export function ClientShowView({
   clientCode,
   onBack,
-  initialTab = 'profile',
+  initialTab = 'details',
+  onNavigate,
   childrenTabs,
 }: ClientShowViewProps) {
   const [activeTab, setActiveTab] = React.useState<string>(initialTab);
@@ -69,15 +73,25 @@ export function ClientShowView({
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Client Summary Header */}
-      <ClientSummaryBar
-        client={client}
-        onBack={onBack}
-        onDownloadPdf={handlePdf}
-        onDownloadExcel={handleExcel}
-      />
+      {/* Header Bar with Deadlines Deep Link */}
+      <div className="flex items-center justify-between gap-4">
+        <ClientSummaryBar
+          client={client}
+          onBack={onBack}
+          onDownloadPdf={handlePdf}
+          onDownloadExcel={handleExcel}
+        />
+      </div>
 
-      {/* 4-Tab Navigation */}
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => onNavigate ? onNavigate('deadlines', client.code) : undefined}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-medium transition-colors cursor-pointer"
+        >
+          <span>View Client Deadlines ➔</span>
+        </button>
+      </div>
       <TabsPrimitive.Root
         value={activeTab}
         onValueChange={setActiveTab}
@@ -105,16 +119,12 @@ export function ClientShowView({
           })}
         </TabsPrimitive.List>
 
+        <TabsPrimitive.Content value="details" className="outline-none">
+          {childrenTabs?.details ?? childrenTabs?.profile ?? <StatutoryProfileTab client={client} />}
+        </TabsPrimitive.Content>
+
         <TabsPrimitive.Content value="profile" className="outline-none">
           {childrenTabs?.profile ?? <StatutoryProfileTab client={client} />}
-        </TabsPrimitive.Content>
-
-        <TabsPrimitive.Content value="deadlines" className="outline-none">
-          {childrenTabs?.deadlines ?? <DeadlinesTab client={client} asOfDate={todayInSouthAfrica()} />}
-        </TabsPrimitive.Content>
-
-        <TabsPrimitive.Content value="estimate" className="outline-none">
-          {childrenTabs?.estimate ?? <EstimateTab client={client} />}
         </TabsPrimitive.Content>
 
         <TabsPrimitive.Content value="vault" className="outline-none">

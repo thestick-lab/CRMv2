@@ -43,6 +43,7 @@ function AppContent() {
           <ClientShowView
             clientCode={clientCode ?? 'MUS-875'}
             onBack={() => handleNavigate('clients')}
+            onNavigate={handleNavigate}
           />
         );
       default:
