@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Bot, Key, Eye, EyeOff, Check, Sparkles, Shield, Cpu } from 'lucide-react';
+import { Bot, Eye, EyeOff, Check, Sparkles, Shield, Cpu } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

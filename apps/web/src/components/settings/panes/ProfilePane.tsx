@@ -1,11 +1,11 @@
 import * as React from 'react';
-import { Download, RotateCcw, ShieldCheck, User, Mail, MapPin, AlertTriangle } from 'lucide-react';
+import { Download, RotateCcw, ShieldCheck, MapPin, AlertTriangle } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export function ProfilePane() {
-  const { currentUser, clients, staff, leads, rates, exportData, resetData } = usePracticeStore();
+  const { currentUser, clients, staff, leads, exportData, resetData } = usePracticeStore();
   const [resetConfirm, setResetConfirm] = React.useState(false);
   const [downloadSuccess, setDownloadSuccess] = React.useState(false);
 

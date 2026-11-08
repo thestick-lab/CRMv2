@@ -440,14 +440,14 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       if (!targetLead) return undefined;
       dispatch({ type: 'CONVERT_LEAD', payload: { leadId, clientData } });
       const code = generateCodeForName(targetLead.companyName, state.clients);
-      return {
+      const created: Client = {
         code,
         name: targetLead.companyName,
         entityType: 'Company',
         efilingProfile: 'client',
         staffId: targetLead.partnerId || 'erik',
         payroll: false,
-        status: 'Active' as const,
+        status: 'Active',
         yearEndAssumed: true,
         yearEndMonth: 2,
         taxElsewhere: false,
@@ -457,6 +457,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
         beneficialOwnershipFiled: true,
         ...clientData,
       };
+      return created;
     },
     [state.leads, state.clients]
   );

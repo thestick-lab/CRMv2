@@ -2,17 +2,12 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
   Plus,
-  ArrowRight,
   CheckCircle2,
   Building2,
   User,
   Mail,
-  Phone,
   Sparkles,
   X,
-  TrendingUp,
-  DollarSign,
-  Briefcase,
 } from 'lucide-react';
 import {
   PIPELINE_STAGES,
@@ -22,7 +17,7 @@ import {
   formatTurnover,
   type PipelineStage,
 } from './pipeline-data';
-import { usePracticeStore, type PipelineLead } from '@/context/PracticeStoreContext';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

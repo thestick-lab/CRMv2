@@ -71,4 +71,19 @@ describe('App shell and view integration', () => {
     expect(vaultSource).toContain('DocumensoDispatchDialog');
     expect(estimateSource).toContain('XeroSyncDialog');
   });
+
+  it('mounts PracticeStoreProvider and integrates PeopleView, PipelineView, and SettingsView', () => {
+    const appSource = fs.readFileSync('src/App.tsx', 'utf8');
+    expect(appSource).toContain('PracticeStoreProvider');
+    expect(appSource).toContain('PeopleView');
+    expect(appSource).toContain('PipelineView');
+    expect(appSource).toContain('SettingsView');
+  });
+
+  it('integrates AI Practice Assistant drawer in Topbar and Layout', () => {
+    const topbarSource = fs.readFileSync('src/components/layout/Topbar.tsx', 'utf8');
+    const layoutSource = fs.readFileSync('src/components/layout/Layout.tsx', 'utf8');
+    expect(topbarSource).toContain('onOpenAiAssistant');
+    expect(layoutSource).toContain('AiPracticeAssistantDrawer');
+  });
 });

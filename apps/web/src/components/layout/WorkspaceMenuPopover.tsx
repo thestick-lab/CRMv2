@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
-import { Check, ChevronsUpDown, Settings, Building2, Briefcase } from 'lucide-react';
+import { Check, ChevronsUpDown, Settings } from 'lucide-react';
 import { usePracticeStore, type Division } from '@/context/PracticeStoreContext';
 import type { ViewKey } from '@/types/navigation';
 import { cn } from '@/lib/utils';
@@ -17,7 +17,6 @@ export function WorkspaceMenuPopover({ onViewChange, className }: WorkspaceMenuP
   const isFd = division === 'fd-on-call';
   const activeLogo = isFd ? '/fd-on-call-logo.png' : '/accountant-on-call-logo.png';
   const activeTitle = isFd ? 'FD on Call' : 'Accountant on Call';
-  const activeTagline = isFd ? 'Virtual FD & Strategic Advisory' : 'Statutory Compliance & Tax';
 
   const handleSelectDivision = (newDiv: Division) => {
     setDivision(newDiv);

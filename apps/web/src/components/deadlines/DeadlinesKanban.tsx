@@ -1,12 +1,11 @@
 import * as React from 'react';
 import type { PracticeTaskItem } from './practice-tasks';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Calendar, UserCheck, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Calendar, UserCheck, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import {
   StatutoryActionModal,
-  WORKFLOW_STATUSES,
   type WorkflowStatus,
 } from './StatutoryActionModal';
 

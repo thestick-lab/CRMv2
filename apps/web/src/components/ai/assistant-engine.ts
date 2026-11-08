@@ -1,5 +1,4 @@
 import type { PracticeState } from '@/context/PracticeStoreContext';
-import { publicHolidays } from 'fdoncall-practice/domain/dates';
 
 export function answerPracticeAssistantQuery(query: string, state: PracticeState): string {
   const q = query.trim().toLowerCase();
@@ -37,7 +36,6 @@ export function answerPracticeAssistantQuery(query: string, state: PracticeState
 
   // 5. Public Holidays & Deadlines
   if (q.includes('holiday') || q.includes('easter') || q.includes('good friday') || q.includes('sars deadline')) {
-    const h2026 = publicHolidays(2026);
     return `South African statutory compliance deadlines automatically roll back to the preceding business day when falling on a weekend or public holiday (Public Holidays Act 36 of 1994 & SARS s25 TAA). For example, Good Friday in 2026 is on **2026-04-03** and Family Day is on **2026-04-06**.`;
   }
 

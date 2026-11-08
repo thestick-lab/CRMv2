@@ -2,10 +2,6 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import {
   getInitialPracticeState,
   practiceReducer,
-  loadPracticeState,
-  savePracticeState,
-  STORAGE_KEY,
-  type PracticeState,
 } from './PracticeStoreContext';
 
 describe('PracticeStore state initialization and persistence', () => {

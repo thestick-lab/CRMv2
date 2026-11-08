@@ -188,6 +188,14 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
   - Implemented Documenso REST API electronic signature dispatch modal with dual-signers (Managing Partner & Director) and SHA-256 audit log.
   - Implemented Xero API v2 repeating monthly draft invoice synchronization modal with chart of accounts mapping and 15% South African VAT.
 
+- [x] **Phase 7: Interactive CRM Features, Settings, RBAC & AI Copilot**
+  - Implemented centralized reactive `PracticeStoreContext` with `localStorage` persistence and seed hydration.
+  - Resolved collapsed sidebar header overlap at 56px with centered brand mark and added translucent glass workspace dropdown.
+  - Built People & Directors relational directory (`/people`) with 18 profiles (9 staff, 9 directors) and linked company navigation.
+  - Implemented 5-Stage Onboarding Pipeline (`/pipeline`) with native HTML5 drag-and-drop, pipeline metrics, and client conversion.
+  - Implemented interactive Deadlines Kanban with card drag-and-drop, dual workflow/urgency grouping, and double-click `StatutoryActionModal` with partner sign-off gates.
+  - Built Two-Pane Settings (`/settings`) covering Profile (export/reset), Team RBAC invites, SA Public Holidays 2026/2027 Gazette, and AI provider key configuration.
+  - Built topbar AI Practice Assistant drawer powered by Vercel AI SDK with zero-token local practice responder fallback.
 ---
 
 *Verified & approved for immediate development in `/home/hein/Projects/CRMv2`.*

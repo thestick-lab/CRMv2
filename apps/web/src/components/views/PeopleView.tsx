@@ -1,4 +1,3 @@
-import * as React from 'react';
 import type { ViewKey } from '@/types/navigation';
 import { PeopleDirectory } from '@/components/people/PeopleDirectory';
 import { Badge } from '@/components/ui/badge';

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { UserPlus, ShieldCheck, Mail, Briefcase, X, User } from 'lucide-react';
+import { UserPlus, X } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

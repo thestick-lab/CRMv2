@@ -7,8 +7,6 @@ import {
   Sparkles,
   X,
   Trash2,
-  ShieldCheck,
-  Building2,
   Key,
 } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
@@ -77,17 +75,15 @@ export function AiPracticeAssistantDrawer({
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
 
-    // Process answer via assistant engine
-    setTimeout(() => {
-      const response = answerPracticeAssistantQuery(query, practiceState);
-      const assistantMsg: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        sender: 'assistant',
-        content: response,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-    }, 200);
+    const response = answerPracticeAssistantQuery(query, practiceState);
+    const assistantMsg: ChatMessage = {
+      id: `msg-${Date.now() + 1}`,
+      sender: 'assistant',
+      content: response,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
   };
 
   const handleQuickPrompt = (prompt: string) => {

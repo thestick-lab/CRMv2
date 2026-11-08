@@ -3,10 +3,6 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
   AlertTriangle,
   Calendar,
-  CheckCircle2,
-  FileCheck2,
-  FileText,
-  Lock,
   ExternalLink,
   ShieldCheck,
   X,

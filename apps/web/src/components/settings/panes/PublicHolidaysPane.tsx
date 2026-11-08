@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Calendar, Percent, DollarSign, Check, Save } from 'lucide-react';
+import { Calendar, DollarSign, Check, Save } from 'lucide-react';
 import { publicHolidays } from 'fdoncall-practice/domain/dates';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';

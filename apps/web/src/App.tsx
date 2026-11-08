@@ -1,17 +1,21 @@
-import { useState } from 'react';
+import * as React from 'react';
 import type { ViewKey } from '@/types/navigation';
+import { PracticeStoreProvider, usePracticeStore } from '@/context/PracticeStoreContext';
 import { Layout } from '@/components/layout/Layout';
 import { DashboardView } from '@/components/views/DashboardView';
 import { ClientsView } from '@/components/views/ClientsView';
 import { DeadlinesView } from '@/components/views/DeadlinesView';
-import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { PeopleView } from '@/components/views/PeopleView';
+import { PipelineView } from '@/components/views/PipelineView';
+import { SettingsView } from '@/components/settings/SettingsView';
 import { ClientShowView } from '@/components/client-show/ClientShowView';
 
-export default function App() {
-  const [view, setView] = useState<ViewKey>('dashboard');
-  const [clientCode, setClientCode] = useState<string | undefined>(undefined);
+function AppContent() {
+  const [view, setView] = React.useState<ViewKey>('dashboard');
+  const [clientCode, setClientCode] = React.useState<string | undefined>(undefined);
+  const { clients } = usePracticeStore();
 
-  const activeClient = clientCode ? CLIENTS.find((c) => c.code === clientCode) : undefined;
+  const activeClient = clientCode ? clients.find((c) => c.code === clientCode) : undefined;
 
   const handleNavigate = (newView: ViewKey, newCode?: string) => {
     setView(newView);
@@ -26,8 +30,14 @@ export default function App() {
         return <DashboardView onNavigate={handleNavigate} />;
       case 'clients':
         return <ClientsView onNavigate={handleNavigate} />;
+      case 'people':
+        return <PeopleView onNavigate={handleNavigate} />;
       case 'deadlines':
         return <DeadlinesView onNavigate={handleNavigate} />;
+      case 'pipeline':
+        return <PipelineView onNavigate={handleNavigate} />;
+      case 'settings':
+        return <SettingsView />;
       case 'client':
         return (
           <ClientShowView
@@ -60,5 +70,13 @@ export default function App() {
     >
       {renderContent()}
     </Layout>
+  );
+}
+
+export default function App() {
+  return (
+    <PracticeStoreProvider>
+      <AppContent />
+    </PracticeStoreProvider>
   );
 }

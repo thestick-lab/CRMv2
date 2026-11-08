@@ -13,5 +13,8 @@
     "test": "npm test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@google/stitch": "^0.12.1"
   }
 }

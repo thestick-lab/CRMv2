@@ -3,9 +3,8 @@ import {
   PIPELINE_STAGES,
   computePipelineTotals,
   groupLeadsByStage,
-  type PipelineStage,
 } from './pipeline-data';
-import { INITIAL_LEADS, type PipelineLead } from '@/context/PracticeStoreContext';
+import { INITIAL_LEADS } from '@/context/PracticeStoreContext';
 
 describe('Onboarding Pipeline data helpers and stage calculations', () => {
   it('defines the 5 statutory onboarding stages in exact sequence', () => {

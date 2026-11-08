@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Search, Mail, Phone, Building2, UserCheck, Briefcase } from 'lucide-react';
-import { buildPeopleProfiles, filterPeople, type Person } from './people-data';
+import { Search, Mail, Phone, Building2, Briefcase } from 'lucide-react';
+import { buildPeopleProfiles, filterPeople } from './people-data';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';

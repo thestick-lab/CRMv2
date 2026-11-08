@@ -1,4 +1,3 @@
-import * as React from 'react';
 import type { ViewKey } from '@/types/navigation';
 import { OnboardingPipeline } from '@/components/pipeline/OnboardingPipeline';
 import { Badge } from '@/components/ui/badge';

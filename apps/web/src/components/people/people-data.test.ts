@@ -3,8 +3,6 @@ import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
 import {
   buildPeopleProfiles,
   filterPeople,
-  type Person,
-  STATIC_DIRECTORS,
 } from './people-data';
 
 describe('People & Directors relational directory data engine', () => {
