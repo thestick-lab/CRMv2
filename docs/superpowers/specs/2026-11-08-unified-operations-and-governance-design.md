@@ -120,33 +120,59 @@ FD on Call is a South African Chartered Accountancy practice managing SMEs, trus
 - **Interactive Live KPI Cards:**
   - `Overdue Filings`, `Due in 7 Days`, `Due in 30 Days`, `Missing a Date`.
   - Clicking any KPI tile instantly filters the board/table to that exact slice.
-- **Workflow Lanes:**
-  - `Not Started` ➔ `In Progress` ➔ `Partner Review Gate` ➔ `Submitted`.
-  - Linear-style card interactions:
-    - Drag card across columns.
-    - Click status badge or assignee avatar to advance status or reassign directly without opening modal.
-    - Double-click card to open `StatutoryActionModal`.
-- **Statutory Action Modal:**
-  - Compact Linear-style dialog showing:
-    - Service Badge (`IRP6`, `ITR14`, `AFS`, `VAT201`), Client Name & Code, Due Date with holiday rollback icon (`↩`).
-    - Status selection buttons.
-    - Partner Review Gate sign-off section:
-      - When logged in as Erik/Wouter (Partner): Checkbox `[X] Sign off as Erik (Partner)` is enabled.
-      - When logged in as Accountant: Displays `PARTNER_REVIEW_REQUIRED` with disabled checkbox and warning banner.
-    - SARS eFiling Reference Number input and ITA34 Notice checkbox.
-    - Button: `Save & Update Status` and `Open Client Record`.
-
----
-
-### 4.5. Partner Review Queue (`/inbox`)
-- **Purpose:** Centralized sign-off inbox for Managing Partners (Erik & Wouter).
-- **View Content:**
-  - Table and card view of all practice tasks currently sitting in `Partner Review Gate`.
-  - Shows: Client Name, Return Type, Period, Assigned Accountant, Draft Filing Date, and Statutory Due Date.
-  - Actions:
-    - `[Sign Off & Approve as Partner]`: Stamps partner signature, logs to SAICA Governance Log, advances task to `Submitted` readiness.
-    - `[Request Changes]`: Reverts task to `In Progress` with an accountant note.
-
++- **Workflow Lanes:**
++  - `Not Started` ➔ `In Progress` ➔ `Partner Review Gate` ➔ `Approved (Ready to Lodge)` ➔ `Submitted`.
++  - Linear-style card interactions:
++    - Drag card across columns.
++    - Click status badge or assignee avatar to advance status or reassign directly without opening modal.
++    - Double-click card to open `StatutoryActionModal`.
++- **Statutory Action Modal:**
++  - Compact Linear-style dialog showing:
++    - Service Badge (`IRP6`, `ITR14`, `AFS`, `VAT201`), Client Name & Code, Due Date with holiday rollback icon (`↩`).
++    - Status selection buttons.
++    - Partner Review Gate sign-off section:
++      - When logged in as Erik/Wouter (Partner): Button/Checkbox `[Sign Off as Partner (CA(SA))]` advances reviewable task to `Approved (Ready to Lodge)`.
++      - When logged in as Accountant: Displays `PARTNER_REVIEW_REQUIRED` with disabled checkbox and warning banner.
++    - Final Lodgment step (for `Approved` or non-reviewable tasks):
++      - SARS eFiling Reference Number input and ITA34 Notice checkbox.
++      - Advancing to `Submitted` verifies SARS confirmation number and records the audit entry into the SAICA Governance Log.
++    - Buttons: `Save & Update Status` and `Open Client Record`.
++
++---
++
++### 4.5. Partner Review Queue (`/inbox`)
++- **Purpose:** Centralized sign-off inbox for Managing Partners (Erik & Wouter).
++- **Two-Step Compliance Lifecycle (Option A):**
++  1. *Step 1 (Partner Approval):* Managing Partner opens `/inbox`, inspects client draft calculations/workpapers, and clicks `[Sign Off & Approve as CA(SA)]`. The task transitions to `Approved (Ready to Lodge)`.
++  2. *Step 2 (Accountant Lodgment):* The filing accountant submits to SARS eFiling, inputs the generated SARS Confirmation Number, and moves the task to `Submitted`.
++  3. *Audit Stamp:* The submission action immediately writes the permanent audit entry to the **SAICA Governance Log**.
++- **View Content:**
++  - Priority list of all statutory returns currently sitting in `Partner Review Gate`.
++  - Columns: Client Code & Name, Return Type, Period, Assigned Accountant, Draft Filing Date, and Statutory Due Date.
++  - Actions:
++    - `[Sign Off & Approve as CA(SA)]`: Stamps partner approval signature and advances task to `Approved (Ready to Lodge)`.
++    - `[Request Revision]`: Reverts task to `In Progress` with an accountant note.
++
++```mermaid
++sequenceDiagram
++    autonumber
++    actor ACC as Accountant (André)
++    actor PTR as Partner (Erik CA(SA))
++    participant CRM as FD on Call CRM
++    participant SARS as SARS eFiling / CIPC
++    participant LOG as SAICA Governance Log
++
++    ACC->>CRM: Prepares AFS / ITR14 / IRP6 workbook
++    ACC->>CRM: Advances task to "Partner Review Gate"
++    CRM->>PTR: Task appears in Partner [Inbox (Review Queue)]
++    PTR->>CRM: Reviews working papers & clicks [Sign Off as CA(SA)]
++    CRM->>CRM: Task moves to "Approved (Ready to Lodge)"
++    ACC->>SARS: Submits approved return via SARS eFiling
++    SARS-->>ACC: Issues SARS Confirmation Number (e.g. SARS-2026-991204)
++    ACC->>CRM: Opens Action Modal, enters SARS Confirmation #
++    CRM->>CRM: Advances task to "Submitted"
++    CRM->>LOG: Stamps immutable entry (Timestamp, Partner, Client, Return, SARS Ref, Hash)
++```
 ---
 
 ### 4.6. Unified Fee Estimator & Quotes (`/estimator`)
