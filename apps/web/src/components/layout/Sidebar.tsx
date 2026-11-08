@@ -1,8 +1,10 @@
 import type { ViewKey } from '@/types/navigation';
 import { NAV_ITEMS, type NavItemDef } from './navigation-helpers';
 import { UserPopover } from '@/components/ui/user-popover';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WorkspaceMenuPopover } from './WorkspaceMenuPopover';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 
 export interface SidebarProps {
   currentView: ViewKey;
@@ -20,6 +22,10 @@ export function Sidebar({
   const topItems = NAV_ITEMS.filter((i) => i.section === 'top');
   const practiceItems = NAV_ITEMS.filter((i) => i.section === 'PRACTICE DATA');
   const statutoryItems = NAV_ITEMS.filter((i) => i.section === 'STATUTORY OPS');
+
+  const { division } = usePracticeStore();
+  const isFd = division === 'fd-on-call';
+  const activeLogo = isFd ? '/fd-on-call-logo.png' : '/accountant-on-call-logo.png';
 
   const renderItem = (item: NavItemDef) => {
     const isActive = currentView === item.id || (item.id === 'clients' && currentView === 'client');
@@ -76,28 +82,33 @@ export function Sidebar({
     >
       {/* Brand Header */}
       <div>
-        <div className="h-12 border-b border-border/70 flex items-center justify-between px-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-6 h-6 rounded bg-[#c4161c] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
-              FD
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <span className="font-semibold text-xs text-foreground tracking-tight block truncate">
-                  FD on Call
-                </span>
-              </div>
-            )}
+        {collapsed ? (
+          <div className="h-12 border-b border-border/70 flex items-center justify-center">
+            <button
+              onClick={onToggleCollapse}
+              aria-label="Expand sidebar"
+              title="Click to expand sidebar"
+              className="w-8 h-8 rounded-md p-1 hover:bg-muted/70 transition-colors flex items-center justify-center border border-border/50 group"
+            >
+              <img
+                src={activeLogo}
+                alt="Expand sidebar"
+                className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+              />
+            </button>
           </div>
-
-          <button
-            onClick={onToggleCollapse}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
-          >
-            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-          </button>
-        </div>
+        ) : (
+          <div className="h-12 border-b border-border/70 flex items-center justify-between px-3">
+            <WorkspaceMenuPopover onViewChange={onViewChange} />
+            <button
+              onClick={onToggleCollapse}
+              aria-label="Collapse sidebar"
+              className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {/* Navigation List */}
         <div className="p-2 space-y-4 overflow-y-auto max-h-[calc(100vh-112px)]">
