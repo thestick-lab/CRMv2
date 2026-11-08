@@ -57,19 +57,6 @@ export function WorkspaceMenuPopover({ onViewChange, className }: WorkspaceMenuP
           sideOffset={8}
           className="z-50 w-64 rounded-lg border border-border bg-card/95 backdrop-blur-md p-2.5 shadow-2xl text-xs space-y-3 animate-in fade-in-0 zoom-in-95"
         >
-          {/* Practice Profile Header */}
-          <div className="px-1.5 pt-0.5">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="font-mono uppercase tracking-wider text-[10px]">Durbanville Practice</span>
-              <span className="font-mono text-[10px] text-primary font-medium">SAICA / CIPC</span>
-            </div>
-            <div className="text-xs font-semibold text-foreground mt-0.5">{activeTitle}</div>
-            <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-              {clients.length} Active Clients · {staff.length} Team Members
-            </div>
-          </div>
-
-          <div className="h-px bg-border/70" />
 
           {/* Division Switcher */}
           <div className="space-y-1">

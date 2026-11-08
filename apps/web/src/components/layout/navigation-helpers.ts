@@ -3,10 +3,6 @@ import {
   Building2,
   CalendarDays,
   Calculator,
-  FolderGit2,
-  Home,
-  Inbox,
-  Settings,
   Users2,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
@@ -14,20 +10,16 @@ import type { ComponentType } from 'react';
 export interface NavItemDef {
   id: ViewKey;
   label: string;
-  section: 'top' | 'PRACTICE DATA' | 'STATUTORY OPS';
+  section: 'PRACTICE REGISTERS' | 'OPERATIONS & GROWTH';
   icon: ComponentType<{ className?: string }>;
   badge?: number | string;
 }
 
 export const NAV_ITEMS: NavItemDef[] = [
-  { id: 'dashboard', label: 'Home', section: 'top', icon: Home },
-  { id: 'inbox', label: 'Inbox', section: 'top', icon: Inbox },
-  { id: 'settings', label: 'Settings', section: 'top', icon: Settings },
-  { id: 'clients', label: 'Clients', section: 'PRACTICE DATA', icon: Building2, badge: 13 },
-  { id: 'people', label: 'People & Directors', section: 'PRACTICE DATA', icon: Users2, badge: 18 },
-  { id: 'deadlines', label: 'Deadlines', section: 'STATUTORY OPS', icon: CalendarDays, badge: 4 },
-  { id: 'quote', label: 'New Quote Calculator', section: 'STATUTORY OPS', icon: Calculator },
-  { id: 'pipeline', label: 'Onboarding Pipeline', section: 'STATUTORY OPS', icon: FolderGit2, badge: 5 },
+  { id: 'clients', label: 'Clients', section: 'PRACTICE REGISTERS', icon: Building2 },
+  { id: 'people', label: 'People', section: 'PRACTICE REGISTERS', icon: Users2 },
+  { id: 'deadlines', label: 'Deadlines', section: 'OPERATIONS & GROWTH', icon: CalendarDays, badge: 4 },
+  { id: 'estimator', label: 'Fee Estimator & Quotes', section: 'OPERATIONS & GROWTH', icon: Calculator },
 ];
 
 export interface BreadcrumbCrumb {
@@ -45,10 +37,10 @@ export function buildBreadcrumbs(view: ViewKey, clientCode?: string, clientName?
     case 'settings':
       return [{ label: 'Home', view: 'dashboard' }, { label: 'Settings' }];
     case 'clients':
-      return [{ label: 'Practice Data' }, { label: 'Clients', view: 'clients' }];
+      return [{ label: 'Practice Registers' }, { label: 'Clients', view: 'clients' }];
     case 'client':
       return [
-        { label: 'Practice Data' },
+        { label: 'Practice Registers' },
         { label: 'Clients', view: 'clients' },
         {
           label: clientName ? `${clientName} [${clientCode}]` : clientCode || 'Client Record',
@@ -56,13 +48,13 @@ export function buildBreadcrumbs(view: ViewKey, clientCode?: string, clientName?
         },
       ];
     case 'people':
-      return [{ label: 'Practice Data' }, { label: 'People & Directors' }];
+      return [{ label: 'Practice Registers' }, { label: 'People' }];
     case 'deadlines':
-      return [{ label: 'Statutory Ops' }, { label: 'Deadlines & Tasks', view: 'deadlines' }];
+      return [{ label: 'Operations & Growth' }, { label: 'Deadlines', view: 'deadlines' }];
+    case 'estimator':
     case 'quote':
-      return [{ label: 'Statutory Ops' }, { label: 'New Quote Calculator' }];
     case 'pipeline':
-      return [{ label: 'Statutory Ops' }, { label: 'Onboarding Pipeline' }];
+      return [{ label: 'Operations & Growth' }, { label: 'Fee Estimator & Quotes' }];
     default:
       return [{ label: 'Home' }];
   }

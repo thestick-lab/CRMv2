@@ -1,7 +1,7 @@
 import type { ViewKey } from '@/types/navigation';
 import { NAV_ITEMS, type NavItemDef } from './navigation-helpers';
 import { UserPopover } from '@/components/ui/user-popover';
-import { PanelLeftClose } from 'lucide-react';
+import { Home, Inbox, Settings, PanelLeftClose } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkspaceMenuPopover } from './WorkspaceMenuPopover';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
@@ -19,16 +19,22 @@ export function Sidebar({
   collapsed,
   onToggleCollapse,
 }: SidebarProps) {
-  const topItems = NAV_ITEMS.filter((i) => i.section === 'top');
-  const practiceItems = NAV_ITEMS.filter((i) => i.section === 'PRACTICE DATA');
-  const statutoryItems = NAV_ITEMS.filter((i) => i.section === 'STATUTORY OPS');
-
-  const { division } = usePracticeStore();
+  const { division, taskStatusOverrides } = usePracticeStore();
   const isFd = division === 'fd-on-call';
   const activeLogo = isFd ? '/fd-on-call-logo.png' : '/accountant-on-call-logo.png';
 
+  const pendingReviewCount = Object.values(taskStatusOverrides).filter(
+    (o) => o.status === 'Partner Review Gate'
+  ).length;
+
+  const registersItems = NAV_ITEMS.filter((i) => i.section === 'PRACTICE REGISTERS');
+  const operationsItems = NAV_ITEMS.filter((i) => i.section === 'OPERATIONS & GROWTH');
+
   const renderItem = (item: NavItemDef) => {
-    const isActive = currentView === item.id || (item.id === 'clients' && currentView === 'client');
+    const isActive =
+      currentView === item.id ||
+      (item.id === 'clients' && currentView === 'client') ||
+      (item.id === 'estimator' && (currentView === 'quote' || currentView === 'pipeline'));
     const Icon = item.icon;
 
     return (
@@ -66,9 +72,6 @@ export function Sidebar({
             {item.badge}
           </span>
         )}
-        {collapsed && item.badge !== undefined && (
-          <span className="sr-only">({item.badge})</span>
-        )}
       </button>
     );
   };
@@ -80,8 +83,8 @@ export function Sidebar({
         collapsed ? 'w-14' : 'w-60'
       )}
     >
-      {/* Brand Header */}
       <div>
+        {/* Brand Header */}
         {collapsed ? (
           <div className="h-12 border-b border-border/70 flex items-center justify-center">
             <button
@@ -98,41 +101,86 @@ export function Sidebar({
             </button>
           </div>
         ) : (
-          <div className="h-12 border-b border-border/70 flex items-center justify-between px-3">
-            <WorkspaceMenuPopover onViewChange={onViewChange} />
+          <div className="h-12 border-b border-border/70 flex items-center gap-2 px-2.5">
             <button
               onClick={onToggleCollapse}
               aria-label="Collapse sidebar"
-              className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+              title="Collapse sidebar"
+              className="p-1 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
             >
               <PanelLeftClose className="h-4 w-4" />
             </button>
+            <WorkspaceMenuPopover onViewChange={onViewChange} />
           </div>
         )}
 
-        {/* Navigation List */}
-        <div className="p-2 space-y-4 overflow-y-auto max-h-[calc(100vh-112px)]">
-          {/* Top Section */}
-          <div className="space-y-0.5">{topItems.map(renderItem)}</div>
+        {/* Horizontal Utility Icon Bar: Home, Inbox, Settings */}
+        <div
+          className={cn(
+            'p-1.5 border-b border-border/60 flex items-center gap-1',
+            collapsed ? 'flex-col justify-center' : 'justify-around'
+          )}
+        >
+          <button
+            onClick={() => onViewChange('dashboard')}
+            title="Home"
+            aria-label="Home"
+            className={cn(
+              'p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative flex items-center justify-center',
+              currentView === 'dashboard' && 'bg-primary/10 text-primary font-semibold'
+            )}
+          >
+            <Home className="h-4 w-4" />
+          </button>
 
-          {/* Practice Data Section */}
+          <button
+            onClick={() => onViewChange('inbox')}
+            title="Inbox"
+            aria-label="Inbox"
+            className={cn(
+              'p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative flex items-center justify-center',
+              currentView === 'inbox' && 'bg-primary/10 text-primary font-semibold'
+            )}
+          >
+            <Inbox className="h-4 w-4" />
+            {pendingReviewCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#c4161c]" />
+            )}
+          </button>
+
+          <button
+            onClick={() => onViewChange('settings')}
+            title="Settings"
+            aria-label="Settings"
+            className={cn(
+              'p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative flex items-center justify-center',
+              currentView === 'settings' && 'bg-primary/10 text-primary font-semibold'
+            )}
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Primary Navigation List */}
+        <div className="p-2 space-y-4 overflow-y-auto max-h-[calc(100vh-160px)]">
+          {/* Practice Registers */}
           <div className="space-y-1">
             {!collapsed && (
               <div className="px-2.5 text-[10px] font-mono font-medium text-muted-foreground uppercase tracking-wider">
-                Practice Data
+                Practice Registers
               </div>
             )}
-            <div className="space-y-0.5">{practiceItems.map(renderItem)}</div>
+            <div className="space-y-0.5">{registersItems.map(renderItem)}</div>
           </div>
 
-          {/* Statutory Ops Section */}
+          {/* Operations & Growth */}
           <div className="space-y-1">
             {!collapsed && (
               <div className="px-2.5 text-[10px] font-mono font-medium text-muted-foreground uppercase tracking-wider">
-                Statutory Ops
+                Operations &amp; Growth
               </div>
             )}
-            <div className="space-y-0.5">{statutoryItems.map(renderItem)}</div>
+            <div className="space-y-0.5">{operationsItems.map(renderItem)}</div>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ export type ViewKey =
   | 'client'
   | 'people'
   | 'deadlines'
+  | 'estimator'
   | 'quote'
   | 'pipeline';
 
