@@ -55,6 +55,7 @@ export interface StatutoryActionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelectClient?: (clientCode: string) => void;
+  initialStatus?: WorkflowStatus;
 }
 
 export function StatutoryActionModal({
@@ -62,6 +63,7 @@ export function StatutoryActionModal({
   open,
   onOpenChange,
   onSelectClient,
+  initialStatus,
 }: StatutoryActionModalProps) {
   const { currentUser, taskStatusOverrides, updateTaskStatus } = usePracticeStore();
 
@@ -77,7 +79,9 @@ export function StatutoryActionModal({
   // Sync state when task changes
   React.useEffect(() => {
     if (task) {
-      const currentStatus = (override?.status as WorkflowStatus) || (task.status as WorkflowStatus) || 'Not Started';
+      const rawStatus = (override?.status as WorkflowStatus) || initialStatus || task.status;
+      const currentStatus: WorkflowStatus =
+        (rawStatus as string) === 'Not started' || !rawStatus ? 'Not Started' : (rawStatus as WorkflowStatus);
       setStatus(currentStatus);
       setPartnerSignOff(override?.partnerSignOff || false);
       setSarsReference(override?.sarsReference || '');
@@ -85,7 +89,7 @@ export function StatutoryActionModal({
       setIta34Notice(false);
       setValidationError(null);
     }
-  }, [task, override]);
+  }, [task, override, initialStatus]);
 
   if (!task) return null;
 

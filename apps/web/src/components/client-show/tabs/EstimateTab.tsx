@@ -24,8 +24,14 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 
-export function buildEstimateForClient(client: Client, startMonth = '2026-12'): Estimate {
+export function buildEstimateForClient(
+  client: Client,
+  startMonth = '2026-12',
+  rate = STANDARD_RATE,
+  marchIncreasePct = 6
+): Estimate {
   const turnover = client.turnover ?? 4_000_000;
   const employeeCount = client.employeeCount ?? (client.payroll ? 8 : 0);
 
@@ -57,8 +63,8 @@ export function buildEstimateForClient(client: Client, startMonth = '2026-12'): 
     employeeCount,
     provisionalTaxpayer: client.provisionalTaxpayer ?? true,
     directors: 2,
-    rate: STANDARD_RATE,
-    marchIncreasePct: 6,
+    rate,
+    marchIncreasePct,
     irp6Payable: true,
     selected,
     hours: {
@@ -86,9 +92,10 @@ export function EstimateTab({
 }) {
   const [startMonth] = React.useState('2026-12');
   const [xeroOpen, setXeroOpen] = React.useState(false);
+  const { rates } = usePracticeStore();
   const estimate = React.useMemo(
-    () => buildEstimateForClient(client, startMonth),
-    [client, startMonth]
+    () => buildEstimateForClient(client, startMonth, rates.standardHourlyRate, rates.marchEscalationPct),
+    [client, startMonth, rates]
   );
 
   const handlePdf = onDownloadPdf ?? (() => downloadPdfQuote(client, estimate, todayInSouthAfrica()));
@@ -134,13 +141,13 @@ export function EstimateTab({
               <TrendingUp className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="text-base font-semibold text-foreground mt-1 flex items-center gap-1.5">
-              <span>+6% from {estimate.increaseFrom}</span>
+              <span>+{rates.marchEscalationPct}% from {estimate.increaseFrom}</span>
               <Badge variant="success" className="text-[10px] py-0 px-1 font-mono">
                 Active
               </Badge>
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
-              Standard practice rate: R {STANDARD_RATE}/hr
+              Standard practice rate: R {rates.standardHourlyRate}/hr
             </div>
           </div>
 

@@ -72,7 +72,6 @@ export function AiPracticeAssistantDrawer({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
     setInput('');
 
     const response = answerPracticeAssistantQuery(query, practiceState);

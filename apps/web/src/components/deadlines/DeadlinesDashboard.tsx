@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import {
   aggregatePracticeTasks,
@@ -32,11 +32,13 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
   const [selectedService, setSelectedService] = React.useState<string>('all');
   const [groupBy, setGroupBy] = React.useState<'workflow' | 'urgency'>('workflow');
   const today = todayInSouthAfrica();
+  const { clients, staff } = usePracticeStore();
+
 
   // Aggregate all tasks practice-wide
   const summary = React.useMemo(() => {
-    return aggregatePracticeTasks(CLIENTS, today);
-  }, [today]);
+    return aggregatePracticeTasks(clients, today, staff);
+  }, [clients, staff, today]);
 
   // Filter tasks based on controls
   const filteredTasks = React.useMemo(() => {
@@ -243,7 +245,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
             className="h-7 px-2 text-xs rounded border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-[#c4161c]"
           >
             <option value="all">All Practice Staff</option>
-            {STAFF.map((s) => (
+            {staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name} ({s.role})
               </option>

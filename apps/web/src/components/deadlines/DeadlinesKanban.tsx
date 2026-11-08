@@ -99,6 +99,7 @@ export function DeadlinesKanban({
   const [modalOpen, setModalOpen] = React.useState(false);
   const [draggedTaskId, setDraggedTaskId] = React.useState<string | null>(null);
   const [activeDropColumn, setActiveDropColumn] = React.useState<string | null>(null);
+  const [pendingTargetStatus, setPendingTargetStatus] = React.useState<WorkflowStatus | undefined>(undefined);
 
   const urgencyBuckets = React.useMemo(
     () => bucketKanbanTasks(tasks, asOfDate),
@@ -140,8 +141,8 @@ export function DeadlinesKanban({
       const targetStatus = targetStatusOrCol as WorkflowStatus;
       if (targetStatus === 'Partner Review Gate' || targetStatus === 'Submitted') {
         setSelectedTask(task);
+        setPendingTargetStatus(targetStatus);
         setModalOpen(true);
-      } else {
         updateTaskStatus(taskId, targetStatus);
       }
     }
@@ -150,6 +151,7 @@ export function DeadlinesKanban({
   const handleDoubleClickCard = (e: React.MouseEvent, task: PracticeTaskItem) => {
     e.stopPropagation();
     setSelectedTask(task);
+    setPendingTargetStatus(undefined);
     setModalOpen(true);
   };
 
@@ -274,7 +276,12 @@ export function DeadlinesKanban({
                         draggable
                         onDragStart={(e) => handleDragStart(e, task.id)}
                         onDoubleClick={(e) => handleDoubleClickCard(e, task)}
-                        onClick={() => onSelectClient(task.clientCode)}
+                        onKeyDown={(e) => {
+                          if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                            e.preventDefault();
+                            handleDoubleClickCard(e as unknown as React.MouseEvent, task);
+                          }
+                        }}
                         tabIndex={0}
                         role="button"
                         aria-label={`Open statutory action modal for ${task.clientName} (${task.clientCode})`}
@@ -297,9 +304,17 @@ export function DeadlinesKanban({
                               </span>
                             )}
                           </div>
-                          <span className="font-mono text-[11px] text-muted-foreground">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectClient(task.clientCode);
+                            }}
+                            className="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                            title="Open client record"
+                          >
                             {task.clientCode}
-                          </span>
+                          </button>
                         </div>
 
                         {/* Client Name */}
@@ -377,6 +392,7 @@ export function DeadlinesKanban({
         open={modalOpen}
         onOpenChange={setModalOpen}
         onSelectClient={onSelectClient}
+        initialStatus={pendingTargetStatus}
       />
     </>
   );

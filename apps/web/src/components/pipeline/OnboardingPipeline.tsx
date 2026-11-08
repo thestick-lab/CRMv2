@@ -46,7 +46,8 @@ export function OnboardingPipeline({ onConvertClient, className }: OnboardingPip
   const metrics = React.useMemo(() => computePipelineTotals(leads), [leads]);
   const grouped = React.useMemo(() => groupLeadsByStage(leads), [leads]);
 
-  const handleDragStart = (leadId: string) => {
+  const handleDragStart = (e: React.DragEvent, leadId: string) => {
+    e.dataTransfer.setData('text/plain', leadId);
     setDraggedLeadId(leadId);
   };
 
@@ -216,7 +217,7 @@ export function OnboardingPipeline({ onConvertClient, className }: OnboardingPip
                       <div
                         key={lead.id}
                         draggable
-                        onDragStart={() => handleDragStart(lead.id)}
+                        onDragStart={(e) => handleDragStart(e, lead.id)}
                         className="p-3 rounded-lg border border-border/80 bg-card hover:border-primary/50 transition-all shadow-xs cursor-grab active:cursor-grabbing space-y-2.5 group"
                       >
                         <div className="flex items-start justify-between gap-2">

@@ -139,7 +139,7 @@ export function Sidebar({
 
       {/* Footer User Popover */}
       <div className="p-2 border-t border-border/70">
-        <UserPopover collapsed={collapsed} />
+        <UserPopover collapsed={collapsed} onNavigateSettings={() => onViewChange('settings')} />
       </div>
     </aside>
   );

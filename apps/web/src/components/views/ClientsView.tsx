@@ -1,6 +1,6 @@
 import * as React from 'react';
 import type { ViewKey } from '@/types/navigation';
-import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { enrichClientRows } from '@/components/clients/client-row-data';
 import { ClientsRegisterTable } from '@/components/clients/ClientsRegisterTable';
@@ -12,11 +12,12 @@ export interface ClientsViewProps {
 }
 
 export function ClientsView({ onNavigate }: ClientsViewProps) {
+  const { clients } = usePracticeStore();
   const today = todayInSouthAfrica();
 
   const rows = React.useMemo(() => {
-    return enrichClientRows(CLIENTS, today);
-  }, [today]);
+    return enrichClientRows(clients, today);
+  }, [clients, today]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-4">

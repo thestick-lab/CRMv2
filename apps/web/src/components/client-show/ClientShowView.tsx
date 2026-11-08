@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { CLIENT_SHOW_TABS, ClientSummaryBar } from './ClientSummaryBar';
 import { StatutoryProfileTab } from './tabs/StatutoryProfileTab';
@@ -30,8 +30,12 @@ export function ClientShowView({
 }: ClientShowViewProps) {
   const [activeTab, setActiveTab] = React.useState<string>(initialTab);
 
-  const client = CLIENTS.find((c) => c.code === clientCode);
-  const estimate = React.useMemo(() => (client ? buildEstimateForClient(client) : undefined), [client]);
+  const { clients, rates } = usePracticeStore();
+  const client = clients.find((c) => c.code === clientCode);
+  const estimate = React.useMemo(
+    () => (client ? buildEstimateForClient(client, undefined, rates.standardHourlyRate, rates.marchEscalationPct) : undefined),
+    [client, rates]
+  );
 
   const handlePdf = () => {
     if (client && estimate) {

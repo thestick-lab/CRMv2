@@ -1,4 +1,4 @@
-import type { Client, ServiceCode, TaskStatus } from 'fdoncall-practice/domain/types';
+import type { Client, ServiceCode, TaskStatus, StaffMember } from 'fdoncall-practice/domain/types';
 import { STAFF } from 'fdoncall-practice/data/seed';
 import { diffDays } from 'fdoncall-practice/domain/dates';
 import { defaultServices, generateTasks, needsReview, urgency, type Urgency } from 'fdoncall-practice/domain/rules';
@@ -63,15 +63,19 @@ export function computePracticeKpi(tasks: PracticeTaskItem[], asOfDate: string):
   };
 }
 
-export function aggregatePracticeTasks(clients: Client[], asOfDate: string): PracticeTaskSummary {
+export function aggregatePracticeTasks(
+  clients: Client[],
+  asOfDate: string,
+  staffList: StaffMember[] = STAFF
+): PracticeTaskSummary {
   const tasks: PracticeTaskItem[] = [];
 
   for (const client of clients) {
     const services = defaultServices(client);
     const clientTasks = generateTasks(client, services, asOfDate);
 
-    const staff = STAFF.find((s) => s.id === client.staffId);
-    const sub = client.subcontractorId ? STAFF.find((s) => s.id === client.subcontractorId) : undefined;
+    const staff = staffList.find((s) => s.id === client.staffId);
+    const sub = client.subcontractorId ? staffList.find((s) => s.id === client.subcontractorId) : undefined;
     const staffName = staff ? (sub ? `${staff.name} with ${sub.name}` : staff.name) : 'Practice Pool';
 
     for (const t of clientTasks) {

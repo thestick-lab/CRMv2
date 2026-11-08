@@ -5,7 +5,7 @@ import { Topbar } from './Topbar';
 import { buildBreadcrumbs, NAV_ITEMS } from './navigation-helpers';
 import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog';
 import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
-import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 
 export interface LayoutProps {
   currentView: ViewKey;
@@ -27,6 +27,7 @@ export function Layout({
   const [isDark, setIsDark] = React.useState(true);
   const [aiDrawerOpen, setAiDrawerOpen] = React.useState(false);
 
+  const { clients } = usePracticeStore();
   // Keyboard shortcut for Cmd+K / Ctrl+K
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,7 +55,7 @@ export function Layout({
       icon: item.icon,
     }));
 
-    const clientItems: CommandItem[] = CLIENTS.map((c) => ({
+    const clientItems: CommandItem[] = clients.map((c) => ({
       id: `client-${c.code}`,
       label: c.name,
       section: 'Clients',
@@ -62,7 +63,7 @@ export function Layout({
     }));
 
     return [...viewItems, ...clientItems];
-  }, []);
+  }, [clients]);
 
   const handleSelectCommand = (item: CommandItem) => {
     if (item.clientCode) {

@@ -1,6 +1,6 @@
 import type { ViewKey } from '@/types/navigation';
 import { todayInSouthAfrica, easterSunday, publicHolidays } from 'fdoncall-practice/domain/dates';
-import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ export interface DashboardViewProps {
 }
 
 export function DashboardView({ onNavigate }: DashboardViewProps) {
+  const { clients, staff } = usePracticeStore();
   const today = todayInSouthAfrica();
   const year = parseInt(today.slice(0, 4), 10);
   const easterThisYear = easterSunday(year);
@@ -75,25 +76,25 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           </div>
           <div>
             <div className="text-2xl font-bold font-mono tracking-tight text-foreground">
-              {CLIENTS.length} Active Clients
+              {clients.length} Active Clients
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              Managed by {STAFF.length} practice members
+              Managed by {staff.length} practice members
             </div>
           </div>
           <div className="pt-2 border-t border-border/50 text-xs text-muted-foreground space-y-1">
             <div className="flex justify-between">
               <span>Companies (Pty Ltd):</span>
-              <span className="font-mono text-foreground">{CLIENTS.filter((c) => c.entityType === 'Company').length}</span>
+              <span className="font-mono text-foreground">{clients.filter((c) => c.entityType === 'Company').length}</span>
             </div>
             <div className="flex justify-between">
               <span>Close Corporations (CC):</span>
-              <span className="font-mono text-foreground">{CLIENTS.filter((c) => c.entityType === 'Close corporation').length}</span>
+              <span className="font-mono text-foreground">{clients.filter((c) => c.entityType === 'Close corporation').length}</span>
             </div>
             <div className="flex justify-between">
               <span>Trusts &amp; Individuals:</span>
               <span className="font-mono text-foreground">
-                {CLIENTS.filter((c) => c.entityType === 'Trust' || c.entityType === 'Individual').length}
+                {clients.filter((c) => c.entityType === 'Trust' || c.entityType === 'Individual').length}
               </span>
             </div>
           </div>
@@ -164,7 +165,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-4 w-4 text-[#c4161c]" />
             <h2 className="text-sm font-semibold text-foreground">Active Practice Clients</h2>
-            <span className="text-xs font-mono text-muted-foreground">({CLIENTS.length} accounts)</span>
+            <span className="text-xs font-mono text-muted-foreground">({clients.length} accounts)</span>
           </div>
 
           <Button
@@ -190,7 +191,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60 font-mono">
-              {CLIENTS.slice(0, 6).map((c) => (
+              {clients.slice(0, 6).map((c) => (
                 <tr
                   key={c.code}
                   onClick={() => onNavigate('client', c.code)}
