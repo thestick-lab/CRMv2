@@ -27,6 +27,7 @@ export interface PracticeUser {
 export interface PracticeRates {
   standardHourlyRate: number;
   marchEscalationPct: number;
+  serviceFees: Record<string, number>;
 }
 
 export interface AiApiKeys {
@@ -59,6 +60,7 @@ export interface PracticeState {
   division: Division;
   taskStatusOverrides: Record<string, TaskStatusOverride>;
   savedEstimates: Record<string, EstimateInput>;
+  isAuthenticated: boolean;
 }
 
 export const INITIAL_LEADS: PipelineLead[] = [
@@ -123,6 +125,21 @@ export const INITIAL_USER: PracticeUser = {
 export const INITIAL_RATES: PracticeRates = {
   standardHourlyRate: 625,
   marchEscalationPct: 6,
+  serviceFees: {
+    VAT201: 545,
+    EMP201: 495,
+    IRP6_NIL: 575,
+    IRP6_PAYABLE: 650,
+    ITR14: 1500,
+    ITR12: 1050,
+    ITR12T: 1500,
+    CIPC_SUBMISSION: 525,
+    BO: 2000,
+    EMP501_SMALL: 1900,
+    EMP501_MEDIUM: 2500,
+    EMP501_LARGE: 3250,
+    COIDA: 545,
+  },
 };
 
 export const INITIAL_AI_KEYS: AiApiKeys = {
@@ -144,6 +161,7 @@ export function getInitialPracticeState(): PracticeState {
     division: 'fd-on-call',
     taskStatusOverrides: {},
     savedEstimates: {},
+    isAuthenticated: true,
   };
 }
 

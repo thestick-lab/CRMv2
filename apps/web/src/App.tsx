@@ -10,11 +10,16 @@ import { PeopleView } from '@/components/views/PeopleView';
 import { EstimatorView } from '@/components/views/EstimatorView';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { ClientShowView } from '@/components/client-show/ClientShowView';
+import { LoginView } from '@/components/auth/LoginView';
 
 function AppContent() {
   const [view, setView] = React.useState<ViewKey>('dashboard');
   const [clientCode, setClientCode] = React.useState<string | undefined>(undefined);
-  const { clients } = usePracticeStore();
+  const { clients, isAuthenticated } = usePracticeStore();
+
+  if (!isAuthenticated) {
+    return <LoginView />;
+  }
 
   const activeClient = clientCode ? clients.find((c) => c.code === clientCode) : undefined;
 

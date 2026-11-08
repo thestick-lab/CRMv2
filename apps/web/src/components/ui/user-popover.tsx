@@ -1,34 +1,29 @@
 import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
-import { ChevronRight, LogOut, ShieldCheck, User, Check, Users } from 'lucide-react';
+import { ChevronRight, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 
 export interface UserPopoverProps {
   collapsed?: boolean;
   onNavigateSettings?: () => void;
+  defaultOpen?: boolean;
 }
 
-export function UserPopover({ collapsed = false, onNavigateSettings }: UserPopoverProps) {
-  const [open, setOpen] = React.useState(false);
-  const { currentUser, setCurrentUser } = usePracticeStore();
+export function UserPopover({ collapsed = false, onNavigateSettings, defaultOpen = false }: UserPopoverProps) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  const { currentUser, logout } = usePracticeStore();
 
   const initials = currentUser.name.slice(0, 2).toUpperCase();
-
-  const demoUsers = [
-    { id: 'erik', name: 'Erik', role: 'Partner (CA(SA))' },
-    { id: 'chrizelle', name: 'Chrizelle', role: 'Compliance Officer' },
-    { id: 'andre', name: 'André', role: 'Accountant' },
-  ];
-
-  const handleSwitchUser = (id: string) => {
-    setCurrentUser(id);
-    setOpen(false);
-  };
 
   const handleOpenProfile = () => {
     setOpen(false);
     onNavigateSettings?.();
+  };
+
+  const handleLogout = () => {
+    setOpen(false);
+    logout();
   };
 
   return (
@@ -51,7 +46,7 @@ export function UserPopover({ collapsed = false, onNavigateSettings }: UserPopov
                   {currentUser.name}
                 </span>
                 <span className="text-[10px] text-muted-foreground block truncate font-mono">
-                  {currentUser.role}
+                  {currentUser.email}
                 </span>
               </div>
             )}
@@ -75,69 +70,29 @@ export function UserPopover({ collapsed = false, onNavigateSettings }: UserPopov
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <div className="text-xs font-semibold text-foreground">
                 <span>{currentUser.name}</span>
-                <span className="text-[10px] font-mono text-[#c4161c] bg-[#c4161c]/10 px-1 py-0.2 rounded">
-                  {currentUser.role.split(' ')[0]}
-                </span>
               </div>
               <div className="text-[11px] text-muted-foreground truncate">{currentUser.email}</div>
-              <div className="text-[10px] text-muted-foreground/80 font-mono mt-0.5">
-                Durbanville, Cape Town
-              </div>
             </div>
           </div>
-
-          {/* Session Switcher (RBAC) */}
-          <div className="space-y-1">
-            <div className="px-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              <span>Switch Active Session</span>
-            </div>
-
-            {demoUsers.map((u) => {
-              const isActive = currentUser.id === u.id;
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => handleSwitchUser(u.id)}
-                  className={cn(
-                    'w-full flex items-center justify-between p-1.5 rounded text-left transition-colors text-xs',
-                    isActive ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-foreground'
-                  )}
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{u.name}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">{u.role}</div>
-                  </div>
-                  {isActive && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="h-px bg-border/70" />
 
           {/* Menu Items */}
           <div className="space-y-0.5">
             <button
               onClick={handleOpenProfile}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-foreground transition-colors"
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-foreground transition-colors cursor-pointer"
             >
               <User className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>Practice Settings</span>
+              <span>Settings</span>
             </button>
-            <div className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-              <span>SAICA Registered Practice</span>
-            </div>
           </div>
 
           {/* Logout */}
           <div className="pt-1.5 border-t border-border/70">
             <button
-              onClick={() => setOpen(false)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive text-xs font-medium transition-colors"
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive text-xs font-medium transition-colors cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Close Session</span>

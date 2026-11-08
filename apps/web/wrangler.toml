@@ -1,0 +1,12 @@
+name = "crmv2"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NODE_VERSION = "22"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "crmv2-auth"
+database_id = "crmv2-auth-local"
