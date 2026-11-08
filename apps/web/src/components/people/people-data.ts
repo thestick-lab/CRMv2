@@ -15,6 +15,10 @@ export interface Person {
   practiceRole?: 'Partner' | 'Accountant' | 'Compliance Officer' | 'Subcontractor' | 'Team member';
   companyLinks: CompanyLink[];
 }
+export function canManagePeople(role?: string): boolean {
+  return role === 'Partner' || role === 'Compliance Officer' || role === 'Admin';
+}
+
 
 export const STATIC_DIRECTORS: Array<{
   id: string;
