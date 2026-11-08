@@ -55,9 +55,28 @@ function AppContent() {
       case 'settings':
         return <SettingsView />;
       case 'client':
+        if (!clientCode) {
+          return (
+            <div className="p-8 max-w-2xl mx-auto text-center space-y-4">
+              <div className="p-6 rounded-xl border border-border bg-card space-y-3">
+                <h2 className="text-base font-semibold text-foreground">No Client Record Selected</h2>
+                <p className="text-xs text-muted-foreground">
+                  Please select an active company or individual from the practice register to inspect their statutory profile.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('clients')}
+                  className="px-3 py-1.5 rounded-lg bg-[#c4161c] hover:bg-[#a51217] text-white text-xs font-medium cursor-pointer transition-colors"
+                >
+                  Return to Clients Register
+                </button>
+              </div>
+            </div>
+          );
+        }
         return (
           <ClientShowView
-            clientCode={clientCode ?? 'MUS-875'}
+            clientCode={clientCode}
             onBack={() => handleNavigate('clients')}
             onNavigate={handleNavigate}
           />

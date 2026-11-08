@@ -8,10 +8,56 @@ import {
   DollarSign,
   Check,
   Save,
+  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 
+// Official SARS, CIPC and National Treasury legal guide links
+const STATUTORY_GUIDES: Record<string, { label: string; url: string }> = {
+  AFS: {
+    label: 'Companies Act §30(1) Audit/Review',
+    url: 'https://www.cipc.co.za/?page_id=3146',
+  },
+  ITR14: {
+    label: 'SARS Comprehensive Guide to ITR14',
+    url: 'https://www.sars.gov.za/types-of-tax/corporate-income-tax/',
+  },
+  ITR12: {
+    label: 'SARS Individual Tax Return Guide',
+    url: 'https://www.sars.gov.za/types-of-tax/personal-income-tax/',
+  },
+  ITR12T: {
+    label: 'SARS Trust Income Tax Return Guide',
+    url: 'https://www.sars.gov.za/types-of-tax/trusts/',
+  },
+  IRP6: {
+    label: 'SARS Provisional Tax External Guide',
+    url: 'https://www.sars.gov.za/types-of-tax/provisional-tax/',
+  },
+  VAT201: {
+    label: 'SARS VAT 404 Guide for Vendors',
+    url: 'https://www.sars.gov.za/types-of-tax/value-added-tax-vat/',
+  },
+  EMP201: {
+    label: 'SARS Monthly Employer Declaration Guide',
+    url: 'https://www.sars.gov.za/types-of-tax/pay-as-you-earn/',
+  },
+  EMP501: {
+    label: 'SARS Business Requirements EMP501',
+    url: 'https://www.sars.gov.za/types-of-tax/pay-as-you-earn/employer-filing-season/',
+  },
+  CIPC_AR: {
+    label: 'CIPC Annual Return & FAS Portal',
+    url: 'https://www.cipc.co.za/?page_id=1460',
+  },
+  BO: {
+    label: 'CIPC Beneficial Ownership Register Guide',
+    url: 'https://www.cipc.co.za/?page_id=6486',
+  },
+};
+
 export function ServicePricingMatrixPane() {
-  const { rates, updateRates, updateServiceFee } = usePracticeStore();
+  const { rates, updateRates, updateServiceFee, currentUser } = usePracticeStore();
   const [hourlyRate, setHourlyRate] = React.useState(rates.standardHourlyRate.toString());
   const [escalation, setEscalation] = React.useState(rates.marchEscalationPct.toString());
   const [savedSuccess, setSavedSuccess] = React.useState(false);
@@ -31,9 +77,12 @@ export function ServicePricingMatrixPane() {
 
   const handleSaveRates = (e: React.FormEvent) => {
     e.preventDefault();
+    const now = new Date().toISOString();
     updateRates({
       standardHourlyRate: Number(hourlyRate) || 625,
       marchEscalationPct: Number(escalation) || 6,
+      updatedBy: `${currentUser.name} (${currentUser.role})`,
+      updatedAt: now,
     });
     // Save individual service fees
     if (feeInputs.VAT201) updateServiceFee('VAT201', Number(feeInputs.VAT201));
@@ -59,14 +108,25 @@ export function ServicePricingMatrixPane() {
 
   return (
     <div className="space-y-6 max-w-5xl text-xs">
-      <div>
-        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-          <FileSpreadsheet className="h-4 w-4 text-primary" />
-          Service Catalogue &amp; Pricing Matrix
-        </h2>
-        <p className="text-muted-foreground mt-0.5">
-          Master administrative matrix defining practice service items, billing rates, turnover bands, and official SARS filing schedules.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4 text-primary" />
+            Service Catalogue &amp; Pricing Matrix
+          </h2>
+          <p className="text-muted-foreground mt-0.5">
+            Master administrative matrix defining practice service items, billing rates, and official statutory references.
+          </p>
+        </div>
+
+        {/* SAICA QA Audit Stamp */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 border border-border/80 text-[11px] font-mono text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+          <span>
+            Last updated by {rates.updatedBy || 'Erik (Partner)'} on{' '}
+            {rates.updatedAt ? rates.updatedAt.slice(0, 10) : '2026-11-08'}
+          </span>
+        </div>
       </div>
 
       {/* Practice Rates & Fees Editor */}
@@ -143,16 +203,17 @@ export function ServicePricingMatrixPane() {
                 <th className="py-2.5 px-3">Standard Fee (R)</th>
                 <th className="py-2.5 px-3">Partner Review Gate</th>
                 <th className="py-2.5 px-3">When It Recurs</th>
-                <th className="py-2.5 px-3">Statutory Basis</th>
+                <th className="py-2.5 px-3">Official Statutory Guide</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
               {SERVICE_TYPES.map((s) => {
                 const feeKey = s.code === 'VAT201' ? 'VAT201' : s.code === 'EMP201' ? 'EMP201' : s.code === 'IRP6' ? 'IRP6' : s.code === 'ITR14' ? 'ITR14' : s.code === 'ITR12' ? 'ITR12' : s.code === 'ITR12T' ? 'ITR12T' : s.code === 'CIPC_AR' ? 'CIPC_AR' : s.code === 'BO' ? 'BO' : s.code === 'EMP501' ? 'EMP501' : null;
                 const currentVal = feeKey && feeInputs[feeKey] !== undefined ? feeInputs[feeKey] : '';
+                const guide = STATUTORY_GUIDES[s.code];
 
                 return (
-                  <tr key={s.code} className="hover:bg-muted/20">
+                  <tr key={s.code} className="hover:bg-muted/20 transition-colors">
                     <td className="py-2.5 px-3 font-semibold text-foreground">{s.name}</td>
                     <td className="py-2.5 px-3 font-mono text-muted-foreground">{s.xeroItems}</td>
                     <td className="py-2.5 px-3 font-mono text-primary font-medium">
@@ -185,7 +246,22 @@ export function ServicePricingMatrixPane() {
                       </Badge>
                     </td>
                     <td className="py-2.5 px-3 text-muted-foreground">{s.recurrence}</td>
-                    <td className="py-2.5 px-3 text-[11px] text-muted-foreground/80">{s.basis}</td>
+                    <td className="py-2.5 px-3 text-[11px]">
+                      {guide ? (
+                        <a
+                          href={guide.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                          title={`Open official guide: ${guide.label}`}
+                        >
+                          <span>{guide.label}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0 opacity-70" />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground/80">{s.basis}</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}

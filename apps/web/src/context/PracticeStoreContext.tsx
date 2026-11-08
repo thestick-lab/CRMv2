@@ -28,6 +28,8 @@ export interface PracticeRates {
   standardHourlyRate: number;
   marchEscalationPct: number;
   serviceFees: Record<string, number>;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface AiApiKeys {
@@ -125,6 +127,8 @@ export const INITIAL_USER: PracticeUser = {
 export const INITIAL_RATES: PracticeRates = {
   standardHourlyRate: 625,
   marchEscalationPct: 6,
+  updatedBy: 'Erik (Managing Partner)',
+  updatedAt: '2026-11-08T08:00:00Z',
   serviceFees: {
     VAT201: 545,
     EMP201: 495,

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { aggregatePracticeTasks, type PracticeTaskItem } from '@/components/deadlines/practice-tasks';
 import { filterReviewQueueTasks } from '@/components/inbox/PartnerReviewQueue';
+import { downloadExcelQuote } from '@/lib/export-actions';
+import { buildEstimateForClient } from '@/components/client-show/tabs/EstimateTab';
 import {
   CalendarClock,
   ShieldCheck,
@@ -14,6 +16,7 @@ import {
   Calendar,
   AlertTriangle,
   ArrowRight,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -61,7 +64,7 @@ export function getUserDashboardQueue(
 }
 
 export function DashboardView({ onNavigate }: DashboardViewProps) {
-  const { clients, staff, leads, currentUser, taskStatusOverrides } = usePracticeStore();
+  const { clients, staff, leads, currentUser, taskStatusOverrides, rates } = usePracticeStore();
   const today = todayInSouthAfrica();
   const upcomingHolidays = React.useMemo(() => getUpcomingHolidays(today, 4), [today]);
 
@@ -74,6 +77,15 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
   }, [summary.tasks, currentUser, taskStatusOverrides]);
 
   const isPartner = currentUser.role === 'Partner';
+
+  const handleExportPartnerSummary = () => {
+    // Generate practice review export for the lead client in the firm
+    const leadClient = clients[0];
+    if (leadClient) {
+      const est = buildEstimateForClient(leadClient, undefined, rates.standardHourlyRate, rates.marchEscalationPct);
+      downloadExcelQuote(leadClient, est, today);
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -88,7 +100,20 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isPartner && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportPartnerSummary}
+              className="text-xs h-8 gap-1.5 cursor-pointer font-mono"
+              title="1-Click Practice Export for Partner meetings"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Partner Meeting Export</span>
+            </Button>
+          )}
+
           {isPartner && queue.reviewItems.length > 0 && (
             <Button
               size="sm"
@@ -99,6 +124,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               <span>{queue.reviewItems.length} Returns Awaiting Partner Sign-Off</span>
             </Button>
           )}
+
           <Button
             size="sm"
             onClick={() => onNavigate('deadlines')}
@@ -218,7 +244,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                       </div>
                     </div>
 
-                    <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0">
+                    <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0 cursor-pointer">
                       Inspect
                     </Button>
                   </div>
