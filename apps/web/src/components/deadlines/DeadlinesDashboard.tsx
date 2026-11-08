@@ -30,7 +30,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
   const [horizon, setHorizon] = React.useState<'30' | '90' | '365'>('30');
   const [selectedStaff, setSelectedStaff] = React.useState<string>('all');
   const [selectedService, setSelectedService] = React.useState<string>('all');
-
+  const [groupBy, setGroupBy] = React.useState<'workflow' | 'urgency'>('workflow');
   const today = todayInSouthAfrica();
 
   // Aggregate all tasks practice-wide
@@ -104,6 +104,33 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
             </button>
           </div>
         </div>
+
+        {viewMode === 'kanban' && (
+          <div className="flex items-center p-0.5 rounded-lg border border-border bg-card text-xs">
+            <button
+              onClick={() => setGroupBy('workflow')}
+              className={cn(
+                'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+                groupBy === 'workflow'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Workflow Status
+            </button>
+            <button
+              onClick={() => setGroupBy('urgency')}
+              className={cn(
+                'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+                groupBy === 'urgency'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Date Urgency
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 4 Statutory KPI Tiles */}
@@ -250,6 +277,7 @@ export function DeadlinesDashboard({ onSelectClient }: DeadlinesDashboardProps) 
           asOfDate={today}
           onSelectClient={onSelectClient}
           horizon={horizon}
+          groupBy={groupBy}
         />
       ) : (
         <DeadlinesTable
