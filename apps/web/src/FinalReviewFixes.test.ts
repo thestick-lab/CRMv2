@@ -30,20 +30,11 @@ describe('Final review fixes: cross-view reactivity and user experience', () => 
     expect(kanbanSrc).toContain('initialStatus');
   });
 
-  it('ensures AiPracticeAssistantDrawer does not append duplicate user messages', () => {
-    const aiDrawerSrc = fs.readFileSync('src/components/ai/AiPracticeAssistantDrawer.tsx', 'utf8');
-
-    // Should not have two separate setMessages calls in handleSend
-    const setMessagesMatches = aiDrawerSrc.match(/setMessages\(/g);
-    // One in handleClear, one in handleSend
-    expect(setMessagesMatches?.length).toBeLessThanOrEqual(2);
-  });
-
-  it('connects UserPopover to usePracticeStore with RBAC session switching', () => {
+  it('connects UserPopover to usePracticeStore with logout and settings navigation', () => {
     const userPopoverSrc = fs.readFileSync('src/components/ui/user-popover.tsx', 'utf8');
 
     expect(userPopoverSrc).toContain('usePracticeStore');
-    expect(userPopoverSrc).toContain('setCurrentUser');
+    expect(userPopoverSrc).toContain('logout');
   });
 
   it('ensures OnboardingPipeline dragStart invokes dataTransfer.setData', () => {

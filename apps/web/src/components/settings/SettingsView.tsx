@@ -5,17 +5,15 @@ import {
   Settings as SettingsIcon,
   FileSpreadsheet,
   Users,
-  Bot,
 } from 'lucide-react';
 import { ProfilePane } from './panes/ProfilePane';
 import { TeamRbacPane } from './panes/TeamRbacPane';
 import { ServicePricingMatrixPane } from './panes/ServicePricingMatrixPane';
 import { SaicaGovernanceLogPane } from './panes/SaicaGovernanceLogPane';
-import { AiIntegrationsPane } from './panes/AiIntegrationsPane';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
 
-export type SettingsPaneKey = 'profile' | 'ai' | 'team' | 'matrix' | 'saica';
+export type SettingsPaneKey = 'profile' | 'team' | 'matrix' | 'saica';
 
 export interface SettingsViewProps {
   initialPane?: SettingsPaneKey;
@@ -33,6 +31,7 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
       setActivePane('profile');
     }
   }, [isPartnerOrAdmin, activePane]);
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 text-xs">
       {/* Unified Clean Header */}
@@ -45,7 +44,7 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
 
       {/* Two-Pane Body */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        {/* Left Navigation Pane (Twenty CRM Hierarchy) */}
+        {/* Left Navigation Pane */}
         <div className="md:col-span-4 lg:col-span-3 rounded-xl border border-border bg-card p-2 space-y-4 shadow-xs">
           {/* User Settings */}
           <div className="space-y-1">
@@ -63,25 +62,6 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
             >
               <User className="h-3.5 w-3.5 shrink-0" />
               <span>My Profile &amp; Security</span>
-            </button>
-          </div>
-
-          {/* Workspace Settings */}
-          <div className="space-y-1">
-            <div className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-medium">
-              Workspace
-            </div>
-            <button
-              onClick={() => setActivePane('ai')}
-              className={cn(
-                'w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors text-xs font-medium cursor-pointer',
-                activePane === 'ai'
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <Bot className="h-3.5 w-3.5 shrink-0" />
-              <span>AI Copilot &amp; Providers</span>
             </button>
           </div>
 
@@ -138,7 +118,6 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
         {/* Right Content Pane */}
         <div className="md:col-span-8 lg:col-span-9 rounded-xl border border-border bg-card p-6 shadow-xs min-h-[550px]">
           {activePane === 'profile' && <ProfilePane />}
-          {activePane === 'ai' && <AiIntegrationsPane />}
           {activePane === 'team' && <TeamRbacPane />}
           {activePane === 'matrix' && <ServicePricingMatrixPane />}
           {activePane === 'saica' && <SaicaGovernanceLogPane />}

@@ -5,11 +5,10 @@ import { CLIENTS } from 'fdoncall-practice/data/seed';
 describe('ClientShowView header and tab definitions', () => {
   const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
 
-  it('defines the 2 focused client master data tabs (details and vault)', () => {
-    expect(CLIENT_SHOW_TABS).toHaveLength(2);
+  it('defines the focused client master data tab (details)', () => {
+    expect(CLIENT_SHOW_TABS).toHaveLength(1);
     expect(CLIENT_SHOW_TABS.map((t) => t.id)).toEqual([
       'details',
-      'vault',
     ]);
   });
 

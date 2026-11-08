@@ -7,19 +7,17 @@ import {
   Building2,
   Download,
   FileSpreadsheet,
-  FolderLock,
   UserCheck,
 } from 'lucide-react';
 
 export interface TabConfig {
-  id: 'details' | 'vault' | 'profile' | 'deadlines' | 'estimate';
+  id: 'details' | 'profile' | 'deadlines' | 'estimate';
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
 export const CLIENT_SHOW_TABS: TabConfig[] = [
   { id: 'details', label: 'Details & Statutory Services', icon: Building2 },
-  { id: 'vault', label: 'SharePoint Vault & SLAs', icon: FolderLock },
 ];
 
 export interface ClientSummary {

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
 import type { Client, StaffMember } from 'fdoncall-practice/domain/types';
 import type { EstimateInput } from 'fdoncall-practice/domain/estimate';
-
+import { signInWithCredentials } from '@/lib/auth-client';
 export interface PipelineLead {
   id: string;
   companyName: string;
@@ -197,6 +197,9 @@ export type PracticeAction =
     }
   | { type: 'UPDATE_STAFF_ROLE'; payload: { staffId: string; role: string } }
   | { type: 'UPDATE_RATES'; payload: Partial<PracticeRates> }
+  | { type: 'UPDATE_SERVICE_FEE'; payload: { code: string; amount: number } }
+  | { type: 'LOGIN'; payload: PracticeUser }
+  | { type: 'LOGOUT' }
   | { type: 'SET_CURRENT_USER'; payload: PracticeUser | string }
   | { type: 'SET_DIVISION'; payload: Division }
   | { type: 'SET_AI_KEYS'; payload: Partial<AiApiKeys> }
@@ -351,6 +354,34 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
       };
     }
 
+    case 'UPDATE_SERVICE_FEE': {
+      return {
+        ...state,
+        rates: {
+          ...state.rates,
+          serviceFees: {
+            ...state.rates.serviceFees,
+            [action.payload.code]: action.payload.amount,
+          },
+        },
+      };
+    }
+
+    case 'LOGIN': {
+      return {
+        ...state,
+        currentUser: action.payload,
+        isAuthenticated: true,
+      };
+    }
+
+    case 'LOGOUT': {
+      return {
+        ...state,
+        isAuthenticated: false,
+      };
+    }
+
     case 'SET_CURRENT_USER': {
       if (typeof action.payload === 'string') {
         const found = state.staff.find((s) => s.id === action.payload);
@@ -471,6 +502,9 @@ export interface PracticeStoreContextValue extends PracticeState {
   }) => void;
   updateStaffRole: (staffId: string, role: string) => void;
   updateRates: (rates: Partial<PracticeRates>) => void;
+  updateServiceFee: (code: string, amount: number) => void;
+  login: (email: string, pass: string) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => void;
   setCurrentUser: (user: PracticeUser | string) => void;
   setDivision: (division: Division) => void;
   setAiKeys: (keys: Partial<AiApiKeys>) => void;
@@ -553,6 +587,23 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     dispatch({ type: 'UPDATE_RATES', payload: rates });
   }, []);
 
+  const updateServiceFee = React.useCallback((code: string, amount: number) => {
+    dispatch({ type: 'UPDATE_SERVICE_FEE', payload: { code, amount } });
+  }, []);
+
+  const login = React.useCallback(async (email: string, pass: string) => {
+    const res = await signInWithCredentials(email, pass);
+    if (res.ok && res.user) {
+      dispatch({ type: 'LOGIN', payload: res.user });
+      return { ok: true };
+    }
+    return { ok: false, error: res.error || 'Authentication failed' };
+  }, []);
+
+  const logout = React.useCallback(() => {
+    dispatch({ type: 'LOGOUT' });
+  }, []);
+
   const setCurrentUser = React.useCallback((user: PracticeUser | string) => {
     dispatch({ type: 'SET_CURRENT_USER', payload: user });
   }, []);
@@ -603,6 +654,9 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       inviteTeamMember,
       updateStaffRole,
       updateRates,
+      updateServiceFee,
+      login,
+      logout,
       setCurrentUser,
       setDivision,
       setAiKeys,
@@ -620,6 +674,9 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       inviteTeamMember,
       updateStaffRole,
       updateRates,
+      updateServiceFee,
+      login,
+      logout,
       saveEstimate,
       setCurrentUser,
       setDivision,

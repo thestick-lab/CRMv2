@@ -3,7 +3,3 @@ node_modules
 dist
 .vite
 .omp/
-mcp.json
-.mcp.json
-.stitch.json
-.stitch/

@@ -80,11 +80,4 @@ describe('App shell and view integration', () => {
     expect(appSource).toContain('PeopleView');
     expect(appSource).toContain('SettingsView');
   });
-
-  it('integrates AI Practice Assistant drawer in Topbar and Layout', () => {
-    const topbarSource = fs.readFileSync('src/components/layout/Topbar.tsx', 'utf8');
-    const layoutSource = fs.readFileSync('src/components/layout/Layout.tsx', 'utf8');
-    expect(topbarSource).toContain('onOpenAiAssistant');
-    expect(layoutSource).toContain('AiPracticeAssistantDrawer');
-  });
 });

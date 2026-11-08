@@ -18,7 +18,6 @@ import {
   ChevronRight,
   Search,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export function filterClientsRow(row: EnrichedClientRow, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -46,7 +45,7 @@ function SortHeader({
     <button
       type="button"
       onClick={onToggle}
-      className="flex items-center gap-1 font-mono uppercase text-[10px] text-muted-foreground hover:text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c] rounded px-0.5"
+      className="flex items-center gap-1 font-mono uppercase text-[10px] text-muted-foreground hover:text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c] rounded px-0.5 cursor-pointer"
     >
       <span>{title}</span>
       {isSorted === 'asc' ? (
@@ -157,48 +156,45 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
     ),
   },
   {
-    id: 'vat',
-    accessorKey: 'vatLabel',
-    header: 'VAT Category',
+    id: 'vatCategory',
+    accessorKey: 'vatCategory',
+    header: 'VAT Status',
     cell: ({ row }) => (
-      <div>
+      <span className="text-xs font-sans">
         {row.original.vatCategory ? (
-          <Badge variant="outline" className="font-mono text-[10px] py-0 px-1.5">
-            {row.original.vatLabel}
+          <Badge variant="outline" className="font-mono text-[10px] py-0 px-1">
+            Cat {row.original.vatCategory}
           </Badge>
         ) : (
-          <span className="text-muted-foreground text-[11px] font-mono">{row.original.vatLabel}</span>
+          <span className="text-muted-foreground text-[11px] italic">Non-VAT</span>
         )}
-      </div>
+      </span>
     ),
   },
   {
     id: 'payroll',
-    accessorKey: 'payrollLabel',
+    accessorKey: 'payroll',
     header: 'Payroll',
     cell: ({ row }) => (
-      <span className="text-xs text-foreground font-mono">
-        {row.original.payrollLabel}
+      <span className="text-xs font-sans text-muted-foreground">
+        {row.original.payroll ? `Yes (${row.original.employeeCount || 0} staff)` : '—'}
       </span>
     ),
   },
   {
     id: 'services',
-    accessorKey: 'services',
-    header: 'Active Services',
+    accessorKey: 'activeServicesCount',
+    header: 'Services',
     cell: ({ row }) => (
-      <div className="flex items-center gap-1 flex-wrap max-w-xs">
-        {row.original.services.slice(0, 4).map((svc) => (
-          <span
-            key={svc}
-            className="font-mono text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground border border-border/60"
-          >
-            {svc}
-          </span>
+      <div className="flex items-center gap-1 flex-wrap">
+        {row.original.services.slice(0, 3).map((s) => (
+          <Badge key={s} variant="outline" className="text-[9px] px-1 py-0 font-mono">
+            {s}
+          </Badge>
         ))}
-        {row.original.services.length > 4 && (
-          <span className="font-mono text-[10px] text-muted-foreground">
-            +{row.original.services.length - 4}
+        {row.original.services.length > 3 && (
+          <span className="text-[10px] text-muted-foreground font-mono">
+            +{row.original.services.length - 3}
           </span>
         )}
       </div>
@@ -207,35 +203,16 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
   {
     id: 'nextDeadline',
     accessorKey: 'nextDeadline',
-    header: ({ column }) => (
-      <SortHeader
-        title="Next Statutory Deadline"
-        isSorted={column.getIsSorted()}
-        onToggle={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      />
-    ),
-    sortingFn: (rowA, rowB) => {
-      const dateA = rowA.original.nextDeadline?.due || '9999-99-99';
-      const dateB = rowB.original.nextDeadline?.due || '9999-99-99';
-      return dateA.localeCompare(dateB);
-    },
+    header: 'Next Statutory Deadline',
     cell: ({ row }) => {
       const deadline = row.original.nextDeadline;
       if (!deadline) {
-        return <span className="text-muted-foreground text-[11px] italic">No pending filing</span>;
+        return <span className="text-muted-foreground italic text-xs">No active tasks</span>;
       }
       return (
         <div className="flex items-center gap-1.5 font-mono text-xs">
           <Badge
-            variant={
-              deadline.urgency === 'overdue'
-                ? 'destructive'
-                : deadline.urgency === 'week'
-                ? 'crimsonSubdued'
-                : deadline.urgency === 'month'
-                ? 'warning'
-                : 'outline'
-            }
+            variant={deadline.urgency === 'overdue' ? 'destructive' : 'outline'}
             className="text-[10px] px-1 py-0 font-mono"
           >
             {deadline.service}
@@ -255,18 +232,14 @@ export interface ClientsRegisterTableProps {
 export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([{ id: 'code', desc: false }]);
   const [globalFilter, setGlobalFilter] = React.useState('');
-  const [entityFilter, setEntityFilter] = React.useState<string>('all');
 
   const filteredData = React.useMemo(() => {
     let rows = data;
-    if (entityFilter !== 'all') {
-      rows = rows.filter((r) => r.entityType === entityFilter);
-    }
     if (globalFilter.trim()) {
       rows = rows.filter((r) => filterClientsRow(r, globalFilter));
     }
     return rows;
-  }, [data, entityFilter, globalFilter]);
+  }, [data, globalFilter]);
 
   const table = useReactTable({
     data: filteredData,
@@ -282,68 +255,8 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
 
   return (
     <div className="space-y-3.5">
-      {/* Controls Bar: Filter Chips & Search Input */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Entity Category Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <button
-            onClick={() => setEntityFilter('all')}
-            className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-medium transition-colors font-mono whitespace-nowrap',
-              entityFilter === 'all'
-                ? 'bg-[#c4161c] text-white shadow-xs'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            All ({data.length})
-          </button>
-          <button
-            onClick={() => setEntityFilter('Company')}
-            className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-medium transition-colors font-mono whitespace-nowrap',
-              entityFilter === 'Company'
-                ? 'bg-[#c4161c] text-white shadow-xs'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            Companies ({data.filter((r) => r.entityType === 'Company').length})
-          </button>
-          <button
-            onClick={() => setEntityFilter('Close corporation')}
-            className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-medium transition-colors font-mono whitespace-nowrap',
-              entityFilter === 'Close corporation'
-                ? 'bg-[#c4161c] text-white shadow-xs'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            CC ({data.filter((r) => r.entityType === 'Close corporation').length})
-          </button>
-          <button
-            onClick={() => setEntityFilter('Trust')}
-            className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-medium transition-colors font-mono whitespace-nowrap',
-              entityFilter === 'Trust'
-                ? 'bg-[#c4161c] text-white shadow-xs'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            Trusts ({data.filter((r) => r.entityType === 'Trust').length})
-          </button>
-          <button
-            onClick={() => setEntityFilter('Individual')}
-            className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-medium transition-colors font-mono whitespace-nowrap',
-              entityFilter === 'Individual'
-                ? 'bg-[#c4161c] text-white shadow-xs'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            Individuals ({data.filter((r) => r.entityType === 'Individual').length})
-          </button>
-        </div>
-
-        {/* Global Search Input */}
+      {/* Controls Bar: Search Input */}
+      <div className="flex items-center justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <input
@@ -406,7 +319,7 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 text-[11px] gap-1 px-2 group-hover:text-[#c4161c]"
+                        className="h-6 text-[11px] gap-1 px-2 group-hover:text-[#c4161c] cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           onRowClick(row.original.code);

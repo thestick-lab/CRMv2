@@ -3,6 +3,21 @@ import { betterAuth } from 'better-auth';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from '../../src/db/auth-schema';
 
+declare global {
+  interface D1Database {
+    prepare(query: string): {
+      bind(...args: unknown[]): {
+        first<T = unknown>(): Promise<T>;
+        run(): Promise<unknown>;
+        all<T = unknown>(): Promise<{ results: T[] }>;
+      };
+      first<T = unknown>(): Promise<T>;
+      run(): Promise<unknown>;
+      all<T = unknown>(): Promise<{ results: T[] }>;
+    };
+  }
+}
+
 export const DEMO_PASSWORD = 'FDonCall2026!';
 
 export const SEEDED_STAFF_ACCOUNTS = [
@@ -37,9 +52,6 @@ function getAuth(d1: D1Database) {
         kind: { type: 'string', required: true, defaultValue: 'employee' },
       },
     },
-    advanced: {
-      generateId: false,
-    },
   });
 }
 
@@ -47,7 +59,6 @@ function getAuth(d1: D1Database) {
 async function ensureSeeded(d1: D1Database) {
   try {
     const auth = getAuth(d1);
-    // check if user table has records
     const res = await d1.prepare('SELECT COUNT(*) as cnt FROM user').first<{ cnt: number }>();
     if (!res || res.cnt === 0) {
       for (const s of SEEDED_STAFF_ACCOUNTS) {
@@ -60,7 +71,14 @@ async function ensureSeeded(d1: D1Database) {
               role: s.role,
               staffId: s.id,
               kind: s.kind,
-            } as any,
+            } as unknown as {
+              email: string;
+              password: string;
+              name: string;
+              role: string;
+              staffId: string;
+              kind: string;
+            },
           });
         } catch (e) {
           // ignore if already exists

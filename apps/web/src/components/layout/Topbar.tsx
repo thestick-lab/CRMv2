@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { ViewKey } from '@/types/navigation';
 import type { BreadcrumbCrumb } from './navigation-helpers';
-import { ChevronRight, Moon, Search, Sun, Sparkles } from 'lucide-react';
+import { ChevronRight, Moon, Search, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface TopbarProps {
@@ -19,7 +19,6 @@ export function Topbar({
   onOpenSearch,
   isDark,
   onToggleTheme,
-  onOpenAiAssistant,
 }: TopbarProps) {
   const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
 
@@ -67,22 +66,13 @@ export function Topbar({
             {isMac ? '⌘K' : 'Ctrl+K'}
           </kbd>
         </button>
-        {/* AI Copilot Trigger */}
-        <button
-          onClick={onOpenAiAssistant}
-          aria-label="Open AI Practice Copilot"
-          title="Open AI Practice Copilot"
-          className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative"
-        >
-          <Sparkles className="h-4 w-4 text-[#c4161c]" />
-        </button>
 
         {/* Theme Toggle */}
         <button
           onClick={onToggleTheme}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>

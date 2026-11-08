@@ -85,6 +85,7 @@ export interface EstimateInput {
   /** Calendar month (1-12) the annual work is done and billed */
   months: { AFS: number; REVIEW: number; ITR: number; CIPC_AR: number };
   recharges: { XERO: number; SIMPLEPAY: number };
+  fixedFees?: Partial<typeof FIXED_FEES> & { EMP501_SMALL?: number; EMP501_MEDIUM?: number; EMP501_LARGE?: number };
 }
 
 export interface EstimateLine {
@@ -256,12 +257,15 @@ const VAT_FREQ: Record<VatCategory, string> = {
 };
 
 export function computeEstimate(i: EstimateInput): Estimate {
+  const fees = {
+    ...FIXED_FEES,
+    ...i.fixedFees,
+  };
   const months = estimateMonths(i.startMonth);
   const index = new Map(months.map((m, k) => [m, k]));
   const sel = { ...suggestedSelection(i), ...i.selected };
   const on = (k: EstimateKey) => !!sel[k] && applicable(k, i);
   const warnings: string[] = [];
-
   const [py] = parts(PRICE_LIST_DATE);
   const increaseFrom = `${py + 1}-03`;
   const factor = (k: number) => (months[k] >= increaseFrom ? 1 + i.marchIncreasePct / 100 : 1);
@@ -348,19 +352,22 @@ export function computeEstimate(i: EstimateInput): Estimate {
 
   // Compliance returns, in the month they fall due
   if (on('VAT201') && i.vatCategory)
-    add('VAT201', 'Compliance', 'VAT returns (VAT201)', `Category ${i.vatCategory}, ${VAT_FREQ[i.vatCategory]}, ${rand(FIXED_FEES.VAT201)} each`, n('VAT201').map((c) => c * FIXED_FEES.VAT201), 'fee', `category ${i.vatCategory}`);
-  if (on('EMP201')) add('EMP201', 'Compliance', 'PAYE returns (EMP201)', `Monthly, ${rand(FIXED_FEES.EMP201)} each`, n('EMP201').map((c) => c * FIXED_FEES.EMP201));
+    add('VAT201', 'Compliance', 'VAT returns (VAT201)', `Category ${i.vatCategory}, ${VAT_FREQ[i.vatCategory]}, ${rand(fees.VAT201)} each`, n('VAT201').map((c) => c * fees.VAT201), 'fee', `category ${i.vatCategory}`);
+  if (on('EMP201')) add('EMP201', 'Compliance', 'PAYE returns (EMP201)', `Monthly, ${rand(fees.EMP201)} each`, n('EMP201').map((c) => c * fees.EMP201));
   if (on('EMP501')) {
     const tier = emp501Tier(i.employeeCount ?? 1)!;
-    const fee = Number(tier.fee.replace(/[^\d]/g, ''));
-    add('EMP501', 'Compliance', 'Employer reconciliations (EMP501)', `Interim and annual, ${tier.label.toLowerCase()}, ${tier.fee} each`, n('EMP501').map((c) => c * fee));
+    const baseFee = i.employeeCount !== undefined && i.employeeCount <= 10
+      ? (fees.EMP501_SMALL ?? 1900)
+      : i.employeeCount !== undefined && i.employeeCount <= 30
+      ? (fees.EMP501_MEDIUM ?? 2500)
+      : (fees.EMP501_LARGE ?? 3250);
+    add('EMP501', 'Compliance', 'Employer reconciliations (EMP501)', `Interim and annual, ${tier.label.toLowerCase()}, R ${baseFee.toLocaleString()} each`, n('EMP501').map((c) => c * baseFee));
   }
   if (on('IRP6')) {
-    const fee = i.irp6Payable ? FIXED_FEES.IRP6_PAYABLE : FIXED_FEES.IRP6_NIL;
+    const fee = i.irp6Payable ? fees.IRP6_PAYABLE : fees.IRP6_NIL;
     add('IRP6', 'Compliance', 'Provisional tax (IRP6)', `Two payments a year, ${rand(fee)} each (${i.irp6Payable ? 'tax payable' : 'nil'})`, n('IRP6').map((c) => c * fee));
   }
-  if (on('COIDA')) add('COIDA', 'Compliance', 'COIDA return of earnings', `${rand(FIXED_FEES.COIDA)}, in ${mon(TIMING.coidaMonth)}`, inMonth(TIMING.coidaMonth, FIXED_FEES.COIDA));
-
+  if (on('COIDA')) add('COIDA', 'Compliance', 'COIDA return of earnings', `${rand(fees.COIDA)}, in ${mon(TIMING.coidaMonth)}`, inMonth(TIMING.coidaMonth, fees.COIDA));
   // Annual work, in the month chosen
   if (on('AFS') && i.hours.AFS > 0)
     add('AFS', 'Annual work', 'Annual financial statements', `${i.hours.AFS} h × ${rand(i.rate)}, in ${mon(i.months.AFS)}`, inMonth(i.months.AFS, i.hours.AFS * i.rate));
@@ -368,19 +375,20 @@ export function computeEstimate(i: EstimateInput): Estimate {
     add('REVIEW', 'Annual work', 'Independent review', `${i.hours.REVIEW} h × ${rand(i.rate)}, in ${mon(i.months.REVIEW)}`, inMonth(i.months.REVIEW, i.hours.REVIEW * i.rate));
   if (on('ITR')) {
     const itr = itrLabel(i.entityType);
-    add('ITR', 'Annual work', itr.name, `${rand(itr.fee)}, in ${mon(i.months.ITR)}`, inMonth(i.months.ITR, itr.fee));
+    const fee = i.entityType === 'Individual' ? fees.ITR12 : i.entityType === 'Trust' ? fees.ITR12T : fees.ITR14;
+    add('ITR', 'Annual work', itr.name, `${rand(fee)}, in ${mon(i.months.ITR)}`, inMonth(i.months.ITR, fee));
   }
   const d = Math.max(0, Math.floor(i.directors || 0));
   if (on('DIR_ITR12') && d > 0)
-    add('DIR_ITR12', 'Annual work', "Directors' income tax returns (ITR12)", `${d} × ${rand(FIXED_FEES.ITR12)}, in ${mon(TIMING.itr12Month)}`, inMonth(TIMING.itr12Month, d * FIXED_FEES.ITR12), 'fee', d > 1 ? `${d} directors` : undefined);
+    add('DIR_ITR12', 'Annual work', "Directors' income tax returns (ITR12)", `${d} × ${rand(fees.ITR12)}, in ${mon(TIMING.itr12Month)}`, inMonth(TIMING.itr12Month, d * fees.ITR12), 'fee', d > 1 ? `${d} directors` : undefined);
   if (on('DIR_IRP6') && d > 0) {
-    const fee = i.irp6Payable ? FIXED_FEES.IRP6_PAYABLE : FIXED_FEES.IRP6_NIL;
+    const fee = i.irp6Payable ? fees.IRP6_PAYABLE : fees.IRP6_NIL;
     const raw = months.map((m) => (TIMING.directorsIrp6Months.includes(Number(m.slice(5))) ? d * fee : 0));
     add('DIR_IRP6', 'Annual work', "Directors' provisional tax (IRP6)", `${d} × ${rand(fee)}, in ${TIMING.directorsIrp6Months.map(mon).join(' and ')}`, raw, 'fee', d > 1 ? `${d} directors` : undefined);
   }
   if (on('CIPC_AR'))
-    add('CIPC_AR', 'Annual work', 'CIPC annual return and FAS', `Our fee ${rand(FIXED_FEES.CIPC_SUBMISSION)}, in ${mon(i.months.CIPC_AR)}`, inMonth(i.months.CIPC_AR, FIXED_FEES.CIPC_SUBMISSION));
-  if (on('BO')) add('BO', 'Annual work', 'Beneficial ownership update', `${rand(FIXED_FEES.BO)}, with the annual return`, inMonth(i.months.CIPC_AR, FIXED_FEES.BO));
+    add('CIPC_AR', 'Annual work', 'CIPC annual return and FAS', `Our fee ${rand(fees.CIPC_SUBMISSION)}, in ${mon(i.months.CIPC_AR)}`, inMonth(i.months.CIPC_AR, fees.CIPC_SUBMISSION));
+  if (on('BO')) add('BO', 'Annual work', 'Beneficial ownership update', `${rand(fees.BO)}, with the annual return`, inMonth(i.months.CIPC_AR, fees.BO));
 
   // Recharges: passed on at cost, no March increase; the CIPC fee carries no VAT
   if (on('CIPC_AR')) {

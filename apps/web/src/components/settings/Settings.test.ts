@@ -44,7 +44,6 @@ describe('Settings view panes and AI assistant engine', () => {
     expect(settingsSrc).toContain('TeamRbacPane');
     expect(settingsSrc).toContain('ServicePricingMatrixPane');
     expect(settingsSrc).toContain('SaicaGovernanceLogPane');
-    expect(settingsSrc).toContain('AiIntegrationsPane');
     expect(settingsSrc).toContain('Admin Panel');
   });
 
@@ -54,8 +53,7 @@ describe('Settings view panes and AI assistant engine', () => {
 
     // Matrix pane contents
     expect(matrixSrc).toContain('Service Catalogue');
-    expect(matrixSrc).toContain('Turnover bands');
-    expect(matrixSrc).toContain('Sync from sars.gov.za');
+    expect(matrixSrc).toContain('Standard Rates');
 
     // SAICA Governance Log contents
     expect(saicaSrc).toContain('SAICA Governance Audit Log');

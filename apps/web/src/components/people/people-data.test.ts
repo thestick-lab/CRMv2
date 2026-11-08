@@ -52,6 +52,6 @@ describe('People directory relational data engine and RBAC policy', () => {
     expect(directorySrc).toContain('<table');
     expect(directorySrc).toContain('overflow-x-auto');
     expect(directorySrc).toContain('canManagePeople');
-    expect(directorySrc).toContain('Add Contact');
+    expect(directorySrc).toContain('Add Employee');
   });
 });

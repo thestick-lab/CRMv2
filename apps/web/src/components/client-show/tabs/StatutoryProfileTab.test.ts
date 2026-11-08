@@ -43,8 +43,7 @@ describe('StatutoryProfileTab interactive details and services configuration', (
     expect(showSrc).toContain('View Client Deadlines');
     expect(showSrc).toContain("onNavigate('deadlines'");
 
-    // Deadlines and Estimate tabs moved out to top level, keeping Details & Vault
+    // Deadlines and Estimate tabs moved out to top level, keeping Details
     expect(showSrc).toContain('details');
-    expect(showSrc).toContain('vault');
   });
 });

@@ -3,7 +3,6 @@ import * as TabsPrimitive from '@radix-ui/react-tabs';
 import type { ViewKey } from '@/types/navigation';
 import { EstimateCalculator } from '@/components/estimator/EstimateCalculator';
 import { SentQuotesPipeline } from '@/components/estimator/SentQuotesPipeline';
-import { Badge } from '@/components/ui/badge';
 import { Calculator, FileCheck2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,13 +24,7 @@ export function EstimatorView({ onNavigate, initialTab = 'calculator' }: Estimat
               <Calculator className="h-5 w-5 text-[#c4161c]" />
               Fee Estimator &amp; Quotes
             </h1>
-            <Badge variant="crimsonSubdued" className="font-mono text-xs py-0 px-1.5 h-5">
-              12-Month Projections
-            </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Interactive retainer calculation engine with March +6% escalation and sent proposal onboarding pipeline.
-          </p>
         </div>
       </div>
 

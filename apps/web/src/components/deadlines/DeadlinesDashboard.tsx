@@ -14,7 +14,6 @@ import {
   CalendarClock,
   Clock,
   Columns3,
-  Filter,
   List,
   ShieldCheck,
   UserCheck,
@@ -28,7 +27,7 @@ export interface DeadlinesDashboardProps {
 }
 
 export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClientFilter }: DeadlinesDashboardProps) {
-  const [viewMode, setViewMode] = React.useState<'kanban' | 'table'>('kanban');
+  const [viewMode, setViewMode] = React.useState<'kanban' | 'table'>('table');
   const [horizon, setHorizon] = React.useState<'30' | '90' | '365'>('30');
   const [selectedStaff, setSelectedStaff] = React.useState<string>('all');
   const [selectedService, setSelectedService] = React.useState<string>('all');
@@ -36,7 +35,6 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
   const [activeKpiFilter, setActiveKpiFilter] = React.useState<'all' | 'overdue' | 'due7' | 'due30' | 'missing'>('all');
   const today = todayInSouthAfrica();
   const { clients, staff } = usePracticeStore();
-
 
   // Aggregate all tasks practice-wide
   const summary = React.useMemo(() => {
@@ -52,11 +50,11 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
       asOfDate: today,
     });
   }, [summary.tasks, horizon, selectedStaff, selectedService, today]);
+
   // Compute dynamic KPI metrics reacting to active horizon and filters
   const displayedKpi = React.useMemo(() => {
     return computePracticeKpi(filteredTasks, today);
   }, [filteredTasks, today]);
-
 
   const displayedTasks = React.useMemo(() => {
     let result = filteredTasks;
@@ -72,10 +70,12 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
     if (activeKpiFilter === 'missing') return result.filter((t) => !t.due);
     return result;
   }, [filteredTasks, clientFilter, activeKpiFilter, today]);
+
   // Available unique service codes
   const availableServices = React.useMemo(() => {
     return Array.from(new Set(summary.tasks.map((t) => t.service))).sort();
   }, [summary.tasks]);
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header & View Mode Switcher */}
@@ -111,30 +111,15 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Real-time compliance monitoring across South African statutory tax returns (SARS s25 TAA &amp; Companies Act s30).
-          </p>
         </div>
 
-        {/* View Mode Toggle: Kanban vs Table */}
-        <div className="flex items-center gap-2 self-start md:self-center">
+        {/* Right Controls Container */}
+        <div className="flex items-center gap-2 self-start md:self-center shrink-0">
           <div className="flex items-center p-0.5 rounded-lg border border-border bg-card">
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                viewMode === 'kanban'
-                  ? 'bg-[#c4161c] text-white shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Columns3 className="h-3.5 w-3.5" />
-              <span>Kanban</span>
-            </button>
             <button
               onClick={() => setViewMode('table')}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer',
                 viewMode === 'table'
                   ? 'bg-[#c4161c] text-white shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -143,35 +128,47 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
               <List className="h-3.5 w-3.5" />
               <span>Table</span>
             </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer',
+                viewMode === 'kanban'
+                  ? 'bg-[#c4161c] text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Columns3 className="h-3.5 w-3.5" />
+              <span>Kanban</span>
+            </button>
           </div>
-        </div>
 
-        {viewMode === 'kanban' && (
-          <div className="flex items-center p-0.5 rounded-lg border border-border bg-card text-xs">
-            <button
-              onClick={() => setGroupBy('workflow')}
-              className={cn(
-                'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
-                groupBy === 'workflow'
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Workflow Status
-            </button>
-            <button
-              onClick={() => setGroupBy('urgency')}
-              className={cn(
-                'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
-                groupBy === 'urgency'
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Date Urgency
-            </button>
-          </div>
-        )}
+          {viewMode === 'kanban' && (
+            <div className="flex items-center p-0.5 rounded-lg border border-border bg-card text-xs">
+              <button
+                onClick={() => setGroupBy('workflow')}
+                className={cn(
+                  'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                  groupBy === 'workflow'
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Workflow Status
+              </button>
+              <button
+                onClick={() => setGroupBy('urgency')}
+                className={cn(
+                  'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                  groupBy === 'urgency'
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Date Urgency
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 4 Statutory KPI Tiles */}
@@ -261,55 +258,33 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
         </button>
       </div>
 
-      {/* Filter Controls Bar */}
-      <div className="border border-border/80 rounded-lg p-3 bg-card/60 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-        {/* Horizon Toggle Chips */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mr-1 flex items-center gap-1">
-            <Filter className="h-3 w-3" /> Horizon:
-          </span>
-          <button
-            onClick={() => setHorizon('30')}
-            className={cn(
-              'px-2.5 py-1 rounded text-xs font-mono font-medium transition-colors',
-              horizon === '30'
-                ? 'bg-[#c4161c] text-white'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            30 Days
-          </button>
-          <button
-            onClick={() => setHorizon('90')}
-            className={cn(
-              'px-2.5 py-1 rounded text-xs font-mono font-medium transition-colors',
-              horizon === '90'
-                ? 'bg-[#c4161c] text-white'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            90 Days
-          </button>
-          <button
-            onClick={() => setHorizon('365')}
-            className={cn(
-              'px-2.5 py-1 rounded text-xs font-mono font-medium transition-colors',
-              horizon === '365'
-                ? 'bg-[#c4161c] text-white'
-                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            Full Year (365d)
-          </button>
-        </div>
+      {/* Filter Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border border-border bg-card/60 shadow-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Horizon Toggle */}
+          <div className="flex items-center p-0.5 rounded-lg border border-border bg-background text-xs">
+            <span className="px-2 text-[10px] font-mono uppercase text-muted-foreground">Horizon:</span>
+            {(['30', '90', '365'] as const).map((h) => (
+              <button
+                key={h}
+                onClick={() => setHorizon(h)}
+                className={cn(
+                  'px-2.5 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer',
+                  horizon === h
+                    ? 'bg-[#c4161c] text-white shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {h === '365' ? 'Full Year (365d)' : `${h} Days`}
+              </button>
+            ))}
+          </div>
 
-        {/* Staff & Return Dropdowns */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Staff Select */}
+          {/* Staff Filter */}
           <select
             value={selectedStaff}
             onChange={(e) => setSelectedStaff(e.target.value)}
-            className="h-7 px-2 text-xs rounded border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-[#c4161c]"
+            className="px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground font-medium"
           >
             <option value="all">All Practice Staff</option>
             {staff.map((s) => (
@@ -319,11 +294,11 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
             ))}
           </select>
 
-          {/* Service Select */}
+          {/* Return Type Filter */}
           <select
             value={selectedService}
             onChange={(e) => setSelectedService(e.target.value)}
-            className="h-7 px-2 text-xs rounded border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-[#c4161c]"
+            className="px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground font-medium"
           >
             <option value="all">All Return Types</option>
             {availableServices.map((svc) => (
@@ -332,21 +307,20 @@ export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClient
               </option>
             ))}
           </select>
+        </div>
 
-          <span className="font-mono text-[11px] text-muted-foreground ml-1">
-            {filteredTasks.length} tasks
-          </span>
+        <div className="text-xs font-mono text-muted-foreground">
+          {displayedTasks.length} tasks
         </div>
       </div>
 
-      {/* Render Active View */}
+      {/* View Content: Kanban vs Table */}
       {viewMode === 'kanban' ? (
         <DeadlinesKanban
           tasks={displayedTasks}
-          asOfDate={today}
-          onSelectClient={onSelectClient}
-          horizon={horizon}
           groupBy={groupBy}
+          onSelectClient={onSelectClient}
+          asOfDate={today}
         />
       ) : (
         <DeadlinesTable

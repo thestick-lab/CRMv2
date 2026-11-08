@@ -6,7 +6,6 @@ import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { CLIENT_SHOW_TABS, ClientSummaryBar } from './ClientSummaryBar';
 import { StatutoryProfileTab } from './tabs/StatutoryProfileTab';
 import { buildEstimateForClient } from './tabs/EstimateTab';
-import { VaultTab } from './tabs/VaultTab';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
 import { cn } from '@/lib/utils';
 
@@ -14,10 +13,9 @@ export interface ClientShowViewProps {
   clientCode: string;
   onBack: () => void;
   onNavigate?: (view: ViewKey, clientCode?: string) => void;
-  initialTab?: 'details' | 'vault' | 'profile' | 'deadlines' | 'estimate';
+  initialTab?: 'details' | 'profile' | 'deadlines' | 'estimate';
   childrenTabs?: {
     details?: React.ReactNode;
-    vault?: React.ReactNode;
     profile?: React.ReactNode;
     deadlines?: React.ReactNode;
     estimate?: React.ReactNode;
@@ -124,10 +122,6 @@ export function ClientShowView({
 
         <TabsPrimitive.Content value="profile" className="outline-none">
           {childrenTabs?.profile ?? <StatutoryProfileTab client={client} />}
-        </TabsPrimitive.Content>
-
-        <TabsPrimitive.Content value="vault" className="outline-none">
-          {childrenTabs?.vault ?? <VaultTab client={client} />}
         </TabsPrimitive.Content>
       </TabsPrimitive.Root>
     </div>

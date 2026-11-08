@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
-import { DEMO_PASSWORD, SEEDED_STAFF_ACCOUNTS } from '@/lib/auth-client';
+import { DEMO_PASSWORD } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, User, Lock, ArrowRight } from 'lucide-react';
+import { User, Lock, ArrowRight } from 'lucide-react';
 
 export interface LoginViewProps {
   onLoginSuccess?: () => void;
@@ -96,7 +96,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#c4161c] hover:bg-[#a51217] text-white font-medium text-xs h-9 shadow-xs"
+            className="w-full bg-[#c4161c] hover:bg-[#a51217] text-white font-medium text-xs h-9 shadow-xs cursor-pointer"
           >
             <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
             <ArrowRight className="h-4 w-4 ml-1.5" />
