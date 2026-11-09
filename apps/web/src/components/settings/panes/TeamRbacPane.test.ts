@@ -62,12 +62,24 @@ describe('invite role gate', () => {
     );
   });
 
+  it('refuses a Compliance Officer a Support Tech invite — its manage cell could mint them a Partner', () => {
+    expect(DEFAULT_PERMISSION_MATRIX['Support Tech']['Settings.manage']).toBe('Allowed');
+    expect(
+      canInviteWithRole('Compliance Officer', 'Support Tech', DEFAULT_PERMISSION_MATRIX)
+    ).toBe(false);
+    expect(inviteRoleBlock('Compliance Officer', 'Support Tech', DEFAULT_PERMISSION_MATRIX)).toBe(
+      INVITE_ROLE_NOTE
+    );
+    // A Partner holds the grant, so the same target is allowed there.
+    expect(canInviteWithRole('Partner', 'Support Tech', DEFAULT_PERMISSION_MATRIX)).toBe(true);
+    expect(inviteRoleBlock('Partner', 'Support Tech', DEFAULT_PERMISSION_MATRIX)).toBeNull();
+  });
+
   it('leaves a Compliance Officer every role below the gate — the Team register list', () => {
     expect(assignableInviteRoles('Compliance Officer', DEFAULT_PERMISSION_MATRIX)).toEqual([
       'Accountant',
       'Team member',
       'Subcontractor',
-      'Support Tech',
     ]);
   });
 

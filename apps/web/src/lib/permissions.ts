@@ -318,18 +318,22 @@ export const DEFAULT_PERMISSION_MATRIX: PermissionMatrix = ROLES.reduce(
  * Minting an account into a role at or above Compliance Officer is a
  * `Settings — manage` decision — the same grant that guards role changes — so
  * a Compliance Officer cannot invite themselves a Partner account behind
- * `Settings — view` or `People — view-invite`. Both invite entry points and the
- * store's reducer resolve the rule here; there is no second copy.
+ * `Settings — view` or `People — view-invite`. Support Tech belongs on that
+ * list too: its `Settings — manage` cell is Allowed, so a Compliance Officer
+ * minting one would otherwise hold a two-step path to Partner they lack
+ * themselves. Both invite entry points and the store's reducer resolve the
+ * rule here; there is no second copy.
  * ------------------------------------------------------------------------- */
 
 export const MANAGE_REQUIRED_INVITE_ROLES: readonly Role[] = [
   'Partner',
   'Compliance Officer',
+  'Support Tech',
 ];
 
 /** The one reason shown wherever an invite role is withheld. */
 export const INVITE_ROLE_NOTE =
-  'Partner and Compliance Officer invites need Settings — manage.';
+  'Partner, Compliance Officer and Support Tech invites need Settings — manage.';
 
 export function canInviteWithRole(
   role: Role,
