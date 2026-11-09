@@ -4,20 +4,13 @@ import { ChevronRight, Search, UserPlus, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { Role } from '@/lib/permissions';
 import {
   filterStaffRows,
   formatHourlyRate,
   formatStartDate,
   type StaffRow,
 } from './staff-data';
-
-export const INVITE_ROLES = [
-  'Partner',
-  'Compliance Officer',
-  'Accountant',
-  'Team member',
-  'Subcontractor',
-] as const;
 
 export interface StaffDirectoryProps {
   rows: StaffRow[];
@@ -159,7 +152,7 @@ export function StaffDirectory({ rows, onOpen }: StaffDirectoryProps) {
 export interface InviteTeamMemberInput {
   name: string;
   email: string;
-  role: (typeof INVITE_ROLES)[number];
+  role: Role;
   kind: 'employee' | 'subcontractor';
 }
 
@@ -167,6 +160,10 @@ export interface InviteMemberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInvite: (member: InviteTeamMemberInput) => void;
+  /** Roles the signed-in user may assign — shared with Settings (no copy). */
+  assignableRoles: readonly Role[];
+  /** Shown when some roles are withheld (e.g. Partner for a Compliance Officer). */
+  roleNote?: string;
 }
 
 function signInEmailFor(name: string): string {
@@ -178,10 +175,22 @@ function signInEmailFor(name: string): string {
 }
 
 /** Invite action for the Team register — dispatches the existing INVITE_TEAM_MEMBER flow. */
-export function InviteMemberDialog({ open, onOpenChange, onInvite }: InviteMemberDialogProps) {
+export function InviteMemberDialog({
+  open,
+  onOpenChange,
+  onInvite,
+  assignableRoles,
+  roleNote,
+}: InviteMemberDialogProps) {
   const [name, setName] = React.useState('');
-  const [role, setRole] = React.useState<(typeof INVITE_ROLES)[number]>('Team member');
+  const [role, setRole] = React.useState<Role>('Team member');
   const [kind, setKind] = React.useState<'employee' | 'subcontractor'>('employee');
+
+  // A role the signed-in user may not assign never stays selected (or ships).
+  React.useEffect(() => {
+    if (assignableRoles.includes(role)) return;
+    setRole(assignableRoles[0] ?? 'Team member');
+  }, [assignableRoles, role]);
 
   const reset = () => {
     setName('');
@@ -192,6 +201,7 @@ export function InviteMemberDialog({ open, onOpenChange, onInvite }: InviteMembe
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!assignableRoles.includes(role)) return;
     onInvite({
       name: name.trim(),
       email: signInEmailFor(name.trim()),
@@ -245,15 +255,18 @@ export function InviteMemberDialog({ open, onOpenChange, onInvite }: InviteMembe
                 <span className="font-medium text-foreground">Role</span>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as (typeof INVITE_ROLES)[number])}
+                  onChange={(e) => setRole(e.target.value as Role)}
                   className="h-[30px] w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c]"
                 >
-                  {INVITE_ROLES.map((r) => (
+                  {assignableRoles.map((r) => (
                     <option key={r} value={r}>
                       {r}
                     </option>
                   ))}
                 </select>
+                {roleNote && (
+                  <p className="text-[10px] leading-relaxed text-muted-foreground">{roleNote}</p>
+                )}
               </label>
 
               <label className="block space-y-1">
@@ -281,7 +294,11 @@ export function InviteMemberDialog({ open, onOpenChange, onInvite }: InviteMembe
                   Cancel
                 </Button>
               </DialogPrimitive.Close>
-              <Button type="submit" size="sm" disabled={!name.trim()}>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!name.trim() || !assignableRoles.includes(role)}
+              >
                 <UserPlus className="h-3.5 w-3.5" />
                 Send invite
               </Button>

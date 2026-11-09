@@ -312,6 +312,51 @@ export const DEFAULT_PERMISSION_MATRIX: PermissionMatrix = ROLES.reduce(
   {} as PermissionMatrix
 );
 
+/* ---------------------------------------------------------------------------
+ * Invite policy (§6.9 / role-change gate).
+ *
+ * Minting an account into a role at or above Compliance Officer is a
+ * `Settings — manage` decision — the same grant that guards role changes — so
+ * a Compliance Officer cannot invite themselves a Partner account behind
+ * `Settings — view` or `People — view-invite`. Both invite entry points and the
+ * store's reducer resolve the rule here; there is no second copy.
+ * ------------------------------------------------------------------------- */
+
+export const MANAGE_REQUIRED_INVITE_ROLES: readonly Role[] = [
+  'Partner',
+  'Compliance Officer',
+];
+
+/** The one reason shown wherever an invite role is withheld. */
+export const INVITE_ROLE_NOTE =
+  'Partner and Compliance Officer invites need Settings — manage.';
+
+export function canInviteWithRole(
+  role: Role,
+  targetRole: string,
+  matrix: PermissionState['matrix'] = DEFAULT_PERMISSION_MATRIX
+): boolean {
+  if (!MANAGE_REQUIRED_INVITE_ROLES.includes(targetRole as Role)) return true;
+  return can(role, 'Settings', 'manage', matrix);
+}
+
+export function inviteRoleBlock(
+  role: Role,
+  targetRole: string,
+  matrix: PermissionState['matrix'] = DEFAULT_PERMISSION_MATRIX
+): string | null {
+  if (canInviteWithRole(role, targetRole, matrix)) return null;
+  return INVITE_ROLE_NOTE;
+}
+
+/** The roles `role` may assign through either invite surface, in matrix order. */
+export function assignableInviteRoles(
+  role: Role,
+  matrix: PermissionState['matrix'] = DEFAULT_PERMISSION_MATRIX
+): Role[] {
+  return ROLES.filter((candidate) => canInviteWithRole(role, candidate, matrix));
+}
+
 /** The partner sign-off row is practice rule and never matrix-overridable. */
 export const SIGN_OFF_LOCKED = true;
 

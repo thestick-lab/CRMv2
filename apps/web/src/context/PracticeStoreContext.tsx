@@ -14,6 +14,7 @@ import { formatHours } from '@/lib/billing';
 import { personInitials } from '@/lib/initials';
 import { signInWithCredentials } from '@/lib/auth-client';
 import {
+  canInviteWithRole,
   validatePermissionChange,
   type PermissionCell,
   type PermissionGroupInput,
@@ -1208,6 +1209,18 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
     }
 
     case 'INVITE_TEAM_MEMBER': {
+      // Invite roles resolve through the same policy as both invite dialogs. A
+      // stale or forged dispatch for a role this user may not assign changes
+      // nothing (same state object, no activity entry).
+      if (
+        !canInviteWithRole(
+          state.currentUser.role,
+          action.payload.role,
+          state.permissions.matrix
+        )
+      ) {
+        return state;
+      }
       const id = action.payload.name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 16);
       const newStaff: StaffMember = {
         id,

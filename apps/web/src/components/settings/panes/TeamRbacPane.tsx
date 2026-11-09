@@ -14,7 +14,12 @@ import {
   type StaffRow,
 } from '@/components/team/staff-data';
 import { StaffEditDialog } from '@/components/team/StaffEditDialog';
-import { can } from '@/lib/permissions';
+import {
+  assignableInviteRoles,
+  can,
+  inviteRoleBlock,
+  INVITE_ROLE_NOTE,
+} from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 
 export const RBAC_ROLES = [
@@ -25,35 +30,6 @@ export const RBAC_ROLES = [
   'Subcontractor',
   'Support Tech',
 ] as const;
-
-/**
- * Roles at or above Compliance Officer. Minting an account into one of these
- * is a `Settings — manage` decision — the same grant that guards role changes —
- * so a Compliance Officer cannot invite themselves a Partner account behind
- * the pane's `Settings — view`.
- */
-export const MANAGE_REQUIRED_INVITE_ROLES: readonly string[] = [
-  'Partner',
-  'Compliance Officer',
-];
-
-export function canInviteWithRole(
-  actorRole: Parameters<typeof can>[0],
-  targetRole: string,
-  matrix: Parameters<typeof can>[3]
-): boolean {
-  if (!MANAGE_REQUIRED_INVITE_ROLES.includes(targetRole)) return true;
-  return can(actorRole, 'Settings', 'manage', matrix);
-}
-
-export function inviteRoleBlock(
-  actorRole: Parameters<typeof can>[0],
-  targetRole: string,
-  matrix: Parameters<typeof can>[3]
-): string | null {
-  if (canInviteWithRole(actorRole, targetRole, matrix)) return null;
-  return `Inviting a ${targetRole} needs Settings — manage permissions.`;
-}
 
 export function TeamRbacPane() {
   const {
@@ -71,10 +47,7 @@ export function TeamRbacPane() {
   const canManageStaff = can(currentUser.role, 'Settings', 'manage', permissions.matrix);
   const canEditStaff = can(currentUser.role, 'People', 'view-invite', permissions.matrix);
   const invitableRoles = React.useMemo(
-    () =>
-      RBAC_ROLES.filter((candidate) =>
-        canInviteWithRole(currentUser.role, candidate, permissions.matrix)
-      ),
+    () => assignableInviteRoles(currentUser.role, permissions.matrix),
     [currentUser.role, permissions.matrix]
   );
   const [feedback, setFeedback] = React.useState<string | null>(null);
@@ -322,9 +295,7 @@ export function TeamRbacPane() {
                     ))}
                   </select>
                   {!canManageStaff && (
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Partner and Compliance Officer invites need Settings — manage.
-                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{INVITE_ROLE_NOTE}</p>
                   )}
                 </div>
 

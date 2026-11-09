@@ -1,7 +1,12 @@
 import * as React from 'react';
 import { ArrowLeft, BadgeCheck, Pencil, Tags, UserPlus, Users2 } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
-import { can } from '@/lib/permissions';
+import {
+  assignableInviteRoles,
+  can,
+  canInviteWithRole,
+  inviteRoleBlock,
+} from '@/lib/permissions';
 import { PageHeader } from '@/components/ui/page-header';
 import { CardHeaderWithLink, EmptyStateCard } from '@/components/ui/list-primitives';
 import { Button } from '@/components/ui/button';
@@ -48,8 +53,16 @@ export function TeamView() {
 
   const selected = rows.find((row) => row.id === selectedId) ?? null;
 
+  const assignableRoles = React.useMemo(
+    () => assignableInviteRoles(currentUser.role, permissions.matrix),
+    [currentUser.role, permissions.matrix]
+  );
+
   const handleInvite = (member: InviteTeamMemberInput) => {
     if (!canEditStaff) return;
+    // The shared rule owns which roles this user may hand out; the reducer
+    // refuses the same roles if a stale UI ever dispatches one.
+    if (!canInviteWithRole(currentUser.role, member.role, permissions.matrix)) return;
     inviteTeamMember(member);
   };
 
@@ -106,6 +119,8 @@ export function TeamView() {
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         onInvite={handleInvite}
+        assignableRoles={assignableRoles}
+        roleNote={inviteRoleBlock(currentUser.role, 'Partner', permissions.matrix) ?? undefined}
       />
     </div>
   );
