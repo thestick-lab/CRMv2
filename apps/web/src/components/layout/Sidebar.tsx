@@ -1,5 +1,5 @@
 import type { NavSection, ViewKey } from '@/types/navigation';
-import { NAV_ITEMS, type NavItemDef } from './navigation-helpers';
+import { NAV_ITEMS, canAccessView, type NavItemDef } from './navigation-helpers';
 import { UserPopover } from '@/components/ui/user-popover';
 import { PanelLeftClose } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,7 +21,7 @@ export function Sidebar({
   collapsed,
   onToggleCollapse,
 }: SidebarProps) {
-  const { division, taskStatusOverrides } = usePracticeStore();
+  const { division, taskStatusOverrides, currentUser, permissions } = usePracticeStore();
   const isFd = division === 'fd-on-call';
   const activeLogo = isFd ? '/fd-on-call-logo.png' : '/accountant-on-call-logo.png';
 
@@ -29,7 +29,9 @@ export function Sidebar({
     (o) => o.status === 'Partner Review Gate'
   ).length;
 
-  const navItems: NavItemDef[] = NAV_ITEMS.map((item) =>
+  const navItems: NavItemDef[] = NAV_ITEMS.filter((item) =>
+    canAccessView(item.id, currentUser.role, permissions.matrix)
+  ).map((item) =>
     item.id === 'inbox' && pendingReviewCount > 0
       ? { ...item, badge: pendingReviewCount }
       : item

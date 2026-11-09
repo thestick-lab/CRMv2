@@ -3,6 +3,7 @@ import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 import { BarChart3, ListChecks, Plus } from 'lucide-react';
 import { useTimer } from './timer-context';
 import { Timesheet } from './Timesheet';
@@ -23,9 +24,12 @@ const TABS: ReadonlyArray<{ id: TimeTab; label: string; icon: React.ComponentTyp
 ];
 
 export function TimeView() {
-  const { timeEntries } = usePracticeStore();
+  const { timeEntries, currentUser, permissions } = usePracticeStore();
   const { openEntrySheet } = useTimer();
-  const [tab, setTab] = React.useState<TimeTab>('log');
+  const canLogOwn = can(currentUser.role, 'Time', 'log-own', permissions.matrix);
+  const canViewAll = can(currentUser.role, 'Time', 'view-all', permissions.matrix);
+  const tabs = TABS.filter((entry) => (entry.id === 'log' ? canLogOwn : canViewAll));
+  const [tab, setTab] = React.useState<TimeTab>(() => (canLogOwn ? 'log' : 'report'));
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 p-6">
@@ -34,7 +38,13 @@ export function TimeView() {
         title="Time tracking"
         subtitle="Log billable and non-billable work, then reconcile the practice report against the underlying entries."
         actions={
-          <Button size="sm" onClick={openEntrySheet} data-testid="time-log-action">
+          <Button
+            size="sm"
+            onClick={openEntrySheet}
+            data-testid="time-log-action"
+            disabled={!canLogOwn}
+            title={canLogOwn ? undefined : `${currentUser.role} cannot log time`}
+          >
             <Plus className="h-3.5 w-3.5" />
             Log time
           </Button>
@@ -43,7 +53,7 @@ export function TimeView() {
 
       <div className="flex items-center justify-between gap-3 border-b border-border">
         <div role="tablist" aria-label="Time views" className="flex items-center gap-1">
-          {TABS.map((entry) => {
+          {tabs.map((entry) => {
             const Icon = entry.icon;
             const active = tab === entry.id;
             return (

@@ -3,16 +3,22 @@ import { PartnerReviewQueue } from '@/components/inbox/PartnerReviewQueue';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { NoAccessView } from '@/components/layout/NoAccessView';
+import { canAccessView } from '@/components/layout/navigation-helpers';
 
 export interface InboxViewProps {
   onNavigate: (view: ViewKey, clientCode?: string) => void;
 }
 
 export function InboxView({ onNavigate }: InboxViewProps) {
-  const { taskStatusOverrides } = usePracticeStore();
+  const { taskStatusOverrides, currentUser, permissions } = usePracticeStore();
   const pendingCount = Object.values(taskStatusOverrides).filter(
     (o) => o.status === 'Partner Review Gate'
   ).length;
+
+  if (!canAccessView('inbox', currentUser.role, permissions.matrix)) {
+    return <NoAccessView view="inbox" onNavigate={(view) => onNavigate(view)} />;
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { ArrowLeft, BadgeCheck, Tags, UserPlus, Users2 } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,8 @@ import {
 const STAFF_TABS: TabConfig[] = [{ id: 'overview', label: 'Overview', icon: BadgeCheck }];
 
 export function TeamView() {
-  const { staff, currentUser, rates, inviteTeamMember } = usePracticeStore();
+  const { staff, currentUser, rates, inviteTeamMember, permissions } = usePracticeStore();
+  const canInvite = can(currentUser.role, 'People', 'view-invite', permissions.matrix);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = React.useState(false);
 
@@ -39,6 +41,7 @@ export function TeamView() {
   const selected = rows.find((row) => row.id === selectedId) ?? null;
 
   const handleInvite = (member: InviteTeamMemberInput) => {
+    if (!canInvite) return;
     inviteTeamMember(member);
   };
 
@@ -53,7 +56,12 @@ export function TeamView() {
         title="Team"
         subtitle="The internal staff register — role, employment kind, contact details and contract terms. Client directors live on each client's Organization tab."
         actions={
-          <Button size="sm" onClick={() => setInviteOpen(true)}>
+          <Button
+            size="sm"
+            onClick={() => setInviteOpen(true)}
+            disabled={!canInvite}
+            title={canInvite ? undefined : `${currentUser.role} cannot invite team members`}
+          >
             <UserPlus className="h-3.5 w-3.5" />
             Invite member
           </Button>

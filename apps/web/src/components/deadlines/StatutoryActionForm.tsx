@@ -12,6 +12,7 @@ import {
   type WorkflowStatus,
 } from '@/lib/workflow';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 
 export interface StatutoryActionFormProps {
   task: PracticeTaskItem;
@@ -34,7 +35,7 @@ export function StatutoryActionForm({
   onSelectClient,
   compact,
 }: StatutoryActionFormProps) {
-  const { currentUser, taskStatusOverrides, updateTaskStatus } = usePracticeStore();
+  const { currentUser, taskStatusOverrides, updateTaskStatus, permissions } = usePracticeStore();
   const override = taskStatusOverrides[task.id];
 
   const [status, setStatus] = React.useState<WorkflowStatus>('Not Started');
@@ -46,6 +47,14 @@ export function StatutoryActionForm({
   const [validationError, setValidationError] = React.useState<string | null>(null);
 
   const isPartner = canSignOffPartnerGate(currentUser.role);
+  // §6.9 `Deadlines — submit returns`: Team members and subcontractors prepare
+  // the work but cannot file it. The partner gate remains the second lock.
+  const canSubmitReturns = can(
+    currentUser.role,
+    'Deadlines',
+    'submit-returns',
+    permissions.matrix
+  );
   const requiresPartnerGate =
     task.needsPartnerReview ||
     task.service === 'AFS' ||
@@ -73,6 +82,16 @@ export function StatutoryActionForm({
 
   const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (
+      (status === 'Approved (Ready to Lodge)' || status === 'Submitted') &&
+      !canSubmitReturns
+    ) {
+      setValidationError(
+        `${currentUser.role} cannot submit statutory returns — ask a Partner, the Compliance Officer or an Accountant to file this one.`
+      );
+      return;
+    }
 
     const validation = validateStatutorySubmission({
       status,
@@ -321,6 +340,15 @@ export function StatutoryActionForm({
           <Button
             type="submit"
             size="sm"
+            disabled={
+              !canSubmitReturns &&
+              (status === 'Approved (Ready to Lodge)' || status === 'Submitted')
+            }
+            title={
+              canSubmitReturns
+                ? undefined
+                : `${currentUser.role} cannot file returns — lane updates still save`
+            }
             className="bg-[#c4161c] text-white hover:bg-[#a51217]"
           >
             Save &amp; update status

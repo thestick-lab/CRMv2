@@ -43,12 +43,15 @@ describe('Unified operations and governance review fixes', () => {
     expect(nextState.savedEstimates['ALC-610'].hours.BOOKKEEPING).toBe(6);
   });
 
-  it('verifies SettingsView role-gates the Admin Panel to Partners and Compliance Officers', () => {
+  it('verifies SettingsView gates its panes through the permission matrix', () => {
     const settingsSrc = fs.readFileSync('src/components/settings/SettingsView.tsx', 'utf8');
 
     expect(settingsSrc).toContain('usePracticeStore');
     expect(settingsSrc).toContain('currentUser.role');
-    expect(settingsSrc).toContain('isPartnerOrAdmin');
+    expect(settingsSrc).toContain("can(currentUser.role, 'Settings', 'view'");
+    expect(settingsSrc).toContain("can(currentUser.role, 'Settings', 'edit'");
+    // The old coarse role check is gone — permissions own this decision.
+    expect(settingsSrc).not.toContain('isPartnerOrAdmin');
   });
 
   it('verifies DeadlinesKanban drops to Not Started and In Progress update status without premature submit', () => {

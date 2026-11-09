@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { CheckCircle2, Lock, RotateCcw, ShieldCheck, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { can, canSignOff } from '@/lib/permissions';
 
 export function filterReviewQueueTasks(
   tasks: PracticeTaskItem[],
@@ -25,7 +26,8 @@ export interface PartnerReviewQueueProps {
 }
 
 export function PartnerReviewQueue({ onNavigateClient, className }: PartnerReviewQueueProps) {
-  const { clients, staff, currentUser, taskStatusOverrides, updateTaskStatus } = usePracticeStore();
+  const { clients, staff, currentUser, taskStatusOverrides, updateTaskStatus, permissions } =
+    usePracticeStore();
   const today = todayInSouthAfrica();
 
   const summary = React.useMemo(() => {
@@ -36,7 +38,15 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
     return filterReviewQueueTasks(summary.tasks, taskStatusOverrides);
   }, [summary.tasks, taskStatusOverrides]);
 
-  const isPartner = currentUser.role === 'Partner';
+  // Sign-off is the locked §6.9 row and the only gate action; requesting a
+  // revision is an ordinary status update.
+  const canSignOffQueue = canSignOff(currentUser.role);
+  const canUpdateStatus = can(
+    currentUser.role,
+    'Deadlines',
+    'update-status',
+    permissions.matrix
+  );
 
   const handleApprove = (taskId: string) => {
     updateTaskStatus(taskId, 'Approved (Ready to Lodge)', {
@@ -181,34 +191,34 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
                     {/* Gate action */}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
-                        {isPartner ? (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleRequestRevision(task.id);
-                              }}
-                              aria-label={`Request revision on ${task.service} for ${task.clientCode}`}
-                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                            >
-                              <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
-                              Request Revision
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleApprove(task.id);
-                              }}
-                              aria-label={`Sign off ${task.service} for ${task.clientCode} as CA(SA)`}
-                              className="h-7 gap-1 bg-[#c4161c] px-2.5 text-[11px] font-medium text-white shadow-xs hover:bg-[#a01217] dark:hover:bg-[#d91b22]"
-                            >
-                              <ShieldCheck className="h-3 w-3" aria-hidden="true" />
-                              Sign Off as CA(SA)
-                            </Button>
-                          </>
+                        {canUpdateStatus && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleRequestRevision(task.id);
+                            }}
+                            aria-label={`Request revision on ${task.service} for ${task.clientCode}`}
+                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                          >
+                            <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
+                            Request Revision
+                          </Button>
+                        )}
+                        {canSignOffQueue ? (
+                          <Button
+                            size="sm"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleApprove(task.id);
+                            }}
+                            aria-label={`Sign off ${task.service} for ${task.clientCode} as CA(SA)`}
+                            className="h-7 gap-1 bg-[#c4161c] px-2.5 text-[11px] font-medium text-white shadow-xs hover:bg-[#a01217] dark:hover:bg-[#d91b22]"
+                          >
+                            <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                            Sign Off as CA(SA)
+                          </Button>
                         ) : (
                           <Badge
                             variant="crimsonSubdued"

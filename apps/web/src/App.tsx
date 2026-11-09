@@ -17,10 +17,15 @@ import { ClientShowView } from '@/components/client-show/ClientShowView';
 import { LoginView } from '@/components/auth/LoginView';
 import { InvoiceEditor } from '@/components/invoice/InvoiceEditor';
 import { TimerProvider } from '@/components/time/timer-context';
+import { NoAccessView } from '@/components/layout/NoAccessView';
+import { canAccessView, firstPermittedView } from '@/components/layout/navigation-helpers';
 import type { Quote } from '@/context/PracticeStoreContext';
 
 function AppContent() {
-  const [view, setView] = React.useState<ViewKey>('dashboard');
+  const { clients, isAuthenticated, currentUser, permissions } = usePracticeStore();
+  const [view, setView] = React.useState<ViewKey>(() =>
+    firstPermittedView(currentUser.role, permissions.matrix)
+  );
   const [clientCode, setClientCode] = React.useState<string | undefined>(undefined);
   const [deadlineStaffId, setDeadlineStaffId] = React.useState<string | undefined>(undefined);
   const [deadlineKpiFilter, setDeadlineKpiFilter] = React.useState<NavigateOptions['kpiFilter']>(undefined);
@@ -28,7 +33,6 @@ function AppContent() {
   const [invoiceEditor, setInvoiceEditor] = React.useState<{ invoiceId?: string; quote?: Quote } | null>(
     null
   );
-  const { clients, isAuthenticated } = usePracticeStore();
 
   if (!isAuthenticated) {
     return <LoginView />;
@@ -51,6 +55,10 @@ function AppContent() {
   };
 
   const renderContent = () => {
+    if (!canAccessView(view, currentUser.role, permissions.matrix)) {
+      return <NoAccessView view={view} onNavigate={(next) => handleNavigate(next)} />;
+    }
+
     switch (view) {
       case 'dashboard':
         return <DashboardView onNavigate={handleNavigate} />;

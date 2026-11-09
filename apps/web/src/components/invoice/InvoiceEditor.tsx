@@ -22,6 +22,7 @@ import {
   type XeroSyncResult,
 } from '@/lib/integrations/xero';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 import {
   billingMonthRange,
   entryDay,
@@ -111,7 +112,15 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     updateInvoice,
     updateTimeEntry,
     logActivity,
+    permissions,
   } = usePracticeStore();
+
+  const canManageInvoices = can(
+    currentUser.role,
+    'Invoices',
+    'create-send',
+    permissions.matrix
+  );
 
   const today = todayInSouthAfrica();
   const [savedId, setSavedId] = React.useState<string | undefined>(invoiceId);
@@ -286,6 +295,10 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   };
 
   const handleSave = () => {
+    if (!canManageInvoices) {
+      setFeedback({ tone: 'error', text: `${currentUser.role} cannot edit invoices` });
+      return;
+    }
     persist();
     setFeedback({
       tone: 'success',
@@ -294,6 +307,10 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   };
 
   const handleSend = () => {
+    if (!canManageInvoices) {
+      setFeedback({ tone: 'error', text: `${currentUser.role} cannot send invoices` });
+      return;
+    }
     if (status !== 'Draft') return;
     const record = persist('Sent');
     setStatus('Sent');
@@ -302,6 +319,10 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   };
 
   const handleMarkPaid = () => {
+    if (!canManageInvoices) {
+      setFeedback({ tone: 'error', text: `${currentUser.role} cannot mark invoices paid` });
+      return;
+    }
     if (status === 'Paid') return;
     const record = persist('Paid');
     setStatus('Paid');
@@ -1063,7 +1084,15 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
           the Governance Log. Overdue is derived from the due date, never stored.
         </p>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={handleSave} className="gap-1.5 text-xs">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleSave}
+            disabled={!canManageInvoices}
+            title={canManageInvoices ? undefined : `${currentUser.role} cannot edit invoices`}
+            className="gap-1.5 text-xs"
+          >
             <Check className="h-3.5 w-3.5" />
             Save
           </Button>
@@ -1071,7 +1100,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             type="button"
             size="sm"
             onClick={handleSend}
-            disabled={status !== 'Draft'}
+            disabled={status !== 'Draft' || !canManageInvoices}
             className="gap-1.5 text-xs"
           >
             <Send className="h-3.5 w-3.5" />
@@ -1082,7 +1111,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             variant="outline"
             size="sm"
             onClick={handleMarkPaid}
-            disabled={status === 'Paid'}
+            disabled={status === 'Paid' || !canManageInvoices}
             className="gap-1.5 text-xs"
           >
             <Receipt className="h-3.5 w-3.5" />

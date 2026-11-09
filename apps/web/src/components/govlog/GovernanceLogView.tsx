@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { AvatarChip, EmptyStateCard } from '@/components/ui/list-primitives';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
+import { NoAccessView } from '@/components/layout/NoAccessView';
 import {
   buildAuditEntries,
   downloadAuditCsv,
@@ -61,9 +63,16 @@ function uniqueSorted(values: Array<string | undefined>): string[] {
 }
 
 export function GovernanceLogView() {
-  const { clients, staff, taskStatusOverrides, activity } = usePracticeStore();
+  const { clients, staff, taskStatusOverrides, activity, currentUser, permissions } =
+    usePracticeStore();
   const [filters, setFilters] = React.useState<FilterState>(EMPTY_FILTERS);
   const [exportState, setExportState] = React.useState<'idle' | 'working' | 'saved' | 'failed'>('idle');
+  const canViewLog = can(
+    currentUser.role,
+    'Governance log',
+    'view',
+    permissions.matrix
+  );
 
   const entries = React.useMemo(
     () => buildAuditEntries({ clients, staff, taskStatusOverrides, activity }),
@@ -111,6 +120,10 @@ export function GovernanceLogView() {
       setExportState('failed');
     }
   };
+
+  if (!canViewLog) {
+    return <NoAccessView view="govlog" label="Governance Log" />;
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">

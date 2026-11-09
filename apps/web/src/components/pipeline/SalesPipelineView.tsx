@@ -15,6 +15,7 @@ import { KanbanBoard, type KanbanColumn, type KanbanTone } from '@/components/ka
 import { DonutChart } from '@/components/analytics/analytics-charts';
 import { QuoteBuilderView } from '@/components/quote/QuoteBuilderView';
 import { formatZar } from '@/components/quote/estimate-form';
+import { can } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 import { QuoteCard, type PipelineCard } from './QuoteCard';
 import { QuotesList } from './QuotesList';
@@ -110,6 +111,7 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
     updateQuote,
     convertQuoteToClient,
     logActivity,
+    permissions,
   } = usePracticeStore();
 
   const [tab, setTab] = React.useState<TabId>('pipeline');
@@ -202,6 +204,19 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
     if (!quote) return;
     const to = toColumn as QuoteStage;
     const name = nameOf(quote);
+
+    const signsQuote = to === 'Accepted' || to === 'Signed' || to === 'Active Client';
+    if (signsQuote && !can(currentUser.role, 'Quotes', 'accept-sign', permissions.matrix)) {
+      setFeedback(`${currentUser.role} cannot accept or sign quotes.`);
+      return;
+    }
+    if (
+      !signsQuote &&
+      !can(currentUser.role, 'Quotes', 'view-create-send', permissions.matrix)
+    ) {
+      setFeedback(`${currentUser.role} cannot move quotes on this board.`);
+      return;
+    }
 
     if (quote.stage === to) {
       setFeedback(`${name} is already in ${to}.`);
@@ -297,6 +312,14 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
               onClick={() => setEditor({})}
               className="gap-1.5"
               size="sm"
+              disabled={
+                !can(currentUser.role, 'Quotes', 'view-create-send', permissions.matrix)
+              }
+              title={
+                can(currentUser.role, 'Quotes', 'view-create-send', permissions.matrix)
+                  ? undefined
+                  : `${currentUser.role} cannot create quotes`
+              }
             >
               <Plus className="h-3.5 w-3.5" />
               New Quote

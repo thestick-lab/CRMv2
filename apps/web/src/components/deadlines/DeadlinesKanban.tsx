@@ -19,6 +19,7 @@ import { AvatarChip, PriorityPill, type PriorityLevel } from '@/components/ui/li
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Calendar, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { AdHocTaskModal } from './AdHocTaskModal';
 
@@ -366,6 +367,7 @@ export function DeadlinesKanban({
     clients,
     currentUser,
     logActivity,
+    permissions,
   } = usePracticeStore();
 
   const visibleAdhocTasks = adhocTasks ?? storeAdhocTasks;
@@ -458,7 +460,18 @@ export function DeadlinesKanban({
     }
   };
 
+  const canUpdateStatus = can(
+    currentUser.role,
+    'Deadlines',
+    'update-status',
+    permissions.matrix
+  );
+
   const handleMove = (cardId: string, toColumnId: string) => {
+    if (!canUpdateStatus) {
+      setFeedback(`Your role (${currentUser.role}) cannot move tasks between lanes.`);
+      return;
+    }
     if (groupBy !== 'workflow') {
       setFeedback('Switch to Workflow status grouping to move cards between lanes.');
       return;
@@ -526,7 +539,7 @@ export function DeadlinesKanban({
         onOpenCard={openCard}
         keyboardEnabled={groupBy === 'workflow'}
         allowAdd={
-          groupBy === 'workflow'
+          groupBy === 'workflow' && canUpdateStatus
             ? (columnId) => {
                 if (columnId === 'Partner Review Gate') {
                   setFeedback(

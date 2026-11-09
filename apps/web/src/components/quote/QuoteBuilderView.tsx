@@ -23,6 +23,7 @@ import {
 } from '@/components/integrations/DocumensoDispatchDialog';
 import type { DocumensoEnvelope } from '@/lib/integrations/documenso';
 import { Button } from '@/components/ui/button';
+import { can } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -249,6 +250,7 @@ export function QuoteBuilderView({
     addQuote,
     updateQuote,
     logActivity,
+    permissions,
   } = usePracticeStore();
 
   const editingQuote = initialQuoteId ? quotes.find((quote) => quote.id === initialQuoteId) : undefined;
@@ -376,6 +378,10 @@ export function QuoteBuilderView({
   };
 
   const handleSave = () => {
+    if (!canManageQuotes) {
+      setFeedback({ tone: 'error', text: `${currentUser.role} cannot create or edit quotes` });
+      return;
+    }
     persist(stage);
     setFeedback({
       tone: 'success',
@@ -384,6 +390,18 @@ export function QuoteBuilderView({
   };
 
   const handleStageChange = (target: QuoteStage) => {
+    const signsQuote = target === 'Accepted' || target === 'Signed' || target === 'Active Client';
+    if (signsQuote && !canAcceptSign) {
+      setFeedback({ tone: 'error', text: `${currentUser.role} cannot accept or sign quotes` });
+      return;
+    }
+    if (
+      !canManageQuotes &&
+      (target === 'Quote Sent' || target === 'Closed Lost' || target === 'Draft Quote')
+    ) {
+      setFeedback({ tone: 'error', text: `${currentUser.role} cannot send or close quotes` });
+      return;
+    }
     const reason = stageBlockReason(stage, target, transitionContext);
     if (reason) {
       setFeedback({ tone: 'error', text: reason });
@@ -432,6 +450,10 @@ export function QuoteBuilderView({
   };
 
   const handleCreateInvoice = () => {
+    if (!canCreateInvoice) {
+      setFeedback({ tone: 'error', text: `${currentUser.role} cannot create invoices` });
+      return;
+    }
     const quote = persist(stage);
     onCreateInvoice?.(quote);
   };
@@ -504,16 +526,40 @@ export function QuoteBuilderView({
     });
   };
 
-  const sendReason = stageBlockReason(stage, 'Quote Sent', transitionContext);
-  const acceptReason = stageBlockReason(stage, 'Accepted', transitionContext);
-  const signReason = stageBlockReason(stage, 'Signed', transitionContext);
-  const lostReason = stageBlockReason(stage, 'Closed Lost', transitionContext);
+  const canManageQuotes = can(
+    currentUser.role,
+    'Quotes',
+    'view-create-send',
+    permissions.matrix
+  );
+  const canAcceptSign = can(currentUser.role, 'Quotes', 'accept-sign', permissions.matrix);
+  const canCreateInvoice = can(
+    currentUser.role,
+    'Invoices',
+    'create-send',
+    permissions.matrix
+  );
+
+  const sendReason = canManageQuotes
+    ? stageBlockReason(stage, 'Quote Sent', transitionContext)
+    : `${currentUser.role} cannot send quotes`;
+  const acceptReason = canAcceptSign
+    ? stageBlockReason(stage, 'Accepted', transitionContext)
+    : `${currentUser.role} cannot accept quotes`;
+  const signReason = canAcceptSign
+    ? stageBlockReason(stage, 'Signed', transitionContext)
+    : `${currentUser.role} cannot accept or sign quotes`;
+  const lostReason = canManageQuotes
+    ? stageBlockReason(stage, 'Closed Lost', transitionContext)
+    : `${currentUser.role} cannot close quotes`;
   const invoiceOpen = stage === 'Accepted' || stage === 'Signed' || stage === 'Active Client';
-  const invoiceReason = !invoiceOpen
-    ? 'An invoice can be raised from an accepted quote onward'
-    : !onCreateInvoice
-      ? 'The invoice editor opens from the invoices list'
-      : null;
+  const invoiceReason = !canCreateInvoice
+    ? `${currentUser.role} cannot create invoices`
+    : !invoiceOpen
+      ? 'An invoice can be raised from an accepted quote onward'
+      : !onCreateInvoice
+        ? 'The invoice editor opens from the invoices list'
+        : null;
 
   const steps = [
     { title: 'Client', description: 'Who the quote is for' },
@@ -776,6 +822,8 @@ export function QuoteBuilderView({
             variant="outline"
             size="sm"
             onClick={handleSave}
+            disabled={!canManageQuotes}
+            title={canManageQuotes ? undefined : `${currentUser.role} cannot create or edit quotes`}
             className="gap-1.5 text-xs"
           >
             <Save className="h-3.5 w-3.5" />

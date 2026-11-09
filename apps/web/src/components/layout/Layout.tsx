@@ -2,7 +2,8 @@ import * as React from 'react';
 import type { ViewKey } from '@/types/navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { buildBreadcrumbs, NAV_ITEMS } from './navigation-helpers';
+import { buildBreadcrumbs, NAV_ITEMS, canAccessView } from './navigation-helpers';
+import { can } from '@/lib/permissions';
 import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog';
 import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
@@ -30,7 +31,7 @@ export function Layout({
   const { isDark, toggle: toggleTheme } = useTheme();
   const { openEntrySheet } = useTimer();
 
-  const { clients, quotes, timeEntries } = usePracticeStore();
+  const { clients, quotes, timeEntries, currentUser, permissions } = usePracticeStore();
   // Keyboard shortcut for Cmd+K / Ctrl+K
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,40 +46,50 @@ export function Layout({
 
   // Build command search items from navigation views, clients, quotes and time entries
   const commandItems = React.useMemo<CommandItem[]>(() => {
-    const viewItems: CommandItem[] = NAV_ITEMS.map((item) => ({
+    const role = currentUser.role;
+    const matrix = permissions.matrix;
+    const viewItems: CommandItem[] = NAV_ITEMS.filter((item) =>
+      canAccessView(item.id, role, matrix)
+    ).map((item) => ({
       id: item.id,
       label: item.label,
       section: item.section,
       icon: item.icon,
     }));
 
-    const clientItems: CommandItem[] = clients.map((c) => ({
-      id: `client-${c.code}`,
-      label: c.name,
-      section: 'Clients',
-      clientCode: c.code,
-    }));
+    const clientItems: CommandItem[] = can(role, 'Clients', 'view', matrix)
+      ? clients.map((c) => ({
+          id: `client-${c.code}`,
+          label: c.name,
+          section: 'Clients',
+          clientCode: c.code,
+        }))
+      : [];
 
     const clientName = (code?: string) =>
       code ? clients.find((client) => client.code === code)?.name : undefined;
 
-    const quoteItems: CommandItem[] = quotes.map((quote) => ({
-      id: `quote-${quote.id}`,
-      label: `${quote.number} · ${clientName(quote.clientCode) ?? quote.prospect?.name ?? 'Unnamed prospect'}`,
-      section: 'Quotes',
-      view: 'sales-pipeline',
-      badge: quote.stage,
-    }));
+    const quoteItems: CommandItem[] = can(role, 'Quotes', 'view-create-send', matrix)
+      ? quotes.map((quote) => ({
+          id: `quote-${quote.id}`,
+          label: `${quote.number} · ${clientName(quote.clientCode) ?? quote.prospect?.name ?? 'Unnamed prospect'}`,
+          section: 'Quotes',
+          view: 'sales-pipeline',
+          badge: quote.stage,
+        }))
+      : [];
 
-    const timeItems: CommandItem[] = timeEntries.map((entry) => ({
-      id: `time-${entry.id}`,
-      label: `${clientName(entry.clientCode) ?? entry.clientCode} · ${entry.description}`,
-      section: 'Time entries',
-      view: 'time',
-    }));
+    const timeItems: CommandItem[] = can(role, 'Time', 'view-all', matrix)
+      ? timeEntries.map((entry) => ({
+          id: `time-${entry.id}`,
+          label: `${clientName(entry.clientCode) ?? entry.clientCode} · ${entry.description}`,
+          section: 'Time entries',
+          view: 'time',
+        }))
+      : [];
 
     return [...viewItems, ...clientItems, ...quoteItems, ...timeItems];
-  }, [clients, quotes, timeEntries]);
+  }, [clients, quotes, timeEntries, currentUser.role, permissions.matrix]);
 
   const handleSelectCommand = (item: CommandItem) => {
     if (item.view) {

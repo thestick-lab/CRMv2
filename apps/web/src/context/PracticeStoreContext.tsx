@@ -12,6 +12,13 @@ import { endOfMonth, todayInSouthAfrica, yearOf, type ISODate } from 'fdoncall-p
 import type { WorkflowStatus } from '@/lib/workflow';
 import { formatHours } from '@/lib/billing';
 import { signInWithCredentials } from '@/lib/auth-client';
+import {
+  validatePermissionChange,
+  type PermissionCell,
+  type PermissionGroupInput,
+  type PermissionState,
+  type Role,
+} from '@/lib/permissions';
 
 /**
  * A prospect as persisted by the legacy onboarding pipeline. Leads are no
@@ -42,7 +49,7 @@ export interface PracticeContract {
 export interface PracticeUser {
   id: string;
   name: string;
-  role: 'Partner' | 'Compliance Officer' | 'Accountant' | 'Team member' | 'Subcontractor';
+  role: Role;
   email: string;
   kind: 'employee' | 'subcontractor';
   contract?: PracticeContract;
@@ -215,23 +222,6 @@ export interface AdHocTask {
   status: WorkflowStatus;
   blockedReason?: string;
   createdAt: string;
-}
-
-export type Role =
-  | 'Partner'
-  | 'Compliance Officer'
-  | 'Accountant'
-  | 'Team member'
-  | 'Subcontractor'
-  | 'Support Tech';
-
-export type PermissionCell = 'Allowed' | 'Not allowed' | 'Limited' | 'Inherited' | 'Custom';
-
-export interface PermissionState {
-  /** Role → `<group>.<action>` → cell state. Empty means the default matrix applies. */
-  matrix: Partial<Record<Role, Record<string, PermissionCell>>>;
-  lastEditedBy?: string;
-  lastEditedAt?: string;
 }
 
 export type ActivityType =
@@ -753,11 +743,21 @@ export type PracticeAction =
   | { type: 'DELETE_ADHOC_TASK'; payload: { id: string } }
   | { type: 'LOG_ACTIVITY'; payload: Omit<ActivityEvent, 'id' | 'at'> }
   | {
+      type: 'SET_PERMISSION';
+      payload: {
+        role: Role;
+        group: PermissionGroupInput;
+        action: string;
+        cell: PermissionCell;
+      };
+    }
+  | { type: 'RESET_PERMISSIONS' }
+  | {
       type: 'INVITE_TEAM_MEMBER';
       payload: {
         name: string;
         email: string;
-        role: 'Partner' | 'Compliance Officer' | 'Accountant' | 'Team member' | 'Subcontractor';
+        role: Role;
         kind?: 'employee' | 'subcontractor';
       };
     }
@@ -772,6 +772,34 @@ export type PracticeAction =
   | { type: 'SET_INTEGRATION_CONFIG'; payload: Partial<IntegrationConfig> }
   | { type: 'RESET_DATA' }
   | { type: 'LOAD_STATE'; payload: PracticeState };
+
+function activityInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+function permissionActivity(
+  actorName: string,
+  text: string,
+  subline: string,
+  at: string,
+  seq: number
+): ActivityEvent {
+  return {
+    id: `activity-permission-${Date.parse(at)}-${seq}`,
+    type: 'permission',
+    actorName,
+    actorInitials: activityInitials(actorName),
+    tint: 'amber',
+    text,
+    subline,
+    at,
+  };
+}
 
 export function practiceReducer(state: PracticeState, action: PracticeAction): PracticeState {
   switch (action.type) {
@@ -1036,6 +1064,60 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
       };
     }
 
+    case 'SET_PERMISSION': {
+      const change = action.payload;
+      const validation = validatePermissionChange(change);
+      // Rejected edits never touch state — no matrix write, no activity entry.
+      if (!validation.ok) return state;
+
+      const { row } = validation;
+      const at = new Date().toISOString();
+      const roleOverrides = state.permissions.matrix[change.role] ?? {};
+      return {
+        ...state,
+        permissions: {
+          matrix: {
+            ...state.permissions.matrix,
+            [change.role]: { ...roleOverrides, [row.id]: change.cell },
+          },
+          lastEditedBy: state.currentUser.name,
+          lastEditedAt: at,
+        },
+        activity: [
+          permissionActivity(
+            state.currentUser.name,
+            `Changed permission — ${row.label}: ${change.cell}`,
+            `${change.role} · ${row.group}`,
+            at,
+            state.activity.length + 1
+          ),
+          ...state.activity,
+        ],
+      };
+    }
+
+    case 'RESET_PERMISSIONS': {
+      const at = new Date().toISOString();
+      return {
+        ...state,
+        permissions: {
+          matrix: {},
+          lastEditedBy: state.currentUser.name,
+          lastEditedAt: at,
+        },
+        activity: [
+          permissionActivity(
+            state.currentUser.name,
+            'Reset permissions to the default matrix',
+            'Roles & Permissions · all roles',
+            at,
+            state.activity.length + 1
+          ),
+          ...state.activity,
+        ],
+      };
+    }
+
     case 'INVITE_TEAM_MEMBER': {
       const id = action.payload.name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 16);
       const newStaff: StaffMember = {
@@ -1297,7 +1379,7 @@ export interface PracticeStoreContextValue extends PracticeState {
   inviteTeamMember: (member: {
     name: string;
     email: string;
-    role: 'Partner' | 'Compliance Officer' | 'Accountant' | 'Team member' | 'Subcontractor';
+    role: Role;
     kind?: 'employee' | 'subcontractor';
   }) => void;
   updateStaffRole: (staffId: string, role: string) => void;
@@ -1318,6 +1400,14 @@ export interface PracticeStoreContextValue extends PracticeState {
   addTimeEntry: (entry: TimeEntry) => void;
   updateTimeEntry: (id: string, patch: Partial<Omit<TimeEntry, 'id' | 'createdAt'>>) => void;
   deleteTimeEntry: (id: string) => void;
+  /** Validated matrix edit; locked rows and the Partner guard reject silently. */
+  setPermission: (change: {
+    role: Role;
+    group: PermissionGroupInput;
+    action: string;
+    cell: PermissionCell;
+  }) => void;
+  resetPermissions: () => void;
   exportData: () => PracticeState;
   resetData: () => void;
 }
@@ -1366,7 +1456,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     (member: {
       name: string;
       email: string;
-      role: 'Partner' | 'Compliance Officer' | 'Accountant' | 'Team member' | 'Subcontractor';
+      role: Role;
       kind?: 'employee' | 'subcontractor';
     }) => {
       dispatch({ type: 'INVITE_TEAM_MEMBER', payload: member });
@@ -1456,6 +1546,22 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     dispatch({ type: 'DELETE_TIME_ENTRY', payload: { id } });
   }, []);
 
+  const setPermission = React.useCallback(
+    (change: {
+      role: Role;
+      group: PermissionGroupInput;
+      action: string;
+      cell: PermissionCell;
+    }) => {
+      dispatch({ type: 'SET_PERMISSION', payload: change });
+    },
+    []
+  );
+
+  const resetPermissions = React.useCallback(() => {
+    dispatch({ type: 'RESET_PERMISSIONS' });
+  }, []);
+
   const exportData = React.useCallback(() => {
     return state;
   }, [state]);
@@ -1488,6 +1594,8 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       addTimeEntry,
       updateTimeEntry,
       deleteTimeEntry,
+      setPermission,
+      resetPermissions,
       updateTaskStatus,
       addAdhocTask,
       updateAdhocTask,
@@ -1519,6 +1627,8 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       addTimeEntry,
       updateTimeEntry,
       deleteTimeEntry,
+      setPermission,
+      resetPermissions,
       updateTaskStatus,
       addAdhocTask,
       updateAdhocTask,

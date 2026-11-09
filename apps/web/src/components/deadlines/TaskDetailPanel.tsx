@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WORKFLOW_LANES, normalizeWorkflowStatus, type WorkflowStatus } from '@/lib/workflow';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 import { StatutoryActionForm } from './StatutoryActionForm';
 import { formatElapsed, useTimer } from '@/components/time/timer-context';
 
@@ -46,8 +47,15 @@ export function TaskDetailPanel({
   onSelectClient,
   initialStatus,
 }: TaskDetailPanelProps) {
-  const { activity, taskStatusOverrides, currentUser, logActivity } = usePracticeStore();
+  const { activity, taskStatusOverrides, currentUser, logActivity, permissions } = usePracticeStore();
   const { session, elapsedMs, startTimer, pauseTimer, resumeTimer, stopTimer } = useTimer();
+  const canUpdateStatus = can(
+    currentUser.role,
+    'Deadlines',
+    'update-status',
+    permissions.matrix
+  );
+  const canLogTime = can(currentUser.role, 'Time', 'log-own', permissions.matrix);
   const [comment, setComment] = React.useState('');
 
   React.useEffect(() => {
@@ -225,13 +233,16 @@ export function TaskDetailPanel({
                   size="sm"
                   variant="outline"
                   data-testid="task-start-timer"
-                  disabled={session !== null}
+                  disabled={session !== null || !canLogTime}
                   title={
-                    session
-                      ? 'A timer is already running — stop it before starting another.'
-                      : 'Start a timer for this task'
+                    !canLogTime
+                      ? `${currentUser.role} cannot log time`
+                      : session
+                        ? 'A timer is already running — stop it before starting another.'
+                        : 'Start a timer for this task'
                   }
                   onClick={() =>
+                    canLogTime &&
                     startTimer({
                       clientCode: task.clientCode,
                       serviceCode: task.service,
@@ -264,13 +275,20 @@ export function TaskDetailPanel({
               <h4 className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Statutory action
               </h4>
-              <StatutoryActionForm
-                task={task}
-                compact
-                onClose={() => onOpenChange(false)}
-                onSelectClient={onSelectClient}
-                initialStatus={initialStatus}
-              />
+              {canUpdateStatus ? (
+                <StatutoryActionForm
+                  task={task}
+                  compact
+                  onClose={() => onOpenChange(false)}
+                  onSelectClient={onSelectClient}
+                  initialStatus={initialStatus}
+                />
+              ) : (
+                <p className="rounded-lg border border-border bg-muted/20 p-3 text-[11px] leading-relaxed text-muted-foreground">
+                  {currentUser.role} cannot update task status. Ask a Partner, the Compliance
+                  Officer or an Accountant to move this return along.
+                </p>
+              )}
             </section>
 
             {/* Activity */}

@@ -20,7 +20,9 @@ describe('Sidebar header and WorkspaceMenuPopover layout', () => {
     // Sections drive the rendering rather than hard-coded utility buttons
     expect(sidebarSrc).toContain("['Practice', 'Work', 'Admin']");
     expect(sidebarSrc).toContain('NAV_SECTIONS.map');
-    expect(sidebarSrc).toContain('NAV_ITEMS.map');
+    // The list is permission-filtered before it is mapped.
+    expect(sidebarSrc).toContain('NAV_ITEMS.filter');
+    expect(sidebarSrc).toContain('canAccessView');
     // Inbox carries the live partner-review count
     expect(sidebarSrc).toContain("item.id === 'inbox'");
     expect(sidebarSrc).toContain('pendingReviewCount');

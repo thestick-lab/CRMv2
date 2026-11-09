@@ -9,6 +9,7 @@ import {
 import { StatutoryActionModal } from '@/components/deadlines/StatutoryActionModal';
 import { buildEstimateForClient } from '@/components/client-show/tabs/EstimateTab';
 import { downloadExcelQuote } from '@/lib/export-actions';
+import { canSignOff } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { EngagementBanner } from '@/components/home/EngagementBanner';
@@ -137,7 +138,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {currentUser.role === 'Partner' && (
+          {canSignOff(currentUser.role) && (
             <Button
               size="sm"
               variant="outline"

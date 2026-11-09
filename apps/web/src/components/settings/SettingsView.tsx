@@ -16,6 +16,7 @@ import {
   type SettingsPaneKey,
 } from './settings-nav';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { can } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 
 export type { SettingsPaneKey };
@@ -92,16 +93,36 @@ function SettingsPane({ pane }: { pane: SettingsPaneKey }) {
 
 export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
   const [activePane, setActivePane] = React.useState<SettingsPaneKey>(initialPane);
-  const { currentUser } = usePracticeStore();
-  const isPartnerOrAdmin =
-    currentUser.role === 'Partner' || currentUser.role === 'Compliance Officer';
+  const { currentUser, permissions } = usePracticeStore();
+  const canViewSettings = can(currentUser.role, 'Settings', 'view', permissions.matrix);
+  // Practice rules, pricing, staffing, integrations: `Settings — edit` per §6.9.
+  const canEditSettings = can(currentUser.role, 'Settings', 'edit', permissions.matrix);
 
-  // Deep links into an admin pane fall back to Profile for other roles.
+  // Deep links into an admin pane fall back to Profile for roles that may only
+  // read their own settings.
   React.useEffect(() => {
-    if (!isPartnerOrAdmin && isAdminPane(activePane)) {
+    if (!canEditSettings && isAdminPane(activePane)) {
       setActivePane('profile');
     }
-  }, [isPartnerOrAdmin, activePane]);
+  }, [canEditSettings, activePane]);
+
+  if (!canViewSettings) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
+        <PageHeader
+          eyebrow="Practice"
+          title="Settings"
+          subtitle="Settings belongs to the practice administrators for this role."
+        />
+        <div className="rounded-xl border border-border bg-card px-6 py-10 text-center">
+          <p className="text-sm font-medium text-foreground">Settings is not available to {currentUser.role}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            A Partner or the support technician can grant access in the permission matrix.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -123,7 +144,7 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
         >
           <div className="space-y-0.5">
             {SETTINGS_NAV.map((item) => {
-              if (item.adminOnly && !isPartnerOrAdmin) return null;
+              if (item.adminOnly && !canEditSettings) return null;
 
               if (item.children) {
                 return (

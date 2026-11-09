@@ -13,6 +13,17 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import type { NavSection } from '@/types/navigation';
+import {
+  can,
+  type PermissionGroupInput,
+  type PermissionState,
+  type Role,
+} from '@/lib/permissions';
+
+export interface NavPermission {
+  group: PermissionGroupInput;
+  action: string;
+}
 
 export interface NavItemDef {
   id: ViewKey;
@@ -20,23 +31,123 @@ export interface NavItemDef {
   section: NavSection;
   icon: ComponentType<{ className?: string }>;
   badge?: number | string;
+  /** Practice permission the destination enforces; absent means always visible. */
+  permission: NavPermission;
 }
 
 export const NAV_ITEMS: NavItemDef[] = [
   // Practice — the daily read of the practice
-  { id: 'dashboard', label: 'Home', section: 'Practice', icon: Home },
-  { id: 'analytics', label: 'Analytics', section: 'Practice', icon: BarChart3 },
-  { id: 'inbox', label: 'Inbox', section: 'Practice', icon: Inbox },
+  {
+    id: 'dashboard',
+    label: 'Home',
+    section: 'Practice',
+    icon: Home,
+    permission: { group: 'Clients', action: 'view' },
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    section: 'Practice',
+    icon: BarChart3,
+    permission: { group: 'Invoices', action: 'view' },
+  },
+  {
+    id: 'inbox',
+    label: 'Inbox',
+    section: 'Practice',
+    icon: Inbox,
+    permission: { group: 'Deadlines', action: 'view' },
+  },
   // Work — the registers, boards and time
-  { id: 'clients', label: 'Clients', section: 'Work', icon: Building2 },
-  { id: 'team', label: 'Team', section: 'Work', icon: Users2 },
-  { id: 'deadlines', label: 'Deadlines', section: 'Work', icon: CalendarDays },
-  { id: 'sales-pipeline', label: 'Sales Pipeline', section: 'Work', icon: TrendingUp },
-  { id: 'time', label: 'Time', section: 'Work', icon: Clock },
+  {
+    id: 'clients',
+    label: 'Clients',
+    section: 'Work',
+    icon: Building2,
+    permission: { group: 'Clients', action: 'view' },
+  },
+  {
+    id: 'team',
+    label: 'Team',
+    section: 'Work',
+    icon: Users2,
+    permission: { group: 'People', action: 'view-invite' },
+  },
+  {
+    id: 'deadlines',
+    label: 'Deadlines',
+    section: 'Work',
+    icon: CalendarDays,
+    permission: { group: 'Deadlines', action: 'view' },
+  },
+  {
+    id: 'sales-pipeline',
+    label: 'Sales Pipeline',
+    section: 'Work',
+    icon: TrendingUp,
+    permission: { group: 'Quotes', action: 'view-create-send' },
+  },
+  {
+    id: 'time',
+    label: 'Time',
+    section: 'Work',
+    icon: Clock,
+    permission: { group: 'Time', action: 'log-own' },
+  },
   // Admin — configuration and the governance trail
-  { id: 'settings', label: 'Settings', section: 'Admin', icon: Settings },
-  { id: 'govlog', label: 'Governance Log', section: 'Admin', icon: ScrollText },
+  {
+    id: 'settings',
+    label: 'Settings',
+    section: 'Admin',
+    icon: Settings,
+    permission: { group: 'Settings', action: 'view' },
+  },
+  {
+    id: 'govlog',
+    label: 'Governance Log',
+    section: 'Admin',
+    icon: ScrollText,
+    permission: { group: 'Governance log', action: 'view' },
+  },
 ];
+
+const VIEW_PERMISSIONS: Record<ViewKey, NavPermission> = NAV_ITEMS.reduce(
+  (map, item) => {
+    map[item.id] = item.permission;
+    return map;
+  },
+  {} as Record<ViewKey, NavPermission>
+);
+
+// A client record is a client-register view.
+VIEW_PERMISSIONS.client = { group: 'Clients', action: 'view' };
+
+/** Whether `role` may open `view`; the views and the router both enforce this. */
+export function canAccessView(
+  view: ViewKey,
+  role: Role,
+  matrix: PermissionState['matrix'] = {}
+): boolean {
+  const permission = VIEW_PERMISSIONS[view];
+  if (!permission) return false;
+  return can(role, permission.group, permission.action, matrix);
+}
+
+/** The nav items a role may see, in declared order. */
+export function visibleNavItems(
+  role: Role,
+  matrix: PermissionState['matrix'] = {}
+): NavItemDef[] {
+  return NAV_ITEMS.filter((item) => canAccessView(item.id, role, matrix));
+}
+
+/** Landing view for a role: the first place it is allowed to work. */
+export function firstPermittedView(
+  role: Role,
+  matrix: PermissionState['matrix'] = {}
+): ViewKey {
+  return visibleNavItems(role, matrix)[0]?.id ?? 'settings';
+}
 
 export interface BreadcrumbCrumb {
   label: string;
