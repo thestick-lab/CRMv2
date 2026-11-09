@@ -1,7 +1,15 @@
 import * as React from 'react';
 import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
-import type { Client, StaffMember } from 'fdoncall-practice/domain/types';
+import type {
+  Client,
+  EntityType,
+  ServiceCode,
+  StaffMember,
+  VatCategory,
+} from 'fdoncall-practice/domain/types';
 import type { EstimateInput } from 'fdoncall-practice/domain/estimate';
+import type { ISODate } from 'fdoncall-practice/domain/dates';
+import type { WorkflowStatus } from '@/components/deadlines/StatutoryActionModal';
 import { signInWithCredentials } from '@/lib/auth-client';
 export interface PipelineLead {
   id: string;
@@ -52,6 +60,163 @@ export interface TaskStatusOverride {
 
 export type Division = 'fd-on-call' | 'accountant-on-call';
 
+/* ---------------------------------------------------------------------------
+ * Foundation types consumed by the quote→invoice flow, time tracking,
+ * permissions matrix and the governance/activity trail. Later feature work
+ * adds reducer actions over these shapes; they are declared once here.
+ * ------------------------------------------------------------------------- */
+
+export type QuoteStage =
+  | 'Draft Quote'
+  | 'Quote Sent'
+  | 'Accepted'
+  | 'Signed'
+  | 'Active Client'
+  | 'Closed Lost';
+
+/** Unregistered prospect captured before the quote becomes a practice client. */
+export interface QuoteProspect {
+  name: string;
+  contactPerson: string;
+  entityType: EntityType;
+  turnover?: number;
+  payroll?: boolean;
+  employeeCount?: number;
+  vatCategory?: VatCategory;
+  yearEndMonth?: number;
+  incorporationDate?: ISODate;
+  staffId?: string;
+}
+
+export interface Quote {
+  id: string;
+  /** Human number, `Q-<seq>`. */
+  number: string;
+  clientCode?: string;
+  prospect?: QuoteProspect;
+  /** Authoritative record; the fee schedule is recomputed from it. */
+  estimateInput: EstimateInput;
+  monthlyRetainerHours: number;
+  adHocHourlyRate: number;
+  vatInclusive: boolean;
+  paymentTerms: string;
+  expiryDate?: ISODate;
+  stage: QuoteStage;
+  ownerStaffId: string;
+  nextStep?: string;
+  documensoEnvelopeId?: string;
+  signedBy?: string;
+  signedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type InvoiceStatus = 'Draft' | 'Sent' | 'Paid';
+
+export interface InvoiceLine {
+  id: string;
+  description: string;
+  quantity: number;
+  unitAmount: number;
+  accountCode?: string;
+  /** `NONE` only for disbursements paid to CIPC on the client's behalf. */
+  taxType: 'OUTPUT2' | 'NONE';
+  lineAmount: number;
+}
+
+export interface Invoice {
+  id: string;
+  /** Human number, `INV-<seq>`. */
+  number: string;
+  quoteId?: string;
+  clientCode: string;
+  lineItems: InvoiceLine[];
+  taxRate: number;
+  subtotal: number;
+  vat: number;
+  total: number;
+  /** `Overdue` is derived at render time, never stored. */
+  status: InvoiceStatus;
+  issueDate: ISODate;
+  dueDate: ISODate;
+  xeroSync?: 'pending' | 'synced' | 'failed';
+  createdAt: string;
+}
+
+export interface TimeEntry {
+  id: string;
+  clientCode: string;
+  serviceCode?: ServiceCode;
+  taskId?: string;
+  staffUserId: string;
+  startedAt: string;
+  endedAt?: string;
+  durationMinutes: number;
+  /** Nearest 0.25h (half-up), minimum 0.25h. */
+  roundedMinutes: number;
+  billable: boolean;
+  description: string;
+  invoiceId?: string;
+  createdAt: string;
+}
+
+/** Practice-created work item flowing through the deadlines board lanes. */
+export interface AdHocTask {
+  id: string;
+  clientCode: string;
+  description: string;
+  assigneeId: string;
+  dueDate?: ISODate;
+  status: WorkflowStatus;
+  blockedReason?: string;
+  createdAt: string;
+}
+
+export type Role =
+  | 'Partner'
+  | 'Compliance Officer'
+  | 'Accountant'
+  | 'Team member'
+  | 'Subcontractor'
+  | 'Support Tech';
+
+export type PermissionCell = 'Allowed' | 'Not allowed' | 'Limited' | 'Inherited' | 'Custom';
+
+export interface PermissionState {
+  /** Role → `<group>.<action>` → cell state. Empty means the default matrix applies. */
+  matrix: Partial<Record<Role, Record<string, PermissionCell>>>;
+  lastEditedBy?: string;
+  lastEditedAt?: string;
+}
+
+export type ActivityType =
+  | 'task'
+  | 'submission'
+  | 'quote'
+  | 'invoice'
+  | 'time'
+  | 'file'
+  | 'client'
+  | 'permission';
+
+export type ActivityTint = 'crimson' | 'amber' | 'muted';
+
+export interface ActivityEvent {
+  id: string;
+  type: ActivityType;
+  actorName: string;
+  actorInitials: string;
+  tint: ActivityTint;
+  text: string;
+  subline: string;
+  at: string;
+}
+
+export interface PracticeSequences {
+  quote: number;
+  invoice: number;
+}
+
 export interface PracticeState {
   clients: Client[];
   staff: StaffMember[];
@@ -62,6 +227,13 @@ export interface PracticeState {
   division: Division;
   taskStatusOverrides: Record<string, TaskStatusOverride>;
   savedEstimates: Record<string, EstimateInput>;
+  quotes: Quote[];
+  invoices: Invoice[];
+  timeEntries: TimeEntry[];
+  permissions: PermissionState;
+  activity: ActivityEvent[];
+  adhocTasks: AdHocTask[];
+  sequences: PracticeSequences;
   isAuthenticated: boolean;
 }
 
@@ -152,7 +324,77 @@ export const INITIAL_AI_KEYS: AiApiKeys = {
   gemini: '',
 };
 
+/**
+ * Historical team-activity feed seeded onto Home's Team Activity card.
+ * The store itself starts with an empty `activity` array so persisted
+ * practice state always wins; the Home view appends these seeds.
+ */
+export const ACTIVITY_SEEDS: ActivityEvent[] = [
+  {
+    id: 'activity-seed-vat201',
+    type: 'submission',
+    actorName: 'Wouter',
+    actorInitials: 'W',
+    tint: 'crimson',
+    text: 'Submitted VAT201 for Cape Agulhas Distillers',
+    subline: 'CAD-100 · September 2026 · SARS-22910488',
+    at: '2026-11-06T09:12:00+02:00',
+  },
+  {
+    id: 'activity-seed-review',
+    type: 'task',
+    actorName: 'Marthinus De Villiers',
+    actorInitials: 'MD',
+    tint: 'amber',
+    text: 'Sent AFS 2026 to partner review',
+    subline: 'ALC-610 · A & L Contracting',
+    at: '2026-11-05T15:40:00+02:00',
+  },
+  {
+    id: 'activity-seed-quote',
+    type: 'quote',
+    actorName: 'Erik',
+    actorInitials: 'E',
+    tint: 'crimson',
+    text: 'Sent fee proposal to Stellenbosch BioTech Labs',
+    subline: 'Q-3 · 12-month statutory engagement',
+    at: '2026-11-04T11:05:00+02:00',
+  },
+  {
+    id: 'activity-seed-time',
+    type: 'time',
+    actorName: 'Chrizelle Visser',
+    actorInitials: 'CV',
+    tint: 'muted',
+    text: 'Logged 2.5h on EMP501 reconciliation',
+    subline: 'MUS-875 · Musgrave Retail Group',
+    at: '2026-11-04T08:30:00+02:00',
+  },
+  {
+    id: 'activity-seed-file',
+    type: 'file',
+    actorName: 'Erik',
+    actorInitials: 'E',
+    tint: 'muted',
+    text: 'Added signed engagement letter to the vault',
+    subline: 'ALC-610 · Documenso envelope env-41',
+    at: '2026-11-03T16:22:00+02:00',
+  },
+];
+
 export const STORAGE_KEY = 'crmv2_practice_state';
+
+/** Testable seam: inject a storage to load a persisted state. */
+export interface PracticeStateStorage {
+  getItem(key: string): string | null;
+}
+
+function browserStorage(): PracticeStateStorage | null {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage;
+  }
+  return null;
+}
 
 export function getInitialPracticeState(): PracticeState {
   return {
@@ -165,6 +407,13 @@ export function getInitialPracticeState(): PracticeState {
     division: 'fd-on-call',
     taskStatusOverrides: {},
     savedEstimates: {},
+    quotes: [],
+    invoices: [],
+    timeEntries: [],
+    permissions: { matrix: {} },
+    activity: [],
+    adhocTasks: [],
+    sequences: { quote: 0, invoice: 0 },
     isAuthenticated: true,
   };
 }
@@ -456,26 +705,40 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
   }
 }
 
-export function loadPracticeState(): PracticeState {
-  if (typeof window !== 'undefined' && window.localStorage) {
+/**
+ * Merge a persisted state over the pristine defaults: fields added after the
+ * state was persisted fall back to their defaults, persisted values are never
+ * overwritten.
+ */
+export function mergePracticeState(persisted: Partial<PracticeState>): PracticeState {
+  const initial = getInitialPracticeState();
+  return {
+    ...initial,
+    ...persisted,
+    rates: {
+      ...initial.rates,
+      ...(persisted.rates || {}),
+      serviceFees: {
+        ...initial.rates.serviceFees,
+        ...(persisted.rates?.serviceFees || {}),
+      },
+    },
+    sequences: { ...initial.sequences, ...(persisted.sequences || {}) },
+    permissions: { ...initial.permissions, ...(persisted.permissions || {}) },
+  };
+}
+
+/**
+ * Read persisted practice state out of localStorage (or an injected storage
+ * in tests) and merge it over the defaults.
+ */
+export function loadPracticeState(storage?: PracticeStateStorage | null): PracticeState {
+  const store = storage === undefined ? browserStorage() : storage;
+  if (store) {
     try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
+      const saved = store.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        // Ensure default rates.serviceFees exists if loaded from older localStorage state
-        const initial = getInitialPracticeState();
-        return {
-          ...initial,
-          ...parsed,
-          rates: {
-            ...initial.rates,
-            ...(parsed.rates || {}),
-            serviceFees: {
-              ...initial.rates.serviceFees,
-              ...(parsed.rates?.serviceFees || {}),
-            },
-          },
-        };
+        return mergePracticeState(JSON.parse(saved));
       }
     } catch (e) {
       console.error('Failed to load practice state from localStorage', e);
@@ -535,7 +798,7 @@ export interface PracticeStoreContextValue extends PracticeState {
 const PracticeStoreContext = React.createContext<PracticeStoreContextValue | null>(null);
 
 export function PracticeStoreProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = React.useReducer(practiceReducer, null, loadPracticeState);
+  const [state, dispatch] = React.useReducer(practiceReducer, undefined, () => loadPracticeState());
 
   // Sync to localStorage on state changes
   React.useEffect(() => {

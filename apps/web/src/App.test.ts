@@ -72,12 +72,53 @@ describe('App shell and view integration', () => {
     expect(estimateSource).toContain('XeroSyncDialog');
   });
 
-  it('mounts PracticeStoreProvider and integrates InboxView, EstimatorView, PeopleView, and SettingsView', () => {
+  it('mounts PracticeStoreProvider and routes every ViewKey to its view', () => {
     const appSource = fs.readFileSync('src/App.tsx', 'utf8');
     expect(appSource).toContain('PracticeStoreProvider');
     expect(appSource).toContain('InboxView');
-    expect(appSource).toContain('EstimatorView');
-    expect(appSource).toContain('PeopleView');
+    expect(appSource).toContain('AnalyticsView');
+    expect(appSource).toContain('TeamView');
+    expect(appSource).toContain('TimeView');
+    expect(appSource).toContain('SalesPipelineView');
+    expect(appSource).toContain('GovernanceLogView');
     expect(appSource).toContain('SettingsView');
+
+    for (const view of [
+      'dashboard',
+      'analytics',
+      'inbox',
+      'clients',
+      'team',
+      'deadlines',
+      'sales-pipeline',
+      'time',
+      'settings',
+      'govlog',
+      'client',
+    ]) {
+      expect(appSource).toContain(`case '${view}':`);
+    }
+
+    // Legacy views are gone from the router (clean cutover)
+    expect(appSource).not.toContain('PeopleView');
+    expect(appSource).not.toContain('EstimatorView');
+    expect(appSource).not.toContain("case 'people':");
+    expect(appSource).not.toContain("case 'estimator':");
+  });
+
+  it('renders a shared PageHeader and empty state on every new foundation view', () => {
+    const views = [
+      'src/components/analytics/AnalyticsView.tsx',
+      'src/components/time/TimeView.tsx',
+      'src/components/pipeline/SalesPipelineView.tsx',
+      'src/components/team/TeamView.tsx',
+      'src/components/govlog/GovernanceLogView.tsx',
+    ];
+    for (const path of views) {
+      const source = fs.readFileSync(path, 'utf8');
+      expect(source).toContain("from '@/components/ui/page-header'");
+      expect(source).toContain('PageHeader');
+      expect(source).toContain('EmptyStateCard');
+    }
   });
 });

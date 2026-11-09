@@ -265,10 +265,10 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onNavigate('estimator')}
+                onClick={() => onNavigate('sales-pipeline')}
                 className="text-xs h-7 gap-1"
               >
-                Estimator <ArrowRight className="h-3 w-3" />
+                Sales Pipeline <ArrowRight className="h-3 w-3" />
               </Button>
             </div>
 

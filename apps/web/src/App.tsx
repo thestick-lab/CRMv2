@@ -6,8 +6,11 @@ import { DashboardView } from '@/components/views/DashboardView';
 import { InboxView } from '@/components/views/InboxView';
 import { ClientsView } from '@/components/views/ClientsView';
 import { DeadlinesView } from '@/components/views/DeadlinesView';
-import { PeopleView } from '@/components/views/PeopleView';
-import { EstimatorView } from '@/components/views/EstimatorView';
+import { AnalyticsView } from '@/components/analytics/AnalyticsView';
+import { TimeView } from '@/components/time/TimeView';
+import { SalesPipelineView } from '@/components/pipeline/SalesPipelineView';
+import { TeamView } from '@/components/team/TeamView';
+import { GovernanceLogView } from '@/components/govlog/GovernanceLogView';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { ClientShowView } from '@/components/client-show/ClientShowView';
 import { LoginView } from '@/components/auth/LoginView';
@@ -38,8 +41,8 @@ function AppContent() {
         return <InboxView onNavigate={handleNavigate} />;
       case 'clients':
         return <ClientsView onNavigate={handleNavigate} />;
-      case 'people':
-        return <PeopleView onNavigate={handleNavigate} />;
+      case 'team':
+        return <TeamView />;
       case 'deadlines':
         return (
           <DeadlinesView
@@ -48,10 +51,14 @@ function AppContent() {
             onClearClientFilter={() => setClientCode(undefined)}
           />
         );
-      case 'estimator':
-      case 'quote':
-      case 'pipeline':
-        return <EstimatorView onNavigate={handleNavigate} />;
+      case 'analytics':
+        return <AnalyticsView />;
+      case 'sales-pipeline':
+        return <SalesPipelineView />;
+      case 'time':
+        return <TimeView />;
+      case 'govlog':
+        return <GovernanceLogView />;
       case 'settings':
         return <SettingsView />;
       case 'client':

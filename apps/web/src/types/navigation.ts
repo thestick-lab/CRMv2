@@ -1,19 +1,22 @@
 export type ViewKey =
   | 'dashboard'
+  | 'analytics'
   | 'inbox'
-  | 'settings'
   | 'clients'
   | 'client'
-  | 'people'
+  | 'team'
   | 'deadlines'
-  | 'estimator'
-  | 'quote'
-  | 'pipeline';
+  | 'sales-pipeline'
+  | 'time'
+  | 'settings'
+  | 'govlog';
+
+export type NavSection = 'Practice' | 'Work' | 'Admin';
 
 export interface NavItemConfig {
   id: ViewKey;
   label: string;
-  section?: 'top' | 'PRACTICE DATA' | 'STATUTORY OPS';
+  section?: NavSection;
   icon: string;
   badge?: number | string;
 }

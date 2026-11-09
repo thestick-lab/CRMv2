@@ -14,16 +14,19 @@ describe('Sidebar header and WorkspaceMenuPopover layout', () => {
     expect(sidebarSrc).toContain('WorkspaceMenuPopover');
   });
 
-  it('implements horizontal icon utility bar for Home, Inbox, and Settings under the header', () => {
+  it('renders grouped navigation sections from NAV_ITEMS with the pending-review inbox badge', () => {
     const sidebarSrc = fs.readFileSync('src/components/layout/Sidebar.tsx', 'utf8');
 
-    // Must render horizontal icon bar with Home, Inbox, and Settings
-    expect(sidebarSrc).toContain('dashboard');
-    expect(sidebarSrc).toContain('inbox');
-    expect(sidebarSrc).toContain('settings');
-    expect(sidebarSrc).toContain('title="Home"');
-    expect(sidebarSrc).toContain('title="Inbox"');
-    expect(sidebarSrc).toContain('title="Settings"');
+    // Sections drive the rendering rather than hard-coded utility buttons
+    expect(sidebarSrc).toContain("['Practice', 'Work', 'Admin']");
+    expect(sidebarSrc).toContain('NAV_SECTIONS.map');
+    expect(sidebarSrc).toContain('NAV_ITEMS.map');
+    // Inbox carries the live partner-review count
+    expect(sidebarSrc).toContain("item.id === 'inbox'");
+    expect(sidebarSrc).toContain('pendingReviewCount');
+    expect(sidebarSrc).toContain("o.status === 'Partner Review Gate'");
+    // Clients item stays active while a client record is open
+    expect(sidebarSrc).toContain("item.id === 'clients' && currentView === 'client'");
   });
 
   it('places collapse button on the left next to brand logo in expanded header', () => {
@@ -48,9 +51,23 @@ describe('Sidebar header and WorkspaceMenuPopover layout', () => {
     expect(popoverSrc).toContain('accountant-on-call');
   });
 
-  it('defines the 4 primary operational navigation items in navigation-helpers', () => {
-    expect(NAV_ITEMS).toHaveLength(4);
+  it('defines the grouped primary navigation items in navigation-helpers', () => {
+    expect(NAV_ITEMS).toHaveLength(10);
     const ids = NAV_ITEMS.map((item) => item.id);
-    expect(ids).toEqual(['clients', 'people', 'deadlines', 'estimator']);
+    expect(ids).toEqual([
+      'dashboard',
+      'analytics',
+      'inbox',
+      'clients',
+      'team',
+      'deadlines',
+      'sales-pipeline',
+      'time',
+      'settings',
+      'govlog',
+    ]);
+    expect(NAV_ITEMS.every((item) => ['Practice', 'Work', 'Admin'].includes(item.section))).toBe(
+      true
+    );
   });
 });
