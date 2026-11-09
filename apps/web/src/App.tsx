@@ -19,6 +19,7 @@ import { InvoiceEditor } from '@/components/invoice/InvoiceEditor';
 import { TimerProvider } from '@/components/time/timer-context';
 import { NoAccessView } from '@/components/layout/NoAccessView';
 import { canAccessView, firstPermittedView } from '@/components/layout/navigation-helpers';
+import { can, isAssignedTo } from '@/lib/permissions';
 import type { Quote } from '@/context/PracticeStoreContext';
 
 function AppContent() {
@@ -55,9 +56,14 @@ function AppContent() {
   };
 
   const renderContent = () => {
-    if (!canAccessView(view, currentUser.role, permissions.matrix)) {
+    if (!canAccessView(view, currentUser.role, permissions.matrix, { assigned: true })) {
       return <NoAccessView view={view} onNavigate={(next) => handleNavigate(next)} />;
     }
+
+    // A limited role reaches the register but only its own client records.
+    const assignedOnlyClients =
+      !can(currentUser.role, 'Clients', 'view', permissions.matrix) &&
+      can(currentUser.role, 'Clients', 'view', permissions.matrix, { assigned: true });
 
     switch (view) {
       case 'dashboard':
@@ -96,6 +102,18 @@ function AppContent() {
           <SettingsView key={settingsPane ?? 'profile'} initialPane={settingsPane} />
         );
       case 'client':
+        if (
+          assignedOnlyClients &&
+          (!activeClient || !isAssignedTo(currentUser.id, activeClient))
+        ) {
+          return (
+            <NoAccessView
+              view="client"
+              label="This client record"
+              onNavigate={(next) => handleNavigate(next)}
+            />
+          );
+        }
         if (!clientCode) {
           return (
             <div className="p-8 max-w-2xl mx-auto text-center space-y-4">

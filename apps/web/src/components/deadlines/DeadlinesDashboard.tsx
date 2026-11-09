@@ -22,6 +22,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { can, scopeToAssigned } from '@/lib/permissions';
 
 export interface DeadlinesDashboardProps {
   onSelectClient: (code: string) => void;
@@ -60,22 +61,35 @@ export function DeadlinesDashboard({
   }, [kpiFilter]);
 
   const today = todayInSouthAfrica();
-  const { clients, staff, adhocTasks } = usePracticeStore();
+  const { clients, staff, adhocTasks, currentUser, permissions } = usePracticeStore();
 
   // Aggregate all tasks practice-wide
   const summary = React.useMemo(() => {
     return aggregatePracticeTasks(clients, today, staff);
   }, [clients, staff, today]);
 
+  // §6.9 `Deadlines — view`: a Limited (assigned) role works only its own
+  // statutory tasks and ad-hoc items; everyone else sees the practice board.
+  const scoped = React.useMemo(() => {
+    const matrix = permissions.matrix;
+    if (can(currentUser.role, 'Deadlines', 'view', matrix)) {
+      return { tasks: summary.tasks, adhocTasks };
+    }
+    return {
+      tasks: scopeToAssigned(summary.tasks, currentUser.id),
+      adhocTasks: adhocTasks.filter((task) => task.assigneeId === currentUser.id),
+    };
+  }, [summary.tasks, adhocTasks, currentUser.id, currentUser.role, permissions.matrix]);
+
   // Filter tasks based on controls
   const filteredTasks = React.useMemo(() => {
-    return filterPracticeTasks(summary.tasks, {
+    return filterPracticeTasks(scoped.tasks, {
       horizon,
       staffId: selectedStaff,
       serviceCode: selectedService,
       asOfDate: today,
     });
-  }, [summary.tasks, horizon, selectedStaff, selectedService, today]);
+  }, [scoped.tasks, horizon, selectedStaff, selectedService, today]);
 
   // Compute dynamic KPI metrics reacting to active horizon and filters
   const displayedKpi = React.useMemo(() => {
@@ -103,14 +117,14 @@ export function DeadlinesDashboard({
 
   // Available unique service codes
   const availableServices = React.useMemo(() => {
-    return Array.from(new Set(summary.tasks.map((t) => t.service))).sort();
-  }, [summary.tasks]);
+    return Array.from(new Set(scoped.tasks.map((t) => t.service))).sort();
+  }, [scoped.tasks]);
 
   // Ad-hoc cards obey the same client/staff/return/horizon/KPI controls as the
   // statutory tasks (undated manual work stays visible as a triage blocker).
   const displayedAdhocTasks = React.useMemo(
     () =>
-      filterAdhocTasks(adhocTasks, {
+      filterAdhocTasks(scoped.adhocTasks, {
         clientCode: clientFilter,
         staffId: selectedStaff,
         serviceCode: selectedService,
@@ -118,7 +132,7 @@ export function DeadlinesDashboard({
         kpiFilter: activeKpiFilter,
         asOfDate: today,
       }),
-    [adhocTasks, clientFilter, selectedStaff, selectedService, horizon, activeKpiFilter, today]
+    [scoped.adhocTasks, clientFilter, selectedStaff, selectedService, horizon, activeKpiFilter, today]
   );
 
   const kpiTiles: Array<{

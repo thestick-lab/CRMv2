@@ -9,7 +9,7 @@ import {
 import { StatutoryActionModal } from '@/components/deadlines/StatutoryActionModal';
 import { buildEstimateForClient } from '@/components/client-show/tabs/EstimateTab';
 import { downloadExcelQuote } from '@/lib/export-actions';
-import { canSignOff } from '@/lib/permissions';
+import { canSignOff, can, isAssignedTo } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { EngagementBanner } from '@/components/home/EngagementBanner';
@@ -50,9 +50,11 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     division,
     rates,
     updateTaskStatus,
+    permissions,
   } = usePracticeStore();
   const today = todayInSouthAfrica();
   const [actionTask, setActionTask] = React.useState<PracticeTaskItem | null>(null);
+  const [feedback, setFeedback] = React.useState<string | null>(null);
 
   const tasks = React.useMemo(
     () => aggregatePracticeTasks(clients, today, staff).tasks,
@@ -97,6 +99,17 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     if (!task) return;
     if (task.needsPartnerReview) {
       setActionTask(task);
+      return;
+    }
+    // The quick checkbox obeys the same matrix row as the statutory form.
+    const canSubmit =
+      can(currentUser.role, 'Deadlines', 'submit-returns', permissions.matrix, {
+        assigned: isAssignedTo(currentUser.id, task),
+      });
+    if (!canSubmit) {
+      setFeedback(
+        `${currentUser.role} cannot submit ${task.service} for ${task.clientCode} — ask a Partner, the Compliance Officer or an Accountant to file it.`
+      );
       return;
     }
     updateTaskStatus(task.id, 'Submitted', {
@@ -258,6 +271,16 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         }}
         onSelectClient={(code) => onNavigate('client', code)}
       />
+
+      {feedback && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded-lg border border-border bg-card px-3.5 py-2 text-xs text-foreground shadow-lg"
+        >
+          {feedback}
+        </div>
+      )}
     </div>
   );
 }

@@ -185,7 +185,9 @@ export function buildMyTaskLists(
   overrides: Record<string, TaskStatusOverride>,
   currentUser: PracticeUser
 ): MyTaskLists {
-  const mine = tasks.filter((t) => t.staffId === currentUser.id);
+  const mine = tasks.filter(
+    (t) => t.staffId === currentUser.id || t.subcontractorId === currentUser.id
+  );
   const open: HomeTaskItem[] = [];
   const completed: HomeTaskItem[] = [];
 

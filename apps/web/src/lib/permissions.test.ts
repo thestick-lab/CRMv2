@@ -5,7 +5,9 @@ import {
   ROLES,
   SIGN_OFF_LOCKED,
   can,
+  canForAssignedRecord,
   canSignOff,
+  scopeToAssigned,
   validatePermissionChange,
   type PermissionState,
   type Role,
@@ -52,8 +54,10 @@ describe('permission matrix defaults (§6.9 verbatim)', () => {
     expect(can('Subcontractor', 'Clients', 'view', undefined, { assigned: true })).toBe(true);
     expect(can('Subcontractor', 'Deadlines', 'view')).toBe(false);
     expect(can('Subcontractor', 'Deadlines & Tasks', 'update-status', undefined, { assigned: true })).toBe(true);
-    // Time logged on assigned work is the one practice surface a subcontractor keeps.
-    expect(can('Subcontractor', 'Time', 'log-own')).toBe(true);
+    // Time logged on assigned work is the one practice surface a subcontractor
+    // keeps — and it is scoped, not a flat allow.
+    expect(can('Subcontractor', 'Time', 'log-own')).toBe(false);
+    expect(can('Subcontractor', 'Time', 'log-own', undefined, { assigned: true })).toBe(true);
     expect(can('Subcontractor', 'Time', 'view-all')).toBe(false);
   });
 
@@ -102,6 +106,21 @@ describe('permission matrix defaults (§6.9 verbatim)', () => {
     expect(can('Team member', 'Clients', 'view', overrides)).toBe(false);
     expect(can('Partner', 'Clients', 'view', overrides)).toBe(true);
   });
+
+  it('resolves an Inherited override to the role default cell', () => {
+    // Subcontractor's default for Clients.view is Limited, so inheriting keeps
+    // the assigned scope rather than silently granting or refusing.
+    const inherited: PermissionState['matrix'] = {
+      Subcontractor: { 'Clients.view': 'Inherited' },
+    };
+    expect(can('Subcontractor', 'Clients', 'view', inherited)).toBe(false);
+    expect(can('Subcontractor', 'Clients', 'view', inherited, { assigned: true })).toBe(true);
+
+    // Accountant's default for Clients.view is Allowed.
+    expect(can('Accountant', 'Clients', 'view', { Accountant: { 'Clients.view': 'Inherited' } })).toBe(
+      true
+    );
+  });
 });
 
 describe('SET_PERMISSION validation', () => {
@@ -146,6 +165,33 @@ describe('SET_PERMISSION validation', () => {
     expect(next.activity[0].text).toContain('View settings');
     expect(next.activity[0].text).toContain('Allowed');
     expect(next.activity[0].subline).toContain('Accountant');
+  });
+
+  it('refuses to store Inherited or Custom: only real grants persist', () => {
+    const inherited = validatePermissionChange({
+      role: 'Accountant',
+      group: 'Settings',
+      action: 'view',
+      cell: 'Inherited',
+    });
+    expect(inherited).toEqual({ ok: false, reason: 'NOT_STORABLE_CELL' });
+
+    const custom = validatePermissionChange({
+      role: 'Accountant',
+      group: 'Settings',
+      action: 'view',
+      cell: 'Custom',
+    });
+    expect(custom).toEqual({ ok: false, reason: 'NOT_STORABLE_CELL' });
+
+    // `Custom` is display-derived: the matrix UI stores Allowed.
+    const allowed = validatePermissionChange({
+      role: 'Accountant',
+      group: 'Settings',
+      action: 'view',
+      cell: 'Allowed',
+    });
+    expect(allowed.ok).toBe(true);
   });
 
   it('leaves state untouched for a rejected change', () => {
@@ -195,7 +241,7 @@ describe('navigation follows the matrix', () => {
     expect(canAccessView('clients', 'Accountant')).toBe(true);
   });
 
-  it('hides revenue surfaces from a Team member and everything client-facing from a Subcontractor', () => {
+  it('hides revenue surfaces from a Team member and scopes a Subcontractor to assigned work', () => {
     expect(visibleNavItems('Team member').map((item) => item.id)).toEqual([
       'dashboard',
       'inbox',
@@ -204,7 +250,19 @@ describe('navigation follows the matrix', () => {
       'sales-pipeline',
       'time',
     ]);
-    expect(visibleNavItems('Subcontractor').map((item) => item.id)).toEqual(['time']);
+    // Limited (assigned) rows earn the views that scope their own data.
+    expect(visibleNavItems('Subcontractor').map((item) => item.id)).toEqual([
+      'clients',
+      'deadlines',
+      'time',
+    ]);
+    expect(canAccessView('clients', 'Subcontractor')).toBe(false);
+    expect(canAccessView('clients', 'Subcontractor', {}, { assigned: true })).toBe(true);
+    expect(canAccessView('deadlines', 'Subcontractor', {}, { assigned: true })).toBe(true);
+    expect(canAccessView('time', 'Subcontractor', {}, { assigned: true })).toBe(true);
+    // Aggregate views never widen with the assigned scope.
+    expect(canAccessView('dashboard', 'Subcontractor', {}, { assigned: true })).toBe(false);
+    expect(canAccessView('sales-pipeline', 'Subcontractor', {}, { assigned: true })).toBe(false);
   });
 
   it('keeps every view for a Partner', () => {
@@ -212,6 +270,92 @@ describe('navigation follows the matrix', () => {
     // A client record is part of the clients register.
     expect(canAccessView('client', 'Partner')).toBe(true);
     expect(canAccessView('client', 'Support Tech')).toBe(false);
+  });
+});
+
+describe('assigned scope on Limited rows', () => {
+  const clients = [
+    { code: 'AAA-111', staffId: 'erik', subcontractorId: 'hannes' },
+    { code: 'BBB-222', staffId: 'wouter', subcontractorId: 'caroline' },
+    { code: 'CCC-333', staffId: 'hannes' },
+  ];
+  const tasks = [
+    { id: 'task-assigned', staffId: 'erik', subcontractorId: 'hannes' },
+    { id: 'task-other', staffId: 'wouter', subcontractorId: 'caroline' },
+  ];
+
+  it('filters the clients register to the subcontractor’s own records', () => {
+    const visible = scopeToAssigned(clients, 'hannes').map((client) => client.code);
+    expect(visible).toEqual(['AAA-111', 'CCC-333']);
+    expect(visible).not.toContain('BBB-222');
+
+    expect(
+      canForAssignedRecord('Subcontractor', 'Clients', 'view', emptyOverrides, 'hannes', clients[0])
+    ).toBe(true);
+    expect(
+      canForAssignedRecord('Subcontractor', 'Clients', 'view', emptyOverrides, 'hannes', clients[1])
+    ).toBe(false);
+  });
+
+  it('lets a subcontractor move their assigned task and refuse another’s', () => {
+    expect(
+      canForAssignedRecord(
+        'Subcontractor',
+        'Deadlines',
+        'update-status',
+        emptyOverrides,
+        'hannes',
+        tasks[0]
+      )
+    ).toBe(true);
+    expect(
+      canForAssignedRecord(
+        'Subcontractor',
+        'Deadlines',
+        'update-status',
+        emptyOverrides,
+        'hannes',
+        tasks[1]
+      )
+    ).toBe(false);
+    expect(
+      scopeToAssigned(tasks, 'hannes').map((task) => task.id)
+    ).toEqual(['task-assigned']);
+  });
+
+  it('scopes time logging to assigned clients', () => {
+    expect(
+      canForAssignedRecord('Subcontractor', 'Time', 'log-own', emptyOverrides, 'hannes', clients[0])
+    ).toBe(true);
+    expect(
+      canForAssignedRecord('Subcontractor', 'Time', 'log-own', emptyOverrides, 'hannes', clients[1])
+    ).toBe(false);
+  });
+
+  it('refuses the Home quick-complete for a role that cannot submit returns', () => {
+    // Home's checkbox dispatches `Submitted`; the matrix row decides.
+    const teamMemberCanSubmit = canForAssignedRecord(
+      'Team member',
+      'Deadlines',
+      'submit-returns',
+      emptyOverrides,
+      'andre',
+      tasks[0]
+    );
+    expect(teamMemberCanSubmit).toBe(false);
+    expect(
+      canForAssignedRecord('Partner', 'Deadlines', 'submit-returns', emptyOverrides, 'erik', tasks[0])
+    ).toBe(true);
+    expect(
+      canForAssignedRecord(
+        'Subcontractor',
+        'Deadlines',
+        'submit-returns',
+        emptyOverrides,
+        'hannes',
+        tasks[0]
+      )
+    ).toBe(false);
   });
 });
 

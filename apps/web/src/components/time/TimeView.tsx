@@ -26,7 +26,9 @@ const TABS: ReadonlyArray<{ id: TimeTab; label: string; icon: React.ComponentTyp
 export function TimeView() {
   const { timeEntries, currentUser, permissions } = usePracticeStore();
   const { openEntrySheet } = useTimer();
-  const canLogOwn = can(currentUser.role, 'Time', 'log-own', permissions.matrix);
+  const canLogOwn = can(currentUser.role, 'Time', 'log-own', permissions.matrix, {
+    assigned: true,
+  });
   const canViewAll = can(currentUser.role, 'Time', 'view-all', permissions.matrix);
   const tabs = TABS.filter((entry) => (entry.id === 'log' ? canLogOwn : canViewAll));
   const [tab, setTab] = React.useState<TimeTab>(() => (canLogOwn ? 'log' : 'report'));

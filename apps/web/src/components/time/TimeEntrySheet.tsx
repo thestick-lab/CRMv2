@@ -12,6 +12,7 @@ import {
   roundToQuarterMinutes,
 } from '@/lib/billing';
 import { Button } from '@/components/ui/button';
+import { can, scopeToAssigned } from '@/lib/permissions';
 import { Clock, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +59,14 @@ const SERVICE_SHORT = new Map(SERVICE_TYPES.map((service) => [service.code, serv
 const SERVICE_FULL = new Map(SERVICE_TYPES.map((service) => [service.code, service.name]));
 
 export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeEntrySheetProps) {
-  const { clients } = usePracticeStore();
+  const { clients, currentUser, permissions } = usePracticeStore();
+
+  // §6.9 `Time — log own`: a Limited (assigned) role may only bill time to its
+  // own clients, so the picker never offers anyone else's.
+  const selectableClients = React.useMemo(() => {
+    if (can(currentUser.role, 'Time', 'log-own', permissions.matrix)) return clients;
+    return scopeToAssigned(clients, currentUser.id);
+  }, [clients, currentUser.id, currentUser.role, permissions.matrix]);
 
   const [clientCode, setClientCode] = React.useState(entry.clientCode);
   const [serviceCode, setServiceCode] = React.useState<ServiceCode | ''>(entry.serviceCode ?? '');
@@ -74,6 +82,11 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
 
   const linkedToTask = Boolean(entry.taskId);
   const client = clients.find((candidate) => candidate.code === clientCode);
+  // An entry captured before scope changed keeps its own client selectable so
+  // the record is still editable; new entries only offer the assigned set.
+  const pickerClients = selectableClients.some((candidate) => candidate.code === entry.clientCode)
+    ? selectableClients
+    : [...selectableClients, ...clients.filter((candidate) => candidate.code === entry.clientCode)];
   const startedIso = localInputToIso(startedAt);
   const endedIso = localInputToIso(endedAt);
   // The stopped timer's pause-excluded duration stays authoritative until a
@@ -120,6 +133,12 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
 
   const problems: string[] = [];
   if (!clientCode) problems.push('Select the client this work was for.');
+  if (
+    clientCode &&
+    !selectableClients.some((candidate) => candidate.code === clientCode)
+  ) {
+    problems.push('Your role can only log time against your assigned clients.');
+  }
   if (problems.length === 0 && (!startedIso || !endedIso)) {
     problems.push('Enter a start and end time.');
   } else if (problems.length === 0 && endBeforeStart) {
@@ -201,7 +220,7 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
                   className={cn(FIELD_CLASS, 'appearance-none')}
                 >
                   <option value="">Select client</option>
-                  {clients.map((candidate) => (
+                  {pickerClients.map((candidate) => (
                     <option key={candidate.code} value={candidate.code}>
                       {candidate.name} · {candidate.code}
                     </option>

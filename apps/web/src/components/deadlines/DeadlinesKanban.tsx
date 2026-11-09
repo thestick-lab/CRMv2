@@ -19,7 +19,7 @@ import { AvatarChip, PriorityPill, type PriorityLevel } from '@/components/ui/li
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Calendar, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { can } from '@/lib/permissions';
+import { can, isAssignedTo } from '@/lib/permissions';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { AdHocTaskModal } from './AdHocTaskModal';
 
@@ -464,21 +464,33 @@ export function DeadlinesKanban({
     currentUser.role,
     'Deadlines',
     'update-status',
-    permissions.matrix
+    permissions.matrix,
+    { assigned: true }
   );
 
+  const cardAssignedTo = (card: DeadlineCard): boolean => {
+    if (card.kind === 'adhoc') return card.adhoc?.assigneeId === currentUser.id;
+    return card.task ? isAssignedTo(currentUser.id, card.task) : card.staffId === currentUser.id;
+  };
+
   const handleMove = (cardId: string, toColumnId: string) => {
-    if (!canUpdateStatus) {
-      setFeedback(`Your role (${currentUser.role}) cannot move tasks between lanes.`);
+    const card = allCards.find((entry) => entry.id === cardId);
+    if (!card) return;
+
+    if (
+      !can(currentUser.role, 'Deadlines', 'update-status', permissions.matrix, {
+        assigned: cardAssignedTo(card),
+      })
+    ) {
+      setFeedback(
+        `Your role (${currentUser.role}) can only move tasks assigned to you — ${card.clientCode} is not yours.`
+      );
       return;
     }
     if (groupBy !== 'workflow') {
       setFeedback('Switch to Workflow status grouping to move cards between lanes.');
       return;
     }
-
-    const card = allCards.find((entry) => entry.id === cardId);
-    if (!card) return;
 
     const targetStatus = toColumnId as WorkflowStatus;
     if (card.status === targetStatus) {

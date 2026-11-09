@@ -7,6 +7,7 @@ import { formatHours } from '@/lib/billing';
 import { Button } from '@/components/ui/button';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { cn } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 import { Clock, Pencil, Plus } from 'lucide-react';
 import { localDay, resolvePresetRange, TIME_REPORT_PRESETS } from './time-report-logic';
 
@@ -35,9 +36,11 @@ function timeLabel(iso: string): string {
 }
 
 export function Timesheet() {
-  const { timeEntries, clients, staff, updateTimeEntry } = usePracticeStore();
+  const { timeEntries, clients, staff, updateTimeEntry, currentUser, permissions } =
+    usePracticeStore();
   const { openEntrySheet, editEntry } = useTimer();
   const today = todayInSouthAfrica();
+  const canViewAllEntries = can(currentUser.role, 'Time', 'view-all', permissions.matrix);
   const [range, setRange] = React.useState(() => resolvePresetRange('this-month', today));
 
   const clientName = React.useMemo(
@@ -53,11 +56,14 @@ export function Timesheet() {
     () =>
       timeEntries
         .filter((entry) => {
+          // Without `Time — view all`, the sheet shows only the user's own
+          // entries — a limited subcontractor never reads other people's time.
+          if (!canViewAllEntries && entry.staffUserId !== currentUser.id) return false;
           const day = localDay(entry.startedAt);
           return day !== '' && day >= range.start && day <= range.end;
         })
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
-    [timeEntries, range]
+    [timeEntries, range, canViewAllEntries, currentUser.id]
   );
 
   const totals = React.useMemo(

@@ -2,8 +2,8 @@ import * as React from 'react';
 import type { ViewKey } from '@/types/navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { buildBreadcrumbs, NAV_ITEMS, canAccessView } from './navigation-helpers';
-import { can } from '@/lib/permissions';
+import { buildBreadcrumbs, visibleNavItems } from './navigation-helpers';
+import { can, scopeToAssigned } from '@/lib/permissions';
 import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog';
 import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
@@ -48,17 +48,20 @@ export function Layout({
   const commandItems = React.useMemo<CommandItem[]>(() => {
     const role = currentUser.role;
     const matrix = permissions.matrix;
-    const viewItems: CommandItem[] = NAV_ITEMS.filter((item) =>
-      canAccessView(item.id, role, matrix)
-    ).map((item) => ({
+    const viewItems: CommandItem[] = visibleNavItems(role, matrix).map((item) => ({
       id: item.id,
       label: item.label,
       section: item.section,
       icon: item.icon,
     }));
 
-    const clientItems: CommandItem[] = can(role, 'Clients', 'view', matrix)
-      ? clients.map((c) => ({
+    const canSeeClients = can(role, 'Clients', 'view', matrix, { assigned: true });
+    const visibleClients =
+      can(role, 'Clients', 'view', matrix) || !canSeeClients
+        ? clients
+        : scopeToAssigned(clients, currentUser.id);
+    const clientItems: CommandItem[] = canSeeClients
+      ? visibleClients.map((c) => ({
           id: `client-${c.code}`,
           label: c.name,
           section: 'Clients',
@@ -89,7 +92,7 @@ export function Layout({
       : [];
 
     return [...viewItems, ...clientItems, ...quoteItems, ...timeItems];
-  }, [clients, quotes, timeEntries, currentUser.role, permissions.matrix]);
+  }, [clients, quotes, timeEntries, currentUser.id, currentUser.role, permissions.matrix]);
 
   const handleSelectCommand = (item: CommandItem) => {
     if (item.view) {

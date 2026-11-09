@@ -15,6 +15,7 @@ import type { ComponentType } from 'react';
 import type { NavSection } from '@/types/navigation';
 import {
   can,
+  type CanOptions,
   type PermissionGroupInput,
   type PermissionState,
   type Role,
@@ -31,8 +32,14 @@ export interface NavItemDef {
   section: NavSection;
   icon: ComponentType<{ className?: string }>;
   badge?: number | string;
-  /** Practice permission the destination enforces; absent means always visible. */
+  /** Practice permission the destination enforces. */
   permission: NavPermission;
+  /**
+   * The view scopes its own data to the person's assigned records, so a
+   * `Limited (assigned)` cell still earns the nav item. Aggregate views leave
+   * this false: a limited user never sees practice-wide numbers.
+   */
+  assignedAccess?: boolean;
 }
 
 export const NAV_ITEMS: NavItemDef[] = [
@@ -65,6 +72,7 @@ export const NAV_ITEMS: NavItemDef[] = [
     section: 'Work',
     icon: Building2,
     permission: { group: 'Clients', action: 'view' },
+    assignedAccess: true,
   },
   {
     id: 'team',
@@ -79,6 +87,7 @@ export const NAV_ITEMS: NavItemDef[] = [
     section: 'Work',
     icon: CalendarDays,
     permission: { group: 'Deadlines', action: 'view' },
+    assignedAccess: true,
   },
   {
     id: 'sales-pipeline',
@@ -93,6 +102,7 @@ export const NAV_ITEMS: NavItemDef[] = [
     section: 'Work',
     icon: Clock,
     permission: { group: 'Time', action: 'log-own' },
+    assignedAccess: true,
   },
   // Admin — configuration and the governance trail
   {
@@ -122,15 +132,26 @@ const VIEW_PERMISSIONS: Record<ViewKey, NavPermission> = NAV_ITEMS.reduce(
 // A client record is a client-register view.
 VIEW_PERMISSIONS.client = { group: 'Clients', action: 'view' };
 
-/** Whether `role` may open `view`; the views and the router both enforce this. */
+/** Views whose data is filtered to the person's assigned records. */
+const ASSIGNED_VIEWS: readonly ViewKey[] = ['clients', 'client', 'deadlines', 'time'];
+
+/**
+ * Whether `role` may open `view`. Pass `{ assigned: true }` so a
+ * `Limited (assigned)` cell earns the view — but only on views that scope
+ * their own data; aggregate views still require the unconditional grant.
+ */
 export function canAccessView(
   view: ViewKey,
   role: Role,
-  matrix: PermissionState['matrix'] = {}
+  matrix: PermissionState['matrix'] = {},
+  options: CanOptions = {}
 ): boolean {
   const permission = VIEW_PERMISSIONS[view];
   if (!permission) return false;
-  return can(role, permission.group, permission.action, matrix);
+  if (options.assigned === true && !ASSIGNED_VIEWS.includes(view)) {
+    return can(role, permission.group, permission.action, matrix);
+  }
+  return can(role, permission.group, permission.action, matrix, options);
 }
 
 /** The nav items a role may see, in declared order. */
@@ -138,7 +159,9 @@ export function visibleNavItems(
   role: Role,
   matrix: PermissionState['matrix'] = {}
 ): NavItemDef[] {
-  return NAV_ITEMS.filter((item) => canAccessView(item.id, role, matrix));
+  return NAV_ITEMS.filter((item) =>
+    canAccessView(item.id, role, matrix, { assigned: item.assignedAccess === true })
+  );
 }
 
 /** Landing view for a role: the first place it is allowed to work. */

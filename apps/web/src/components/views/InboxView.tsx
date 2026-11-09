@@ -16,7 +16,7 @@ export function InboxView({ onNavigate }: InboxViewProps) {
     (o) => o.status === 'Partner Review Gate'
   ).length;
 
-  if (!canAccessView('inbox', currentUser.role, permissions.matrix)) {
+  if (!canAccessView('inbox', currentUser.role, permissions.matrix, { assigned: true })) {
     return <NoAccessView view="inbox" onNavigate={(view) => onNavigate(view)} />;
   }
 

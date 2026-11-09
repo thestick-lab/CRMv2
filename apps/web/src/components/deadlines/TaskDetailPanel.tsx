@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WORKFLOW_LANES, normalizeWorkflowStatus, type WorkflowStatus } from '@/lib/workflow';
 import { cn } from '@/lib/utils';
-import { can } from '@/lib/permissions';
+import { can, isAssignedTo } from '@/lib/permissions';
 import { StatutoryActionForm } from './StatutoryActionForm';
 import { formatElapsed, useTimer } from '@/components/time/timer-context';
 
@@ -49,13 +49,17 @@ export function TaskDetailPanel({
 }: TaskDetailPanelProps) {
   const { activity, taskStatusOverrides, currentUser, logActivity, permissions } = usePracticeStore();
   const { session, elapsedMs, startTimer, pauseTimer, resumeTimer, stopTimer } = useTimer();
+  const taskAssigned = task ? isAssignedTo(currentUser.id, task) : false;
   const canUpdateStatus = can(
     currentUser.role,
     'Deadlines',
     'update-status',
-    permissions.matrix
+    permissions.matrix,
+    { assigned: taskAssigned }
   );
-  const canLogTime = can(currentUser.role, 'Time', 'log-own', permissions.matrix);
+  const canLogTime = can(currentUser.role, 'Time', 'log-own', permissions.matrix, {
+    assigned: taskAssigned,
+  });
   const [comment, setComment] = React.useState('');
 
   React.useEffect(() => {

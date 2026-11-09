@@ -1,5 +1,5 @@
 import type { NavSection, ViewKey } from '@/types/navigation';
-import { NAV_ITEMS, canAccessView, type NavItemDef } from './navigation-helpers';
+import { visibleNavItems, type NavItemDef } from './navigation-helpers';
 import { UserPopover } from '@/components/ui/user-popover';
 import { PanelLeftClose } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,13 +29,19 @@ export function Sidebar({
     (o) => o.status === 'Partner Review Gate'
   ).length;
 
-  const navItems: NavItemDef[] = NAV_ITEMS.filter((item) =>
-    canAccessView(item.id, currentUser.role, permissions.matrix)
-  ).map((item) =>
-    item.id === 'inbox' && pendingReviewCount > 0
-      ? { ...item, badge: pendingReviewCount }
-      : item
+  const navItems: NavItemDef[] = visibleNavItems(currentUser.role, permissions.matrix).map(
+    (item) =>
+      item.id === 'inbox' && pendingReviewCount > 0
+        ? { ...item, badge: pendingReviewCount }
+        : item
   );
+
+  // Sections with no permitted item disappear entirely; a heading over an
+  // empty list would advertise areas the role cannot reach.
+  const navSections = NAV_SECTIONS.map((section) => ({
+    section,
+    items: navItems.filter((item) => item.section === section),
+  })).filter((entry) => entry.items.length > 0);
 
   const renderItem = (item: NavItemDef) => {
     const isActive =
@@ -122,8 +128,7 @@ export function Sidebar({
 
         {/* Grouped primary navigation */}
         <nav aria-label="Primary" className="p-2 space-y-4 overflow-y-auto max-h-[calc(100vh-120px)]">
-          {NAV_SECTIONS.map((section) => {
-            const items = navItems.filter((item) => item.section === section);
+          {navSections.map(({ section, items }) => {
             return (
               <div key={section} className="space-y-1">
                 {!collapsed && (

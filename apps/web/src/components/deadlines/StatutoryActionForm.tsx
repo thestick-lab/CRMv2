@@ -12,7 +12,7 @@ import {
   type WorkflowStatus,
 } from '@/lib/workflow';
 import { cn } from '@/lib/utils';
-import { can } from '@/lib/permissions';
+import { can, isAssignedTo } from '@/lib/permissions';
 
 export interface StatutoryActionFormProps {
   task: PracticeTaskItem;
@@ -53,7 +53,8 @@ export function StatutoryActionForm({
     currentUser.role,
     'Deadlines',
     'submit-returns',
-    permissions.matrix
+    permissions.matrix,
+    { assigned: isAssignedTo(currentUser.id, task) }
   );
   const requiresPartnerGate =
     task.needsPartnerReview ||

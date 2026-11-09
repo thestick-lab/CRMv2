@@ -65,6 +65,17 @@ export const PERMISSION_CELLS: readonly PermissionCell[] = [
 ];
 
 /**
+ * What the matrix may persist. `Inherited` is the absence of an override and
+ * `Custom` is a badge the matrix UI derives from a stored value that differs
+ * from the default — neither is ever written.
+ */
+export const STORABLE_PERMISSION_CELLS: readonly PermissionCell[] = [
+  'Allowed',
+  'Not allowed',
+  'Limited',
+];
+
+/**
  * Role → `<section>.<action>` → cell. Only overrides are persisted; the default
  * matrix is the fallback for every key a role has not been granted explicitly.
  */
@@ -218,7 +229,9 @@ const ROW_DEFINITIONS: readonly RowDefinition[] = [
     group: 'Time',
     label: 'Log own time',
     aliases: ['log-own', 'log'],
-    cells: [ALLOW, ALLOW, ALLOW, ALLOW, ALLOW, NOT],
+    // §6.9 "A (assigned)": allowed for the subcontractor's assigned clients
+    // only, so the call sites pass `{ assigned }` (see `isAssignedTo`).
+    cells: [ALLOW, ALLOW, ALLOW, ALLOW, LIMITED, NOT],
   },
   {
     section: 'Time',
@@ -351,14 +364,29 @@ function cellAllows(cell: PermissionCell, options: CanOptions): boolean {
   switch (cell) {
     case 'Allowed':
     case 'Custom':
-    case 'Inherited':
       return true;
     case 'Limited':
       return options.assigned === true;
+    case 'Inherited':
     case 'Not allowed':
     default:
       return false;
   }
+}
+
+/**
+ * The cell that actually applies: a stored override wins, but `Inherited`
+ * means "use the role default" (and legacy persisted `Custom` reads as the
+ * grant it was written from).
+ */
+function effectiveCell(
+  role: Role,
+  row: PermissionRow,
+  matrix: PermissionState['matrix']
+): PermissionCell {
+  const stored = matrix[role]?.[row.id];
+  if (stored && stored !== 'Inherited') return stored;
+  return DEFAULT_PERMISSION_MATRIX[role]?.[row.id] ?? 'Not allowed';
 }
 
 /**
@@ -374,9 +402,43 @@ export function can(
 ): boolean {
   const row = permissionRowFor(group, action);
   if (!row) return false;
-  const cell =
-    matrix[role]?.[row.id] ?? DEFAULT_PERMISSION_MATRIX[role]?.[row.id] ?? 'Not allowed';
-  return cellAllows(cell, options);
+  return cellAllows(effectiveCell(role, row, matrix), options);
+}
+
+/* ---------------------------------------------------------------------------
+ * `Limited (assigned)` scope.
+ *
+ * Clients and statutory tasks record their responsible partner and
+ * subcontractor; a Limited cell passes only when the record names this user.
+ * ------------------------------------------------------------------------- */
+
+export interface AssignmentScope {
+  staffId: string;
+  subcontractorId?: string;
+}
+
+export function isAssignedTo(userId: string, record: AssignmentScope): boolean {
+  return record.staffId === userId || record.subcontractorId === userId;
+}
+
+/** Filter a register down to the records this user is responsible for. */
+export function scopeToAssigned<T extends AssignmentScope>(
+  records: readonly T[],
+  userId: string
+): T[] {
+  return records.filter((record) => isAssignedTo(userId, record));
+}
+
+/** `can()` with the record's own assignment supplying the Limited scope. */
+export function canForAssignedRecord(
+  role: Role,
+  group: PermissionGroupInput,
+  action: string,
+  matrix: PermissionState['matrix'],
+  userId: string,
+  record: AssignmentScope
+): boolean {
+  return can(role, group, action, matrix, { assigned: isAssignedTo(userId, record) });
 }
 
 /** Partner sign-off authority: unchanged practice rule (`role === 'Partner'`). */
@@ -408,8 +470,9 @@ export function validatePermissionChange(
   if (!ROLES.includes(change.role)) {
     return { ok: false, reason: 'UNKNOWN_ROLE' };
   }
-  if (!PERMISSION_CELLS.includes(change.cell)) {
-    return { ok: false, reason: 'INVALID_CELL' };
+  if (!STORABLE_PERMISSION_CELLS.includes(change.cell)) {
+    // `Inherited` is the absence of an override; `Custom` is derived for display.
+    return { ok: false, reason: 'NOT_STORABLE_CELL' };
   }
 
   const row = permissionRowFor(change.group, change.action);
