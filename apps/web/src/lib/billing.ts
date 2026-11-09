@@ -1,4 +1,6 @@
-import { cents } from 'fdoncall-practice/domain/estimate';
+import { cents, formatMonthShort } from 'fdoncall-practice/domain/estimate';
+import { endOfMonth, iso, type ISODate } from 'fdoncall-practice/domain/dates';
+import type { InvoiceLine, TimeEntry } from '@/context/PracticeStoreContext';
 
 /**
  * Time-entry arithmetic for the practice.
@@ -124,4 +126,131 @@ export function formatHours(minutes: number): string {
   if (!Number.isFinite(minutes) || minutes <= 0) return '0h';
   const hours = minutes / 60;
   return `${Number.isInteger(hours) ? hours : Number(hours.toFixed(2))}h`;
+}
+
+/* ---------------------------------------------------------------------------
+ * Invoice time feed
+ *
+ * An invoice for a retainer client already carries that month's fee lines, so
+ * the retainer's allowance is paid for: only the hours beyond it become a new
+ * line. The split is the same `splitRetainerOverage` math the time report
+ * shows, and the entries that produced the line are marked with the invoice id
+ * on save so a second `Add unbilled time` pass can never double-bill them.
+ * ------------------------------------------------------------------------- */
+
+/** First and last day of one billing month, inclusive. */
+export interface MonthRange {
+  start: ISODate;
+  end: ISODate;
+}
+
+/** The calendar month an entry belongs to, from its start timestamp. */
+const SA_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' });
+
+/** The South African calendar day an entry started on, `YYYY-MM-DD`. */
+export function entryDay(iso: string): string {
+  const time = Date.parse(iso);
+  if (Number.isNaN(time)) return '';
+  return SA_DAY.format(new Date(time));
+}
+
+/** `2026-11` → `{ start: '2026-11-01', end: '2026-11-30' }`. */
+export function billingMonthRange(month: string): MonthRange {
+  const [year, monthNumber] = month.split('-').map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(monthNumber)) {
+    return { start: `${month}-01`, end: `${month}-01` };
+  }
+  return { start: iso(year, monthNumber, 1), end: endOfMonth(year, monthNumber) };
+}
+
+export interface TimeInvoiceFeed {
+  /** Unbilled billable entries in the month: what the invoice would bill. */
+  entries: TimeEntry[];
+  /** Rounded minutes across those entries. */
+  billableMinutes: number;
+  /** Billable minutes the retainer's allowance already covers. */
+  coveredMinutes: number;
+  /** Billable minutes beyond the allowance, priced at the ad-hoc rate. */
+  overageMinutes: number;
+  overageHours: number;
+  /** The ex-VAT value of the line(s) this feed produces. */
+  overageAmountZar: number;
+  /** The overage line, or nothing while the month is inside the allowance. */
+  lines: InvoiceLine[];
+}
+
+/**
+ * The unbilled time an invoice can bill for one client and month.
+ *
+ * Only billable, not-yet-invoiced entries started inside the range count. The
+ * covered portion produces no line — the retainer fee line already on the
+ * invoice pays for it — and the overage becomes exactly one `OUTPUT2` line at
+ * the quote's ad-hoc rate. The quantity is stated in decimal hours (two
+ * decimals, matching the report's labels) and the line amount is derived from
+ * it, so quantity × rate and the invoice's line sum always agree.
+ */
+export function timeInvoiceFeed(
+  clientCode: string,
+  monthRange: MonthRange,
+  entries: TimeEntry[],
+  allowanceHours: number,
+  adHocRate: number
+): TimeInvoiceFeed {
+  const unbilled = entries.filter((entry) => {
+    if (entry.clientCode !== clientCode || !entry.billable || entry.invoiceId) return false;
+    const day = entryDay(entry.startedAt);
+    return day !== '' && day >= monthRange.start && day <= monthRange.end;
+  });
+
+  const billableMinutes = unbilled.reduce(
+    (total, entry) =>
+      total + (Number.isFinite(entry.roundedMinutes) ? entry.roundedMinutes : 0),
+    0
+  );
+  const split = splitRetainerOverage(
+    unbilled.map((entry) => ({ billableMinutes: entry.roundedMinutes })),
+    allowanceHours,
+    adHocRate
+  );
+
+  const overageHours = Number((split.overageMinutes / 60).toFixed(2));
+  const unitAmount = cents(adHocRate);
+  const monthKey = monthRange.start.slice(0, 7);
+  const lines: InvoiceLine[] =
+    overageHours > 0
+      ? [
+          {
+            id: `line-time-${clientCode}-${monthKey}`,
+            description: `Time overage — ${formatMonthShort(monthKey)}`,
+            quantity: overageHours,
+            unitAmount,
+            taxType: 'OUTPUT2',
+            lineAmount: cents(overageHours * unitAmount),
+          },
+        ]
+      : [];
+
+  return {
+    entries: unbilled,
+    billableMinutes,
+    coveredMinutes: split.coveredMinutes,
+    overageMinutes: split.overageMinutes,
+    overageHours,
+    overageAmountZar: lines[0]?.lineAmount ?? 0,
+    lines,
+  };
+}
+
+/**
+ * The invoice lines for a month's unbilled billable time: one overage line, or
+ * none while the logged hours stay inside the retainer's allowance.
+ */
+export function buildTimeInvoiceLines(
+  clientCode: string,
+  monthRange: MonthRange,
+  entries: TimeEntry[],
+  allowanceHours: number,
+  adHocRate: number
+): InvoiceLine[] {
+  return timeInvoiceFeed(clientCode, monthRange, entries, allowanceHours, adHocRate).lines;
 }

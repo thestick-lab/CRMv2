@@ -1,7 +1,13 @@
 import * as React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import type { Client } from 'fdoncall-practice/domain/types';
 import { computeEstimate, cents, formatMonthShort } from 'fdoncall-practice/domain/estimate';
-import { addDays, formatDate, todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
+import {
+  addDays,
+  formatDate,
+  formatMonthKey,
+  todayInSouthAfrica,
+} from 'fdoncall-practice/domain/dates';
 import type {
   Invoice,
   InvoiceLine,
@@ -16,10 +22,12 @@ import {
   type XeroSyncResult,
 } from '@/lib/integrations/xero';
 import { cn } from '@/lib/utils';
+import { billingMonthRange, entryDay, formatHours, timeInvoiceFeed } from '@/lib/billing';
 import { Button } from '@/components/ui/button';
 import { formatZar } from '@/components/quote/estimate-form';
 import {
   Check,
+  Clock,
   Cloud,
   Plus,
   Receipt,
@@ -90,10 +98,12 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     clients,
     quotes,
     invoices,
+    timeEntries,
     sequences,
     currentUser,
     addInvoice,
     updateInvoice,
+    updateTimeEntry,
     logActivity,
   } = usePracticeStore();
 
@@ -137,6 +147,13 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   const [feedback, setFeedback] = React.useState<{ tone: 'success' | 'error'; text: string } | null>(
     null
   );
+  const [timePanelOpen, setTimePanelOpen] = React.useState(false);
+  /**
+   * Unbilled-time lines staged in this edit session: line id → the time-entry
+   * ids the line bills. Entries only carry `invoiceId` once the invoice is
+   * saved, so abandoning the editor leaves them unbilled.
+   */
+  const [stagedTime, setStagedTime] = React.useState<Record<string, string[]>>({});
 
   const totals = reconcileInvoice(lines, INVOICE_TAX_RATE);
   const months = quote ? computeEstimate(quote.estimateInput).months : [];
@@ -144,6 +161,27 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     { status, dueDate },
     today
   );
+
+  const stagedEntryIds = React.useMemo(
+    () => new Set(Object.values(stagedTime).flat()),
+    [stagedTime]
+  );
+
+  /**
+   * The client's unbilled billable time for the invoice month, split against
+   * the quote's retainer allowance. `null` when no quote sets the billing
+   * baseline — the panel then has nothing honest to offer.
+   */
+  const unbilledTime = React.useMemo(() => {
+    if (!quote || clientCode === UNREGISTERED_CLIENT_CODE) return null;
+    return timeInvoiceFeed(
+      clientCode,
+      billingMonthRange(month),
+      timeEntries.filter((entry) => !stagedEntryIds.has(entry.id)),
+      quote.monthlyRetainerHours,
+      quote.adHocHourlyRate
+    );
+  }, [quote, clientCode, month, timeEntries, stagedEntryIds]);
 
   const draftInvoice: Invoice = {
     id: savedId ?? seeded?.id ?? `invoice-${quote?.id ?? 'manual'}-${month}`,
@@ -205,6 +243,21 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     } else {
       addInvoice(record);
       setSavedId(record.id);
+    }
+
+    // Time lines carry their entries with them: saving the invoice is what
+    // marks those entries billed, so the next `Add unbilled time` pass cannot
+    // offer them again.
+    const billedEntryIds = Object.entries(stagedTime)
+      .filter(([lineId]) => record.lineItems.some((line) => line.id === lineId))
+      .flatMap(([, entryIds]) => entryIds);
+    if (billedEntryIds.length > 0) {
+      billedEntryIds.forEach((entryId) => updateTimeEntry(entryId, { invoiceId: record.id }));
+      setStagedTime({});
+      log(
+        `Unbilled time added to ${record.number}`,
+        `${billedEntryIds.length} entries · ${formatZar(record.total)} incl. 15% VAT`
+      );
     }
     return record;
   };
@@ -281,6 +334,36 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
 
   const removeLine = (id: string) => {
     setLines((previous) => previous.filter((line) => line.id !== id));
+    // Dropping the line also releases the entries it was going to bill.
+    setStagedTime((previous) => {
+      if (!previous[id]) return previous;
+      const next = { ...previous };
+      delete next[id];
+      return next;
+    });
+  };
+
+  /**
+   * Confirm step's commit: append the overage line and remember which entries
+   * it bills. Nothing is written to the store until the invoice is saved.
+   */
+  const addUnbilledTime = () => {
+    if (!unbilledTime || unbilledTime.lines.length === 0) return;
+    const [line] = unbilledTime.lines;
+    setLines((previous) =>
+      previous.some((existing) => existing.id === line.id) ? previous : [...previous, line]
+    );
+    setStagedTime((previous) => ({
+      ...previous,
+      [line.id]: unbilledTime.entries.map((entry) => entry.id),
+    }));
+    setTimePanelOpen(false);
+    setFeedback({
+      tone: 'success',
+      text: `${formatHours(unbilledTime.overageMinutes)} overage added · ${formatZar(
+        line.lineAmount
+      )} excl. VAT`,
+    });
   };
 
   const toggleMethod = (method: string) => {
@@ -457,16 +540,35 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
           <section className="rounded-xl border border-border bg-card" data-invoice-lines>
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <h2 className="text-xs font-semibold text-foreground">Line items</h2>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addLine}
-                className="h-7 gap-1 px-2 text-[11px]"
-              >
-                <Plus className="h-3 w-3" />
-                Add line
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  data-time-feed-open
+                  onClick={() => setTimePanelOpen(true)}
+                  disabled={!unbilledTime}
+                  title={
+                    unbilledTime
+                      ? 'Bill the overage of this month’s unbilled time'
+                      : 'A quote sets the retainer allowance and ad-hoc rate'
+                  }
+                  className="h-7 gap-1 px-2 text-[11px]"
+                >
+                  <Clock className="h-3 w-3" />
+                  Add unbilled time
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addLine}
+                  className="h-7 gap-1 px-2 text-[11px]"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add line
+                </Button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] text-left text-[11px]">
@@ -596,6 +698,21 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
               VAT is fixed at 15% and reconciled per line. Only CIPC fees paid on the client's
               behalf use <span className="font-mono">None</span>.
             </p>
+            {unbilledTime && quote && (
+              <p
+                data-time-feed-hint
+                className="border-t border-border/60 px-4 py-2 font-mono text-[10px] leading-relaxed text-muted-foreground"
+              >
+                {formatHours(unbilledTime.billableMinutes)} unbilled billable ·{' '}
+                {formatHours(unbilledTime.coveredMinutes)} inside the{' '}
+                {formatHours(quote.monthlyRetainerHours * 60)} retainer
+                {unbilledTime.overageMinutes > 0
+                  ? ` · ${formatHours(unbilledTime.overageMinutes)} overage at ${formatZar(
+                      quote.adHocHourlyRate
+                    )}/h`
+                  : ' · nothing to bill'}
+              </p>
+            )}
           </section>
 
           {/* Payment details */}
@@ -727,6 +844,176 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
           </section>
         </div>
       </div>
+
+      <DialogPrimitive.Root open={timePanelOpen} onOpenChange={setTimePanelOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs" />
+          <DialogPrimitive.Content
+            data-time-feed-panel
+            className="fixed left-1/2 top-1/2 z-[60] max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-card shadow-2xl outline-none"
+          >
+            <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#c4161c]/20 bg-[#c4161c]/10 text-[#c4161c]">
+                  <Clock className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+                    Unbilled time
+                  </p>
+                  <DialogPrimitive.Title className="font-serif text-lg leading-tight text-foreground">
+                    Add unbilled time
+                  </DialogPrimitive.Title>
+                  <DialogPrimitive.Description className="max-w-xs text-xs leading-relaxed text-muted-foreground">
+                    {clientName} · {formatMonthKey(month)}
+                  </DialogPrimitive.Description>
+                </div>
+              </div>
+              <DialogPrimitive.Close asChild>
+                <button
+                  type="button"
+                  aria-label="Close unbilled time"
+                  className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#c4161c]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </DialogPrimitive.Close>
+            </header>
+
+            {unbilledTime && quote && (
+              <div className="space-y-3 px-5 py-4">
+                <div className="grid grid-cols-3 divide-x divide-border rounded-lg border border-border">
+                  {(
+                    [
+                      {
+                        id: 'billable',
+                        label: 'Billable this month',
+                        value: formatHours(unbilledTime.billableMinutes),
+                        tone: 'text-foreground',
+                      },
+                      {
+                        id: 'covered',
+                        label: 'Retainer covers',
+                        value: formatHours(unbilledTime.coveredMinutes),
+                        tone: 'text-muted-foreground',
+                      },
+                      {
+                        id: 'overage',
+                        label: 'Overage',
+                        value: formatHours(unbilledTime.overageMinutes),
+                        tone:
+                          unbilledTime.overageMinutes > 0
+                            ? 'text-[#c4161c] dark:text-[#f87171]'
+                            : 'text-muted-foreground',
+                      },
+                    ] as const
+                  ).map((cell) => (
+                    <div key={cell.id} data-time-feed-cell={cell.id} className="px-3 py-2">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                        {cell.label}
+                      </p>
+                      <p className={cn('mt-0.5 font-mono text-sm tabular-nums', cell.tone)}>
+                        {cell.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {unbilledTime.entries.length > 0 ? (
+                  <ul className="divide-y divide-border/60 rounded-lg border border-border">
+                    {unbilledTime.entries.slice(0, 5).map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="flex items-center justify-between gap-3 px-3 py-1.5 text-[11px]"
+                      >
+                        <span className="min-w-0">
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            {formatDate(entryDay(entry.startedAt))}
+                          </span>
+                          <span className="mx-1.5 text-muted-foreground/50">·</span>
+                          <span className="truncate text-foreground">{entry.description}</span>
+                        </span>
+                        <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
+                          {formatHours(entry.roundedMinutes)}
+                        </span>
+                      </li>
+                    ))}
+                    {unbilledTime.entries.length > 5 && (
+                      <li className="px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
+                        +{unbilledTime.entries.length - 5} more entries in the month
+                      </li>
+                    )}
+                  </ul>
+                ) : (
+                  <p className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
+                    No billable time was logged for {clientName} in {formatMonthKey(month)}.
+                  </p>
+                )}
+
+                {unbilledTime.lines.length > 0 ? (
+                  <div
+                    data-time-feed-line
+                    className="rounded-lg border border-[#c4161c]/25 bg-[#c4161c]/5 px-3 py-2.5"
+                  >
+                    <p className="text-[11px] font-medium text-foreground">
+                      {unbilledTime.lines[0].description}
+                    </p>
+                    <p className="mt-0.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+                      {formatHours(unbilledTime.overageMinutes)} ×{' '}
+                      {formatZar(quote.adHocHourlyRate)} ={' '}
+                      <span className="text-foreground">
+                        {formatZar(unbilledTime.lines[0].lineAmount)}
+                      </span>{' '}
+                      excl. VAT ·{' '}
+                      {formatZar(
+                        cents(
+                          unbilledTime.lines[0].quantity *
+                            unbilledTime.lines[0].unitAmount *
+                            INVOICE_TAX_RATE
+                        )
+                      )}{' '}
+                      VAT
+                    </p>
+                  </div>
+                ) : (
+                  <p
+                    data-time-feed-inside
+                    className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground"
+                  >
+                    All logged time is inside the{' '}
+                    {formatHours(quote.monthlyRetainerHours * 60)} retainer — the fee lines above
+                    already pay for it, so no line is added.
+                  </p>
+                )}
+
+                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                  The invoice month follows the issue date ({formatMonthShort(month)}). Entries are
+                  marked invoiced when this invoice is saved, so they can never be billed twice.
+                </p>
+              </div>
+            )}
+
+            {unbilledTime && (
+              <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-5 py-3">
+                <DialogPrimitive.Close asChild>
+                  <Button type="button" size="sm" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogPrimitive.Close>
+                <Button
+                  type="button"
+                  size="sm"
+                  data-time-feed-confirm
+                  onClick={addUnbilledTime}
+                  disabled={unbilledTime.lines.length === 0}
+                >
+                  {unbilledTime.lines.length === 0 ? 'Nothing to bill' : 'Add overage line'}
+                </Button>
+              </footer>
+            )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
 
       {feedback && (
         <div

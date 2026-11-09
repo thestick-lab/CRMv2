@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import type { TimeEntry } from '@/context/PracticeStoreContext';
 import {
+  billingMonthRange,
+  buildTimeInvoiceLines,
   entryDurationMinutes,
   formatHours,
   resolveRoundedMinutes,
   resolveWorkedMinutes,
   roundToQuarterMinutes,
   splitRetainerOverage,
+  timeInvoiceFeed,
 } from './billing';
 
 describe('roundToQuarterMinutes', () => {
@@ -165,5 +169,131 @@ describe('resolveRoundedMinutes', () => {
   it('falls back to the worked duration when the field is empty or unusable', () => {
     expect(resolveRoundedMinutes('', 7)).toBe(15);
     expect(resolveRoundedMinutes('abc', 80)).toBe(75);
+  });
+});
+
+describe('timeInvoiceFeed / buildTimeInvoiceLines', () => {
+  const NOVEMBER = billingMonthRange('2026-11');
+  const MUS = 'MUS-875';
+
+  function entry(overrides: Partial<TimeEntry> = {}): TimeEntry {
+    return {
+      id: 'entry-1',
+      clientCode: MUS,
+      staffUserId: 'staff-1',
+      startedAt: '2026-11-05T09:00:00+02:00',
+      endedAt: '2026-11-05T15:00:00+02:00',
+      durationMinutes: 360,
+      roundedMinutes: 360,
+      billable: true,
+      description: 'Bookkeeping',
+      createdAt: '2026-11-05T15:00:00+02:00',
+      ...overrides,
+    };
+  }
+
+  /** Three six-hour sittings: 18h logged against a 15h retainer. */
+  const eighteenHours = [
+    entry({ id: 'entry-a' }),
+    entry({ id: 'entry-b', startedAt: '2026-11-12T09:00:00+02:00' }),
+    entry({ id: 'entry-c', startedAt: '2026-11-19T09:00:00+02:00' }),
+  ];
+
+  it('builds one overage line for the hours beyond the retainer allowance', () => {
+    const lines = buildTimeInvoiceLines(MUS, NOVEMBER, eighteenHours, 15, 625);
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      description: 'Time overage — Nov 26',
+      quantity: 3,
+      unitAmount: 625,
+      taxType: 'OUTPUT2',
+      lineAmount: 1875,
+    });
+  });
+
+  it('bills nothing while the month stays inside the allowance', () => {
+    const twelveHours = [
+      entry({ id: 'entry-a', roundedMinutes: 360 }),
+      entry({ id: 'entry-b', roundedMinutes: 360 }),
+    ];
+
+    expect(buildTimeInvoiceLines(MUS, NOVEMBER, twelveHours, 15, 625)).toEqual([]);
+    expect(timeInvoiceFeed(MUS, NOVEMBER, twelveHours, 15, 625)).toMatchObject({
+      coveredMinutes: 720,
+      overageMinutes: 0,
+      overageHours: 0,
+      overageAmountZar: 0,
+    });
+  });
+
+  it('reports the retainer split for the confirm step', () => {
+    const feed = timeInvoiceFeed(MUS, NOVEMBER, eighteenHours, 15, 625);
+
+    expect(feed.billableMinutes).toBe(18 * 60);
+    expect(feed.coveredMinutes).toBe(15 * 60);
+    expect(feed.overageMinutes).toBe(3 * 60);
+    expect(feed.overageAmountZar).toBe(1875);
+    expect(feed.entries.map((item) => item.id)).toEqual(['entry-a', 'entry-b', 'entry-c']);
+  });
+
+  it('ignores non-billable time entirely', () => {
+    const mixed = [
+      entry({ id: 'entry-billable', roundedMinutes: 12 * 60 }),
+      entry({ id: 'entry-admin', roundedMinutes: 8 * 60, billable: false }),
+    ];
+
+    expect(buildTimeInvoiceLines(MUS, NOVEMBER, mixed, 15, 625)).toEqual([]);
+  });
+
+  it('never bills an entry twice', () => {
+    const partiallyBilled = eighteenHours.map((item) =>
+      item.id === 'entry-a' ? { ...item, invoiceId: 'invoice-1' } : item
+    );
+
+    // 12h remain unbilled, all inside the 15h retainer.
+    expect(buildTimeInvoiceLines(MUS, NOVEMBER, partiallyBilled, 15, 625)).toEqual([]);
+    expect(
+      timeInvoiceFeed(MUS, NOVEMBER, partiallyBilled, 15, 625).entries.map((item) => item.id)
+    ).toEqual(['entry-b', 'entry-c']);
+  });
+
+  it('only feeds the invoice client, and only entries started in the month', () => {
+    const mixed = [
+      entry({ id: 'entry-november' }),
+      entry({ id: 'entry-october', startedAt: '2026-10-31T09:00:00+02:00' }),
+      entry({ id: 'entry-december', startedAt: '2026-12-01T09:00:00+02:00' }),
+      entry({ id: 'entry-other-client', clientCode: 'STE-220' }),
+    ];
+
+    expect(
+      timeInvoiceFeed(MUS, NOVEMBER, mixed, 0, 625).entries.map((item) => item.id)
+    ).toEqual(['entry-november']);
+  });
+
+  it('reads the month from South African calendar days, not UTC', () => {
+    // 00:30 on 1 November in Johannesburg is 22:30 on 31 October in UTC.
+    const midnightEntry = entry({ id: 'entry-midnight', startedAt: '2026-10-31T22:30:00Z' });
+
+    expect(timeInvoiceFeed(MUS, NOVEMBER, [midnightEntry], 0, 625).entries).toHaveLength(1);
+  });
+
+  it('bills the rounded entry minutes, never the raw duration', () => {
+    const unrounded = [entry({ id: 'entry-one', durationMinutes: 100, roundedMinutes: 105 })];
+
+    expect(timeInvoiceFeed(MUS, NOVEMBER, unrounded, 0, 625).billableMinutes).toBe(105);
+  });
+
+  it('prices a fractional overage to the cent with a two-decimal quantity', () => {
+    // 15.1h allowance against 18h logged: 174 minutes of overage = 2.9h.
+    const lines = buildTimeInvoiceLines(MUS, NOVEMBER, eighteenHours, 15.1, 625);
+
+    expect(lines[0].quantity).toBe(2.9);
+    expect(lines[0].lineAmount).toBe(1812.5);
+  });
+
+  it('spans a month key to inclusive first and last days', () => {
+    expect(billingMonthRange('2026-02')).toEqual({ start: '2026-02-01', end: '2026-02-28' });
+    expect(billingMonthRange('2028-02')).toEqual({ start: '2028-02-01', end: '2028-02-29' });
   });
 });
