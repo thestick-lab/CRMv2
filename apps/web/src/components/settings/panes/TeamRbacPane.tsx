@@ -1,9 +1,10 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { UserPlus, X } from 'lucide-react';
+import { Info, UserPlus, X } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { buildStaffUsers, formatHourlyRate, formatStartDate, staffRows } from '@/components/team/staff-data';
 import { cn } from '@/lib/utils';
 
 export const RBAC_ROLES = [
@@ -15,8 +16,13 @@ export const RBAC_ROLES = [
 ] as const;
 
 export function TeamRbacPane() {
-  const { staff, updateStaffRole, inviteTeamMember } = usePracticeStore();
+  const { staff, currentUser, rates, updateStaffRole, inviteTeamMember } = usePracticeStore();
   const [modalOpen, setModalOpen] = React.useState(false);
+
+  const rows = React.useMemo(
+    () => staffRows(staff, buildStaffUsers(staff, currentUser, rates.standardHourlyRate)),
+    [staff, currentUser, rates.standardHourlyRate]
+  );
 
   // Invite Form State
   const [name, setName] = React.useState('');
@@ -44,9 +50,10 @@ export function TeamRbacPane() {
     <div className="space-y-6 max-w-4xl text-xs">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Team &amp; Role-Based Access Control</h2>
+          <h2 className="text-base font-semibold text-foreground">Team &amp; Staff</h2>
           <p className="text-muted-foreground mt-0.5">
-            Configure practice team permissions, CA(SA) partner sign-off rights, and staff designations.
+            The practice employee register: contact details, employment terms and the role each
+            member carries into the partner review gate.
           </p>
         </div>
 
@@ -65,55 +72,83 @@ export function TeamRbacPane() {
         <table className="w-full text-left">
           <thead className="bg-muted/40 border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Member Name</th>
-              <th className="px-4 py-3">Email Address</th>
-              <th className="px-4 py-3">Employment Kind</th>
-              <th className="px-4 py-3">Assigned RBAC Role</th>
+              <th className="px-4 py-3">Member</th>
+              <th className="px-4 py-3">Contact</th>
+              <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Contract</th>
+              <th className="px-4 py-3">Phone</th>
+              <th className="px-4 py-3">Start date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
-            {staff.map((member) => (
-              <tr key={member.id} className="hover:bg-muted/20 transition-colors">
-                <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center font-mono font-semibold text-xs border border-border">
-                    {member.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <span>{member.name}</span>
-                </td>
+            {rows.map((member) => {
+              const isSubcontractor = member.contractType === 'subcontractor';
+              return (
+                <tr key={member.id} className="hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 font-medium text-foreground">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center font-mono font-semibold text-xs border border-border">
+                        {member.initials}
+                      </div>
+                      <span>{member.name}</span>
+                    </div>
+                  </td>
 
-                <td className="px-4 py-3 font-mono text-muted-foreground">
-                  {member.id}@fdoncall.co.za
-                </td>
+                  <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
+                    {member.email ?? '—'}
+                  </td>
 
-                <td className="px-4 py-3">
-                  <Badge variant="outline" className="text-[10px] font-mono capitalize">
-                    {member.kind}
-                  </Badge>
-                </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={member.role}
+                      onChange={(e) => updateStaffRole(member.id, e.target.value)}
+                      className={cn(
+                        'px-2 py-1 rounded border text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary',
+                        member.role === 'Partner'
+                          ? 'border-primary/40 bg-primary/5 text-primary font-semibold'
+                          : 'border-border bg-background text-foreground'
+                      )}
+                    >
+                      {RBAC_ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
 
-                <td className="px-4 py-3">
-                  <select
-                    value={member.role}
-                    onChange={(e) => updateStaffRole(member.id, e.target.value)}
-                    className={cn(
-                      'px-2 py-1 rounded border text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary',
-                      member.role === 'Partner'
-                        ? 'border-primary/40 bg-primary/5 text-primary font-semibold'
-                        : 'border-border bg-background text-foreground'
-                    )}
-                  >
-                    {RBAC_ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px] font-mono capitalize">
+                        {member.contractType}
+                      </Badge>
+                      {isSubcontractor && (
+                        <span className="font-mono text-[11px] text-muted-foreground">
+                          {formatHourlyRate(member.hourlyRate)}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
+                    {member.phone ?? '—'}
+                  </td>
+
+                  <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
+                    {formatStartDate(member.startDate)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Info className="h-3 w-3 shrink-0" />
+        Employment terms come from the staff record; subcontracted hours bill at the practice
+        standard rate. Missing details show — rather than a guessed value.
+      </p>
 
       {/* Invite Modal */}
       <DialogPrimitive.Root open={modalOpen} onOpenChange={setModalOpen}>

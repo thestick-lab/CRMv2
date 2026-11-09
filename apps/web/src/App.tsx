@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import { PracticeStoreProvider, usePracticeStore } from '@/context/PracticeStoreContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { Layout } from '@/components/layout/Layout';
 import { DashboardView } from '@/components/views/DashboardView';
 import { InboxView } from '@/components/views/InboxView';
@@ -121,8 +122,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <PracticeStoreProvider>
-      <AppContent />
-    </PracticeStoreProvider>
+    <ThemeProvider>
+      <PracticeStoreProvider>
+        <AppContent />
+      </PracticeStoreProvider>
+    </ThemeProvider>
   );
 }

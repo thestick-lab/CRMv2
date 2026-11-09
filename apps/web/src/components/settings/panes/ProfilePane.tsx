@@ -63,7 +63,7 @@ export function ProfilePane() {
             <span>Durbanville, Cape Town Practice</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
+            <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
             <span>SAICA Chartered Accountant Access</span>
           </div>
         </div>
@@ -94,7 +94,7 @@ export function ProfilePane() {
           </Button>
 
           {downloadSuccess && (
-            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">
+            <span className="text-primary font-mono text-[11px]">
               Snapshot downloaded successfully!
             </span>
           )}

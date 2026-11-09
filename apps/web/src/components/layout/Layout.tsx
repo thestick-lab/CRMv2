@@ -6,6 +6,7 @@ import { buildBreadcrumbs, NAV_ITEMS } from './navigation-helpers';
 import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog';
 import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export interface LayoutProps {
   currentView: ViewKey;
@@ -25,7 +26,7 @@ export function Layout({
   const [collapsed, setCollapsed] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = React.useState(false);
-  const [isDark, setIsDark] = React.useState(true);
+  const { isDark, toggle: toggleTheme } = useTheme();
 
   const { clients } = usePracticeStore();
   // Keyboard shortcut for Cmd+K / Ctrl+K
@@ -39,12 +40,6 @@ export function Layout({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-  };
 
   // Build command search items from navigation views + seeded clients
   const commandItems = React.useMemo<CommandItem[]>(() => {

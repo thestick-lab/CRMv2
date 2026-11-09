@@ -5,6 +5,22 @@
     <link rel="icon" type="image/jpeg" href="/favicon-32.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FD on Call CRM</title>
+    <script>
+      // Apply the stored theme before first paint so a light preference never
+      // flashes the dark canvas (and vice versa). Mirrors ThemeContext.
+      (function () {
+        try {
+          var mode = localStorage.getItem('crmv2_theme_mode') || 'dark';
+          var dark =
+            mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (error) {
+          /* storage unavailable: keep the dark default */
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />

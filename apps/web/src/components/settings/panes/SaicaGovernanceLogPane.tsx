@@ -142,7 +142,7 @@ export function SaicaGovernanceLogPane() {
           </Button>
 
           {downloadSuccess && (
-            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] flex items-center gap-1">
+            <span className="text-primary font-mono text-[11px] flex items-center gap-1">
               <Check className="h-3 w-3" /> Exported!
             </span>
           )}
@@ -192,7 +192,7 @@ export function SaicaGovernanceLogPane() {
                     </Badge>
                   </td>
 
-                  <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <td className="px-4 py-3 text-foreground font-semibold">
                     {entry.sarsReference}
                   </td>
 

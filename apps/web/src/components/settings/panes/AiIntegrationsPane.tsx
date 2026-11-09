@@ -41,7 +41,7 @@ export function AiIntegrationsPane() {
       </div>
 
       <div className="p-3.5 rounded-xl border border-border/80 bg-muted/30 flex items-start gap-3">
-        <Shield className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+        <Shield className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-muted-foreground leading-relaxed">
           Keys are stored locally in your browser session (`localStorage`). When no external provider key is configured, the assistant operates in zero-token local mode querying practice state directly.
         </p>
@@ -59,7 +59,7 @@ export function AiIntegrationsPane() {
               variant="outline"
               className={
                 anthropic
-                  ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                  ? 'border-primary/30 bg-primary/5 text-primary'
                   : 'border-border text-muted-foreground'
               }
             >
@@ -91,14 +91,14 @@ export function AiIntegrationsPane() {
         <div className="p-4 rounded-xl border border-border bg-card space-y-2">
           <div className="flex items-center justify-between">
             <label className="font-semibold text-foreground flex items-center gap-2">
-              <Bot className="h-4 w-4 text-emerald-500" />
+              <Bot className="h-4 w-4 text-muted-foreground" />
               OpenAI ChatGPT (GPT-4o)
             </label>
             <Badge
               variant="outline"
               className={
                 openai
-                  ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                  ? 'border-primary/30 bg-primary/5 text-primary'
                   : 'border-border text-muted-foreground'
               }
             >
@@ -127,14 +127,14 @@ export function AiIntegrationsPane() {
         <div className="p-4 rounded-xl border border-border bg-card space-y-2">
           <div className="flex items-center justify-between">
             <label className="font-semibold text-foreground flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-blue-500" />
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
               Google Gemini (Gemini 1.5 Pro)
             </label>
             <Badge
               variant="outline"
               className={
                 gemini
-                  ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                  ? 'border-primary/30 bg-primary/5 text-primary'
                   : 'border-border text-muted-foreground'
               }
             >
@@ -168,7 +168,7 @@ export function AiIntegrationsPane() {
             Save Provider Keys
           </Button>
           {saveSuccess && (
-            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] flex items-center gap-1">
+            <span className="text-primary font-mono text-[11px] flex items-center gap-1">
               <Check className="h-3.5 w-3.5" /> Keys updated in browser storage!
             </span>
           )}

@@ -121,7 +121,7 @@ export function ServicePricingMatrixPane() {
 
         {/* SAICA QA Audit Stamp */}
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 border border-border/80 text-[11px] font-mono text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+          <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>
             Last updated by {rates.updatedBy || 'Erik (Partner)'} on{' '}
             {rates.updatedAt ? rates.updatedAt.slice(0, 10) : '2026-11-08'}
@@ -176,7 +176,7 @@ export function ServicePricingMatrixPane() {
                 <span>Save All Matrix Fees</span>
               </Button>
               {savedSuccess && (
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] flex items-center gap-1">
+                <span className="text-primary font-mono text-[11px] flex items-center gap-1">
                   <Check className="h-3.5 w-3.5" /> Saved!
                 </span>
               )}
