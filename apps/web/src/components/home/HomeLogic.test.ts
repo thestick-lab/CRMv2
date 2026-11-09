@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { STAFF } from 'fdoncall-practice/data/seed';
 import type { PracticeTaskItem } from '@/components/deadlines/practice-tasks';
 import type { ActivityEvent, PracticeUser, TaskStatusOverride } from '@/context/PracticeStoreContext';
-import { buildHomeData, buildMyTaskLists, getUpcomingHolidays } from './home-logic';
+import {
+  buildHomeData,
+  buildMyTaskLists,
+  getUpcomingHolidays,
+  priorityForDays,
+} from './home-logic';
 
 const TODAY = '2026-11-09';
 
@@ -146,6 +151,19 @@ describe('Home data: my tasks', () => {
     expect(byId.get('khe-VAT201')?.priority).toBe('High');
     expect(byId.get('mus-VAT201')?.priority).toBe('High');
     expect(byId.get('mus-EMP201')?.priority).toBe('Low');
+  });
+
+  it('maps the 21-day fixture to Medium and holds the 7- and 30-day boundaries', () => {
+    // Boundaries: within seven days is High, up to thirty is Medium, past is Low.
+    expect(priorityForDays(7)).toBe('High');
+    expect(priorityForDays(8)).toBe('Medium');
+    expect(priorityForDays(30)).toBe('Medium');
+    expect(priorityForDays(31)).toBe('Low');
+
+    // The 21-day alc-ITR14 fixture, reached through the my-tasks pipeline.
+    const nikita: PracticeUser = { ...CURRENT_USER, id: 'nikita', name: 'Nikita' };
+    const lists = buildMyTaskLists(TASKS, OVERRIDES, nikita);
+    expect(lists.open.find((t) => t.id === 'alc-ITR14')?.priority).toBe('Medium');
   });
 
   it('separates completed tasks and counts them for the Completed tab', () => {

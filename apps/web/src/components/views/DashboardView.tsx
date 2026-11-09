@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ViewKey } from '@/types/navigation';
+import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import {
@@ -7,6 +7,9 @@ import {
   type PracticeTaskItem,
 } from '@/components/deadlines/practice-tasks';
 import { StatutoryActionModal } from '@/components/deadlines/StatutoryActionModal';
+import { buildEstimateForClient } from '@/components/client-show/tabs/EstimateTab';
+import { downloadExcelQuote } from '@/lib/export-actions';
+import { Button } from '@/components/ui/button';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { EngagementBanner } from '@/components/home/EngagementBanner';
 import { KpiStrip } from '@/components/home/KpiStrip';
@@ -22,11 +25,11 @@ import {
   splitDate,
   type HomeTaskItem,
 } from '@/components/home/home-logic';
-import { CheckCircle2, Clock3, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock3, FileSpreadsheet, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface DashboardViewProps {
-  onNavigate: (view: ViewKey, clientCode?: string, options?: { staffId?: string }) => void;
+  onNavigate: (view: ViewKey, clientCode?: string, options?: NavigateOptions) => void;
 }
 
 function greetingForHour(hour: number): string {
@@ -36,8 +39,17 @@ function greetingForHour(hour: number): string {
 }
 
 export function DashboardView({ onNavigate }: DashboardViewProps) {
-  const { clients, staff, currentUser, taskStatusOverrides, activity, timeEntries, division, updateTaskStatus } =
-    usePracticeStore();
+  const {
+    clients,
+    staff,
+    currentUser,
+    taskStatusOverrides,
+    activity,
+    timeEntries,
+    division,
+    rates,
+    updateTaskStatus,
+  } = usePracticeStore();
   const today = todayInSouthAfrica();
   const [actionTask, setActionTask] = React.useState<PracticeTaskItem | null>(null);
 
@@ -94,6 +106,18 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     });
   };
 
+  const handleExportPartnerSummary = () => {
+    const leadClient = clients[0];
+    if (!leadClient) return;
+    const estimate = buildEstimateForClient(
+      leadClient,
+      undefined,
+      rates.standardHourlyRate,
+      rates.marchEscalationPct
+    );
+    void downloadExcelQuote(leadClient, estimate, today);
+  };
+
   const divisionLabel = division === 'accountant-on-call' ? 'Accountant on Call' : 'FD on Call';
   const dateLabel = React.useMemo(() => {
     const { month, day } = splitDate(today);
@@ -113,6 +137,19 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {currentUser.role === 'Partner' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportPartnerSummary}
+              className="h-8 cursor-pointer gap-1.5 font-mono text-[11px]"
+              title="1-Click Practice Export for Partner meetings"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Partner Meeting Export</span>
+            </Button>
+          )}
+
           <span
             className={cn(
               'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-[11px]',
@@ -154,7 +191,10 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         />
       )}
 
-      <KpiStrip kpis={home.kpis} onOpenDeadlines={() => onNavigate('deadlines')} />
+      <KpiStrip
+        kpis={home.kpis}
+        onOpenDeadlines={(filter) => onNavigate('deadlines', undefined, { kpiFilter: filter })}
+      />
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
         <div className="space-y-5 lg:col-span-8">
@@ -203,7 +243,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           />
           <RecentWorkCard items={home.recentWork} onViewAll={() => onNavigate('time')} />
           <HolidaysCard holidays={home.holidays} />
-          <InviteCard onInvite={() => onNavigate('settings')} />
+          <InviteCard
+            onInvite={() => onNavigate('settings', undefined, { settingsPane: 'team' })}
+          />
         </div>
       </div>
 

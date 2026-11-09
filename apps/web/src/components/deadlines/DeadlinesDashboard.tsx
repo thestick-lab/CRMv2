@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { DeadlineKpiFilter } from '@/types/navigation';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import {
@@ -25,6 +26,8 @@ export interface DeadlinesDashboardProps {
   clientFilter?: string;
   /** Pre-applied assignee filter, e.g. Home's "View all" for the current user. */
   staffFilter?: string;
+  /** Pre-applied KPI tile filter, e.g. Home's "Due this week" tile. */
+  kpiFilter?: DeadlineKpiFilter;
   onClearClientFilter?: () => void;
 }
 
@@ -32,6 +35,7 @@ export function DeadlinesDashboard({
   onSelectClient,
   clientFilter,
   staffFilter,
+  kpiFilter,
   onClearClientFilter,
 }: DeadlinesDashboardProps) {
   const [viewMode, setViewMode] = React.useState<'kanban' | 'table'>('table');
@@ -39,13 +43,17 @@ export function DeadlinesDashboard({
   const [selectedStaff, setSelectedStaff] = React.useState<string>(staffFilter ?? 'all');
   const [selectedService, setSelectedService] = React.useState<string>('all');
   const [groupBy, setGroupBy] = React.useState<'workflow' | 'urgency'>('workflow');
-  const [activeKpiFilter, setActiveKpiFilter] = React.useState<'all' | 'overdue' | 'due7' | 'due30' | 'missing'>('all');
+  const [activeKpiFilter, setActiveKpiFilter] = React.useState<DeadlineKpiFilter>(kpiFilter ?? 'all');
 
-  // A navigation-supplied assignee filter (Home's "View all") wins on arrival
-  // and resets when the view is reopened without one.
+  // Navigation-supplied filters (Home's KPI tiles and "View all") win on
+  // arrival and reset when the view is reopened without them.
   React.useEffect(() => {
     setSelectedStaff(staffFilter ?? 'all');
   }, [staffFilter]);
+
+  React.useEffect(() => {
+    setActiveKpiFilter(kpiFilter ?? 'all');
+  }, [kpiFilter]);
 
   const today = todayInSouthAfrica();
   const { clients, staff } = usePracticeStore();

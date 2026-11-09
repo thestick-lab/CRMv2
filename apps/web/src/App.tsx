@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ViewKey } from '@/types/navigation';
+import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import { PracticeStoreProvider, usePracticeStore } from '@/context/PracticeStoreContext';
 import { Layout } from '@/components/layout/Layout';
 import { DashboardView } from '@/components/views/DashboardView';
@@ -19,6 +19,8 @@ function AppContent() {
   const [view, setView] = React.useState<ViewKey>('dashboard');
   const [clientCode, setClientCode] = React.useState<string | undefined>(undefined);
   const [deadlineStaffId, setDeadlineStaffId] = React.useState<string | undefined>(undefined);
+  const [deadlineKpiFilter, setDeadlineKpiFilter] = React.useState<NavigateOptions['kpiFilter']>(undefined);
+  const [settingsPane, setSettingsPane] = React.useState<NavigateOptions['settingsPane']>(undefined);
   const { clients, isAuthenticated } = usePracticeStore();
 
   if (!isAuthenticated) {
@@ -27,17 +29,17 @@ function AppContent() {
 
   const activeClient = clientCode ? clients.find((c) => c.code === clientCode) : undefined;
 
-  const handleNavigate = (
-    newView: ViewKey,
-    newCode?: string,
-    options?: { staffId?: string }
-  ) => {
+  const handleNavigate = (newView: ViewKey, newCode?: string, options?: NavigateOptions) => {
     setView(newView);
     if (newCode !== undefined) {
       setClientCode(newCode);
     }
     if (newView === 'deadlines') {
       setDeadlineStaffId(options?.staffId);
+      setDeadlineKpiFilter(options?.kpiFilter);
+    }
+    if (newView === 'settings') {
+      setSettingsPane(options?.settingsPane);
     }
   };
 
@@ -57,6 +59,7 @@ function AppContent() {
             onNavigate={handleNavigate}
             clientFilter={clientCode}
             staffFilter={deadlineStaffId}
+            kpiFilter={deadlineKpiFilter}
             onClearClientFilter={() => setClientCode(undefined)}
           />
         );
@@ -69,7 +72,9 @@ function AppContent() {
       case 'govlog':
         return <GovernanceLogView />;
       case 'settings':
-        return <SettingsView />;
+        return (
+          <SettingsView key={settingsPane ?? 'profile'} initialPane={settingsPane} />
+        );
       case 'client':
         if (!clientCode) {
           return (
