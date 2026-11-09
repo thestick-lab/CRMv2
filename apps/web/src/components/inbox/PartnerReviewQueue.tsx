@@ -48,11 +48,17 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
     permissions.matrix
   );
 
-  const handleApprove = (taskId: string) => {
-    updateTaskStatus(taskId, 'Approved (Ready to Lodge)', {
+  const handleApprove = (task: PracticeTaskItem) => {
+    // The override's own metadata is what the governance trail reads, so it has
+    // to carry the filing identity — the task id alone leaves the subject as
+    // raw id segments.
+    updateTaskStatus(task.id, 'Approved (Ready to Lodge)', {
       partnerSignOff: true,
       approvedBy: currentUser.name,
       submissionDate: today,
+      service: task.service,
+      clientName: task.clientName,
+      period: task.period,
     });
   };
 
@@ -211,7 +217,7 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
                             size="sm"
                             onClick={(event) => {
                               event.stopPropagation();
-                              handleApprove(task.id);
+                              handleApprove(task);
                             }}
                             aria-label={`Sign off ${task.service} for ${task.clientCode} as CA(SA)`}
                             className="h-7 gap-1 bg-[#c4161c] px-2.5 text-[11px] font-medium text-white shadow-xs hover:bg-[#a01217] dark:hover:bg-[#d91b22]"

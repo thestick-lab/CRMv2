@@ -1,11 +1,13 @@
 import type { Client, StaffMember } from 'fdoncall-practice/domain/types';
 import { defaultServices } from 'fdoncall-practice/domain/rules';
-import {
-  ACTIVITY_SEEDS,
-  type ActivityEvent,
-  type TaskStatusOverride,
+import type {
+  ActivityEvent,
+  Invoice,
+  Quote,
+  TaskStatusOverride,
 } from '@/context/PracticeStoreContext';
 import { aggregatePracticeTasks, type PracticeTaskItem } from '@/components/deadlines/practice-tasks';
+import { buildClientAuditEntries } from '@/components/govlog/audit-log';
 
 /* ---------------------------------------------------------------------------
  * Pure derivation helpers for the client record. Everything here reads the
@@ -99,62 +101,52 @@ export function boFilingState(client: Client): 'out-of-scope' | 'required' | 'fi
   return client.beneficialOwnershipFiled === true ? 'filed' : 'required';
 }
 
-/** Store activity with the seeded historical feed appended (deduped by id). */
-export function withSeededActivity(activity: ActivityEvent[]): ActivityEvent[] {
-  const seen = new Set(activity.map((event) => event.id));
-  return [...activity, ...ACTIVITY_SEEDS.filter((seed) => !seen.has(seed.id))];
-}
-
 export interface ClientTimelineEntry {
   id: string;
   at: string;
+  /** What happened, e.g. `Submitted` or `Invoice sent`. */
+  action: string;
+  /** The event's subject, e.g. `AFS · FY 2026`. */
   title: string;
+  /** Actor plus supporting detail, rendered beside the date. */
   subline: string;
 }
 
-function mentionsClient(event: ActivityEvent, client: Client): boolean {
-  return (
-    event.subline.includes(client.code) ||
-    event.subline.includes(client.name) ||
-    event.text.includes(client.name)
-  );
+/** Store records the trail joins against to find a client code. */
+export interface ClientTimelineSource {
+  clients?: Pick<Client, 'code' | 'name'>[];
+  staff?: Pick<StaffMember, 'id' | 'name' | 'role'>[];
+  quotes?: Pick<Quote, 'number' | 'clientCode'>[];
+  invoices?: Pick<Invoice, 'number' | 'clientCode'>[];
 }
 
 /**
- * Relationship timeline: practice activity that touches this client plus the
- * filing milestones recorded as task overrides. Newest first.
+ * Relationship timeline: the governance trail filtered to this client — its
+ * filings, sign-offs, quote decisions, invoices and logged time. Newest first.
  */
 export function buildClientTimeline(
   client: Client,
   activity: ActivityEvent[],
-  overrides: Record<string, TaskStatusOverride>
+  overrides: Record<string, TaskStatusOverride>,
+  source: ClientTimelineSource = {}
 ): ClientTimelineEntry[] {
-  const entries: ClientTimelineEntry[] = activity
-    .filter((event) => mentionsClient(event, client))
-    .map((event) => ({
-      id: `activity-${event.id}`,
-      at: event.at,
-      title: event.text,
-      subline: event.subline,
-    }));
-
-  const prefix = `${client.code}-`;
-  for (const [taskId, override] of Object.entries(overrides)) {
-    if (!taskId.startsWith(prefix)) continue;
-    const submitted = override.status === 'Submitted' || override.status === 'Done';
-    if (!submitted && !override.partnerSignOff) continue;
-
-    const service = override.service ?? taskId.slice(prefix.length);
-    const period = override.period ? ` ${override.period}` : '';
-    entries.push({
-      id: `override-${taskId}`,
-      at: override.updatedAt ?? '',
-      title: `${submitted ? 'Submitted' : 'Partner sign-off'} ${service}${period}`,
-      subline: [override.approvedBy ?? 'Practice', client.name, override.status].filter(Boolean).join(' · '),
-    });
-  }
-
-  return entries.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  return buildClientAuditEntries(
+    {
+      clients: source.clients ?? [{ code: client.code, name: client.name }],
+      staff: source.staff ?? [],
+      taskStatusOverrides: overrides,
+      activity,
+      quotes: source.quotes,
+      invoices: source.invoices,
+    },
+    client.code
+  ).map((entry) => ({
+    id: entry.id,
+    at: entry.at,
+    action: entry.action,
+    title: entry.subject,
+    subline: [entry.actorName, entry.detail].filter(Boolean).join(' · '),
+  }));
 }
 
 /** The soonest open statutory task, i.e. what the record should do next. */

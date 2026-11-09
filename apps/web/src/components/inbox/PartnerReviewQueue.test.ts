@@ -86,10 +86,14 @@ describe('PartnerReviewQueue data filtering and approval actions', () => {
     expect(queueSrc).toContain('Sign Off as CA(SA)');
     expect(queueSrc).toContain('Request Revision');
     expect(queueSrc).toContain("variant=\"ghost\"");
-    expect(queueSrc).toContain("handleApprove(task.id)");
-    expect(queueSrc).toContain("handleRequestRevision(task.id)");
+    expect(queueSrc).toContain('handleApprove(task)');
+    expect(queueSrc).toContain('handleRequestRevision(task.id)');
     expect(queueSrc).toContain("'Approved (Ready to Lodge)'");
     expect(queueSrc).toContain("'In Progress'");
+    // The sign-off override carries the filing identity: the audit trail reads
+    // `service`/`period` from it to name the subject.
+    expect(queueSrc).toContain('service: task.service');
+    expect(queueSrc).toContain('period: task.period');
 
     // Rows stay keyboard reachable with a visible focus ring.
     expect(queueSrc).toContain('tabIndex={0}');

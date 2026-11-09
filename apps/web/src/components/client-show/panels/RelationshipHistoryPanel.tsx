@@ -26,7 +26,8 @@ export function RelationshipHistoryPanel({ entries, limit }: RelationshipHistory
         <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
           <CalendarCheck className="h-4 w-4 text-muted-foreground" />
           <p className="text-xs text-muted-foreground">
-            No interactions recorded yet. Filings and sign-offs appear here as they happen.
+            No interactions recorded yet. Filings, sign-offs, quotes and invoices appear here as
+            they happen.
           </p>
         </div>
       ) : (
@@ -46,8 +47,10 @@ export function RelationshipHistoryPanel({ entries, limit }: RelationshipHistory
               <div className="min-w-0 flex-1">
                 <p className="text-xs leading-snug text-foreground">{entry.title}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-2 font-mono text-[10px] text-muted-foreground">
-                  {entry.at && <span>{formatWhen(entry.at)}</span>}
-                  {entry.at && entry.subline && <span aria-hidden="true">·</span>}
+                  {entry.at && <span className="tabular-nums">{formatWhen(entry.at)}</span>}
+                  {entry.at && <span aria-hidden="true">·</span>}
+                  <span className="uppercase tracking-wider">{entry.action}</span>
+                  {entry.subline && <span aria-hidden="true">·</span>}
                   <span className="truncate">{entry.subline}</span>
                 </p>
               </div>

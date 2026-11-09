@@ -30,7 +30,7 @@ import { DeadlinesTab } from './tabs/DeadlinesTab';
 import { InternalNotesPanel } from './panels/InternalNotesPanel';
 import { OrganizationPanel } from './panels/OrganizationPanel';
 import { RelationshipHistoryPanel } from './panels/RelationshipHistoryPanel';
-import { buildClientTimeline, clientTags, withSeededActivity } from './client-record-data';
+import { buildClientTimeline, clientTags } from './client-record-data';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
 import { can } from '@/lib/permissions';
 import { useTimer } from '@/components/time/timer-context';
@@ -115,8 +115,18 @@ export function ClientShowView({
 }: ClientShowViewProps) {
   const [activeTab, setActiveTab] = React.useState<ClientTabId>(initialTab);
 
-  const { clients, rates, activity, taskStatusOverrides, updateClient, currentUser, permissions } =
-    usePracticeStore();
+  const {
+    clients,
+    staff,
+    rates,
+    activity,
+    taskStatusOverrides,
+    quotes,
+    invoices,
+    updateClient,
+    currentUser,
+    permissions,
+  } = usePracticeStore();
   const canViewBilling = can(
     currentUser.role,
     'Clients',
@@ -168,7 +178,12 @@ export function ClientShowView({
   const summary = formatClientSummary(client);
   const tags = clientTags(client);
   const firstNoteLine = client.notes?.split('\n').find((line) => line.trim().length > 0)?.trim();
-  const timeline = buildClientTimeline(client, withSeededActivity(activity), taskStatusOverrides);
+  const timeline = buildClientTimeline(client, activity, taskStatusOverrides, {
+    clients,
+    staff,
+    quotes,
+    invoices,
+  });
   const groupMembers = client.groupId
     ? clients
         .filter((c) => c.groupId === client.groupId && c.code !== client.code)

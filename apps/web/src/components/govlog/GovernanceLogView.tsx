@@ -37,7 +37,13 @@ function actionTone(action: string): 'crimson' | 'amber' | 'muted' {
   ) {
     return 'crimson';
   }
-  if (action === 'Partner sign-off' || action === 'Changed permission') return 'amber';
+  if (
+    action === 'Partner sign-off' ||
+    action === 'Changed permission' ||
+    action === 'Reset permissions'
+  ) {
+    return 'amber';
+  }
   return 'muted';
 }
 
@@ -63,8 +69,16 @@ function uniqueSorted(values: Array<string | undefined>): string[] {
 }
 
 export function GovernanceLogView() {
-  const { clients, staff, taskStatusOverrides, activity, currentUser, permissions } =
-    usePracticeStore();
+  const {
+    clients,
+    staff,
+    taskStatusOverrides,
+    activity,
+    quotes,
+    invoices,
+    currentUser,
+    permissions,
+  } = usePracticeStore();
   const [filters, setFilters] = React.useState<FilterState>(EMPTY_FILTERS);
   const [exportState, setExportState] = React.useState<'idle' | 'working' | 'saved' | 'failed'>('idle');
   const canViewLog = can(
@@ -75,8 +89,16 @@ export function GovernanceLogView() {
   );
 
   const entries = React.useMemo(
-    () => buildAuditEntries({ clients, staff, taskStatusOverrides, activity }),
-    [clients, staff, taskStatusOverrides, activity]
+    () =>
+      buildAuditEntries({
+        clients,
+        staff,
+        taskStatusOverrides,
+        activity,
+        quotes,
+        invoices,
+      }),
+    [clients, staff, taskStatusOverrides, activity, quotes, invoices]
   );
 
   const clientNames = React.useMemo(() => {

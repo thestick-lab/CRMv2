@@ -79,19 +79,58 @@ describe('client record derived data', () => {
       muse,
       [],
       {
-        'MUS-875-afs-2025': {
+        'MUS-875|AFS|2025': {
           status: 'Submitted',
+          partnerSignOff: true,
           service: 'AFS',
           clientName: 'Muse 1399',
           period: '2025',
           approvedBy: 'Erik',
           updatedAt: '2026-10-30T10:00:00+02:00',
         },
-      }
+      },
+      { staff: [{ id: 'erik', name: 'Erik', role: 'Partner' }] }
     );
     expect(timeline).toHaveLength(1);
     expect(timeline[0].title).toContain('AFS');
+    expect(timeline[0].action).toBe('Submitted');
     expect(timeline[0].subline).toContain('Erik');
+  });
+
+  it('shows the same trail for the client — filings, time and invoices only', () => {
+    const trail: ActivityEvent[] = [
+      ...activity,
+      {
+        id: 'a3',
+        type: 'time',
+        actorName: 'Nikita',
+        actorInitials: 'N',
+        tint: 'muted',
+        text: 'Logged 1.5h on AFS workpapers',
+        subline: 'MUS-875 · AFS',
+        at: '2026-11-04T10:00:00+02:00',
+      },
+      {
+        id: 'a4',
+        type: 'invoice',
+        actorName: 'Erik',
+        actorInitials: 'E',
+        tint: 'crimson',
+        text: 'Invoice INV-1 sent to Muse 1399',
+        subline: 'R4,125 incl. 15% VAT',
+        at: '2026-11-04T11:00:00+02:00',
+      },
+    ];
+
+    const timeline = buildClientTimeline(muse, trail, {}, {
+      invoices: [{ number: 'INV-1', clientCode: 'MUS-875' }],
+    });
+
+    expect(timeline.map((entry) => entry.action)).toEqual(
+      expect.arrayContaining(['Invoice sent', 'Time logged', 'Task updated'])
+    );
+    expect(timeline.some((entry) => entry.action === 'Submitted')).toBe(false);
+    expect(timeline.find((entry) => entry.action === 'Invoice sent')?.subline).toContain('R4,125');
   });
 
   it('picks the soonest open statutory task for the next action panel', () => {

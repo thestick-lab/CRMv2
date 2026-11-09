@@ -14,6 +14,8 @@ import { offerDownload } from 'fdoncall-practice/ui/download';
 import type {
   ActivityEvent,
   ActivityType,
+  Invoice,
+  Quote,
   TaskStatusOverride,
 } from '@/context/PracticeStoreContext';
 
@@ -34,6 +36,9 @@ export interface AuditLogSource {
   staff: Pick<StaffMember, 'id' | 'name' | 'role'>[];
   taskStatusOverrides: Record<string, TaskStatusOverride>;
   activity?: ActivityEvent[];
+  /** Stage/creation events name their quote but not always their client. */
+  quotes?: Pick<Quote, 'number' | 'clientCode'>[];
+  invoices?: Pick<Invoice, 'number' | 'clientCode'>[];
 }
 
 /** Activity types mapped onto the actions shown in the log. */
@@ -73,6 +78,12 @@ const ACTIVITY_ACTION_PATTERNS: Partial<Record<ActivityType, [RegExp, string][]>
     [/ sent to /i, 'Invoice sent'],
     [/marked paid/i, 'Invoice paid'],
     [/pushed to Xero/i, 'Invoice pushed to Xero'],
+    [/ created /i, 'Invoice created'],
+    [/INV-\d+/i, 'Invoice updated'],
+  ],
+  permission: [
+    [/^Reset permissions/i, 'Reset permissions'],
+    [/^Changed permission/i, 'Changed permission'],
   ],
 };
 
@@ -94,6 +105,13 @@ function clientCodeFromSubline(subline: string | undefined): string | undefined 
   return subline?.match(/^\s*([A-Z]{2,4}-\d{3})\b/)?.[1];
 }
 
+/** Subline minus the leading client code: the row's supporting detail. */
+function detailFromSubline(subline: string | undefined): string | undefined {
+  const remaining = subline?.replace(/^\s*[A-Z]{2,4}-\d{3}\s*·\s*/, '').trim();
+  if (!remaining || /^[A-Z]{2,4}-\d{3}$/.test(remaining)) return undefined;
+  return remaining;
+}
+
 function sortNewestFirst(entries: AuditEntry[]): AuditEntry[] {
   const stamp = (at: string) => {
     const parsed = Date.parse(at);
@@ -106,8 +124,28 @@ function roleForName(staff: AuditLogSource['staff'], name: string, fallback: str
   return staff.find((member) => member.name === name)?.role ?? fallback;
 }
 
-function buildOverrideEntries(source: AuditLogSource): AuditEntry[] {
-  const entries: AuditEntry[] = [];
+/**
+ * An entry plus the real-world action it records. Builders that can be
+ * described twice (a sign-off writes an override *and* a submission event)
+ * stamp the same key; the first builder to produce it wins.
+ */
+type KeyedAuditEntry = AuditEntry & { dedupeKey?: string };
+
+function entryFromActivity(source: AuditLogSource, event: ActivityEvent): KeyedAuditEntry {
+  return {
+    id: `audit-activity-${event.id}`,
+    at: event.at,
+    actorName: event.actorName,
+    actorRole: roleForName(source.staff, event.actorName, ROLE_FALLBACK),
+    action: actionForActivity(event),
+    subject: event.text,
+    clientCode: clientCodeFromSubline(event.subline),
+    detail: detailFromSubline(event.subline),
+  };
+}
+
+function buildOverrideEntries(source: AuditLogSource): KeyedAuditEntry[] {
+  const entries: KeyedAuditEntry[] = [];
 
   for (const [taskId, override] of Object.entries(source.taskStatusOverrides)) {
     // The trail is evidence of authorised decisions; an unsigned status change
@@ -129,33 +167,153 @@ function buildOverrideEntries(source: AuditLogSource): AuditEntry[] {
       subject: [service, period].filter(Boolean).join(' · ') || 'Statutory return',
       clientCode,
       detail: override.sarsReference ? `SARS reference ${override.sarsReference}` : undefined,
+      // The override holds the approver and the SARS reference, so it is the
+      // richer row for a submission the same event also logged.
+      dedupeKey: submitted ? `submission:${taskId}` : undefined,
     });
   }
 
   return entries;
 }
 
-function buildActivityEntries(source: AuditLogSource): AuditEntry[] {
-  return (source.activity ?? []).map((event) => {
-    const clientCode = clientCodeFromSubline(event.subline);
-    const detail = event.subline?.replace(/^\s*[A-Z]{2,4}-\d{3}\s*·\s*/, '') || undefined;
+function buildSubmissionEntries(source: AuditLogSource): KeyedAuditEntry[] {
+  return (source.activity ?? [])
+    .filter((event) => event.type === 'submission')
+    .map((event) => {
+      const base = entryFromActivity(source, event);
+      // Unsigned overrides are skipped by the sign-off builder but still hold
+      // the filing identity and SARS reference for a non-gated submission.
+      const override = event.taskId ? source.taskStatusOverrides[event.taskId] : undefined;
 
-    return {
-      id: `audit-activity-${event.id}`,
-      at: event.at,
-      actorName: event.actorName,
-      actorRole: roleForName(source.staff, event.actorName, ROLE_FALLBACK),
-      action: actionForActivity(event),
-      subject: event.text,
-      clientCode,
-      detail: detail && detail !== event.text ? detail : undefined,
-    };
-  });
+      return {
+        ...base,
+        subject:
+          [override?.service, override?.period].filter(Boolean).join(' · ') || base.subject,
+        clientCode: event.taskId
+          ? clientCodeFromTaskId(event.taskId)
+          : clientCodeFromSubline(event.subline),
+        detail: override?.sarsReference
+          ? `SARS reference ${override.sarsReference}`
+          : base.detail,
+        dedupeKey: event.taskId ? `submission:${event.taskId}` : undefined,
+      };
+    });
+}
+
+const PERMISSION_CHANGE_TEXT = /^Changed permission — (.+?): (.+)$/;
+
+/** Types with a dedicated builder below; the general pass must not repeat them. */
+const DEDICATED_ACTIVITY_TYPES: ActivityType[] = [
+  'submission',
+  'permission',
+  'quote',
+  'invoice',
+  'time',
+];
+
+function buildPermissionEntries(source: AuditLogSource): KeyedAuditEntry[] {
+  return (source.activity ?? [])
+    .filter((event) => event.type === 'permission')
+    .map((event) => {
+      const base = entryFromActivity(source, event);
+      const [role = '', group = ''] = event.subline.split(' · ');
+      const change = PERMISSION_CHANGE_TEXT.exec(event.text);
+
+      // A matrix reset touches no single permission; its own text is the record.
+      if (!change) {
+        return {
+          ...base,
+          subject: 'Default permission matrix',
+          detail: [group, 'all roles'].filter(Boolean).join(' · '),
+        };
+      }
+
+      const [, label, cell] = change;
+      return {
+        ...base,
+        subject: `${label}: ${cell}`,
+        detail: [role, label].filter(Boolean).join(' · '),
+      };
+    });
+}
+
+function buildQuoteEntries(source: AuditLogSource): KeyedAuditEntry[] {
+  return (source.activity ?? [])
+    .filter((event) => event.type === 'quote')
+    .map((event) => {
+      const number = /\bQ-\d+\b/.exec(event.text)?.[0];
+      const quote = number ? source.quotes?.find((entry) => entry.number === number) : undefined;
+
+      return {
+        ...entryFromActivity(source, event),
+        clientCode: quote?.clientCode ?? clientCodeFromSubline(event.subline),
+      };
+    });
+}
+
+function buildInvoiceEntries(source: AuditLogSource): KeyedAuditEntry[] {
+  return (source.activity ?? [])
+    .filter((event) => event.type === 'invoice')
+    .map((event) => {
+      const number = /\bINV-\d+\b/.exec(event.text)?.[0];
+      const invoice = number
+        ? source.invoices?.find((entry) => entry.number === number)
+        : undefined;
+
+      return {
+        ...entryFromActivity(source, event),
+        clientCode: invoice?.clientCode ?? clientCodeFromSubline(event.subline),
+      };
+    });
+}
+
+function buildTimeEntries(source: AuditLogSource): KeyedAuditEntry[] {
+  return (source.activity ?? [])
+    .filter((event) => event.type === 'time')
+    .map((event) => entryFromActivity(source, event));
+}
+
+/** Task notes, vault files and client-record edits. */
+function buildGeneralActivityEntries(source: AuditLogSource): KeyedAuditEntry[] {
+  return (source.activity ?? [])
+    .filter((event) => !DEDICATED_ACTIVITY_TYPES.includes(event.type))
+    .map((event) => entryFromActivity(source, event));
 }
 
 /** Derive the whole read-only trail, newest first. */
 export function buildAuditEntries(source: AuditLogSource): AuditEntry[] {
-  return sortNewestFirst([...buildOverrideEntries(source), ...buildActivityEntries(source)]);
+  const derived: KeyedAuditEntry[] = [
+    ...buildOverrideEntries(source),
+    ...buildSubmissionEntries(source),
+    ...buildPermissionEntries(source),
+    ...buildQuoteEntries(source),
+    ...buildInvoiceEntries(source),
+    ...buildTimeEntries(source),
+    ...buildGeneralActivityEntries(source),
+  ];
+
+  // One real-world action, one row: the override builder runs first so its
+  // richer subject and detail survive when both sources describe the same act.
+  const seen = new Set<string>();
+  const unique: AuditEntry[] = [];
+  for (const entry of derived) {
+    if (entry.dedupeKey) {
+      if (seen.has(entry.dedupeKey)) continue;
+      seen.add(entry.dedupeKey);
+    }
+    const { dedupeKey: _key, ...auditEntry } = entry;
+    unique.push(auditEntry);
+  }
+
+  return sortNewestFirst(unique);
+}
+
+/** The same derived trail filtered to the events that touch one client. */
+export function buildClientAuditEntries(
+  source: AuditLogSource,
+  clientCode: string
+): AuditEntry[] {
+  return buildAuditEntries(source).filter((entry) => entry.clientCode === clientCode);
 }
 
 /** Display form: date-only values stay date-only; timestamps gain SAST time. */

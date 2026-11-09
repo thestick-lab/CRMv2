@@ -35,7 +35,8 @@ export function StatutoryActionForm({
   onSelectClient,
   compact,
 }: StatutoryActionFormProps) {
-  const { currentUser, taskStatusOverrides, updateTaskStatus, permissions } = usePracticeStore();
+  const { currentUser, taskStatusOverrides, updateTaskStatus, logActivity, permissions } =
+    usePracticeStore();
   const override = taskStatusOverrides[task.id];
 
   const [status, setStatus] = React.useState<WorkflowStatus>('Not Started');
@@ -124,6 +125,28 @@ export function StatutoryActionForm({
       period: task.period,
       irp6Outcome: task.service === 'IRP6' ? irp6Outcome : undefined,
     });
+
+    // Non-gated returns (EMP201, CIPC annual return, BO, nil IRP6) never reach
+    // the partner gate, so no signed override records them. The submission
+    // event is what puts them in the governance trail; for gated returns the
+    // signed override is the richer row and the trail folds this one away.
+    if (status === 'Submitted') {
+      logActivity({
+        type: 'submission',
+        actorName: currentUser.name,
+        actorInitials: currentUser.name
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((part) => part[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase(),
+        tint: 'crimson',
+        text: `Submitted ${task.service} · ${task.period}`,
+        subline: `${task.clientCode} · ${task.clientName}`,
+        taskId: task.id,
+      });
+    }
 
     onClose?.();
   };

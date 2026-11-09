@@ -245,6 +245,11 @@ export interface ActivityEvent {
   text: string;
   subline: string;
   at: string;
+  /**
+   * Statutory task the event describes. Lets the governance trail fold this
+   * event into the task's status override instead of logging the act twice.
+   */
+  taskId?: string;
 }
 
 export interface PracticeSequences {

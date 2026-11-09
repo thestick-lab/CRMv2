@@ -15,7 +15,6 @@ import {
   boFilingState,
   clientTags,
   nextOpenTask,
-  withSeededActivity,
   type MissingInformationItem,
 } from '../client-record-data';
 import {
@@ -175,7 +174,8 @@ export function StatutoryProfileTab({
   onOpenOrganization,
   onOpenTasks,
 }: StatutoryProfileTabProps) {
-  const { clients, updateClient, taskStatusOverrides, activity } = usePracticeStore();
+  const { clients, staff, updateClient, taskStatusOverrides, activity, quotes, invoices } =
+    usePracticeStore();
   const asOf = todayInSouthAfrica();
 
   const isCompany = client.entityType === 'Company' || client.entityType === 'Close corporation';
@@ -204,8 +204,14 @@ export function StatutoryProfileTab({
   const missing = React.useMemo(() => buildMissingInformation(client), [client]);
   const tags = React.useMemo(() => clientTags(client), [client]);
   const timeline = React.useMemo(
-    () => buildClientTimeline(client, withSeededActivity(activity), taskStatusOverrides),
-    [client, activity, taskStatusOverrides]
+    () =>
+      buildClientTimeline(client, activity, taskStatusOverrides, {
+        clients,
+        staff,
+        quotes,
+        invoices,
+      }),
+    [client, activity, taskStatusOverrides, clients, staff, quotes, invoices]
   );
   const nextTask = React.useMemo(
     () => nextOpenTask(client, taskStatusOverrides, asOf),

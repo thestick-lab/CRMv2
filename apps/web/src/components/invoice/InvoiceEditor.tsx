@@ -258,6 +258,10 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     } else {
       addInvoice(record);
       setSavedId(record.id);
+      log(
+        `Invoice ${record.number} created for ${clientName}`,
+        `${formatZar(record.total)} incl. 15% VAT`
+      );
     }
 
     // Time lines carry their entries with them: saving the invoice is what
