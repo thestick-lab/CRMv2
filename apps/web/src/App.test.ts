@@ -114,10 +114,24 @@ describe('App shell and view integration', () => {
     expect(appSource).not.toContain("case 'estimator':");
   });
 
+  it('renders the time view as Log and Report tabs over the shared timesheet and report', () => {
+    const timeSource = fs.readFileSync('src/components/time/TimeView.tsx', 'utf8');
+    expect(timeSource).toContain('PageHeader');
+    expect(timeSource).toContain("from './Timesheet'");
+    expect(timeSource).toContain("from './TimeReport'");
+    expect(timeSource).toContain("id: 'log'");
+    expect(timeSource).toContain("id: 'report'");
+    expect(timeSource).toContain('openEntrySheet');
+
+    const sheetSource = fs.readFileSync('src/components/time/Timesheet.tsx', 'utf8');
+    expect(sheetSource).toContain('editEntry');
+    expect(sheetSource).toContain('updateTimeEntry');
+    expect(sheetSource).toContain('EmptyStateCard');
+  });
+
   it('renders a shared PageHeader and empty state on every new foundation view', () => {
     const views = [
       'src/components/analytics/AnalyticsView.tsx',
-      'src/components/time/TimeView.tsx',
       'src/components/pipeline/SalesPipelineView.tsx',
       'src/components/team/TeamView.tsx',
       'src/components/govlog/GovernanceLogView.tsx',
