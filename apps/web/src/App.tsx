@@ -1,21 +1,41 @@
 import * as React from 'react';
-import type { ViewKey } from '@/types/navigation';
+import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import { PracticeStoreProvider, usePracticeStore } from '@/context/PracticeStoreContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { Layout } from '@/components/layout/Layout';
 import { DashboardView } from '@/components/views/DashboardView';
 import { InboxView } from '@/components/views/InboxView';
 import { ClientsView } from '@/components/views/ClientsView';
 import { DeadlinesView } from '@/components/views/DeadlinesView';
-import { PeopleView } from '@/components/views/PeopleView';
-import { EstimatorView } from '@/components/views/EstimatorView';
+import { AnalyticsView } from '@/components/analytics/AnalyticsView';
+import { TimeView } from '@/components/time/TimeView';
+import { SalesPipelineView } from '@/components/pipeline/SalesPipelineView';
+import { TeamView } from '@/components/team/TeamView';
+import { GovernanceLogView } from '@/components/govlog/GovernanceLogView';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { ClientShowView } from '@/components/client-show/ClientShowView';
 import { LoginView } from '@/components/auth/LoginView';
+import { InvoiceEditor } from '@/components/invoice/InvoiceEditor';
+import { TimerProvider } from '@/components/time/timer-context';
+import { NoAccessView } from '@/components/layout/NoAccessView';
+import { canAccessView, firstPermittedView } from '@/components/layout/navigation-helpers';
+import { can, isAssignedTo } from '@/lib/permissions';
+import type { Quote } from '@/context/PracticeStoreContext';
 
 function AppContent() {
-  const [view, setView] = React.useState<ViewKey>('dashboard');
+  const { clients, isAuthenticated, currentUser, permissions } = usePracticeStore();
+  const [view, setView] = React.useState<ViewKey>(() =>
+    firstPermittedView(currentUser.role, permissions.matrix)
+  );
   const [clientCode, setClientCode] = React.useState<string | undefined>(undefined);
-  const { clients, isAuthenticated } = usePracticeStore();
+  const [deadlineStaffId, setDeadlineStaffId] = React.useState<string | undefined>(undefined);
+  const [deadlineKpiFilter, setDeadlineKpiFilter] = React.useState<NavigateOptions['kpiFilter']>(undefined);
+  const [settingsPane, setSettingsPane] = React.useState<NavigateOptions['settingsPane']>(undefined);
+  const [quoteClientCode, setQuoteClientCode] = React.useState<string | undefined>(undefined);
+  const [newClientIntent, setNewClientIntent] = React.useState(false);
+  const [invoiceEditor, setInvoiceEditor] = React.useState<{ invoiceId?: string; quote?: Quote } | null>(
+    null
+  );
 
   if (!isAuthenticated) {
     return <LoginView />;
@@ -23,38 +43,93 @@ function AppContent() {
 
   const activeClient = clientCode ? clients.find((c) => c.code === clientCode) : undefined;
 
-  const handleNavigate = (newView: ViewKey, newCode?: string) => {
+  const handleNavigate = (newView: ViewKey, newCode?: string, options?: NavigateOptions) => {
     setView(newView);
     if (newCode !== undefined) {
       setClientCode(newCode);
     }
+    if (newView === 'deadlines') {
+      setDeadlineStaffId(options?.staffId);
+      setDeadlineKpiFilter(options?.kpiFilter);
+    }
+    if (newView === 'settings') {
+      setSettingsPane(options?.settingsPane);
+    }
+    if (options?.quoteClientCode !== undefined) {
+      setQuoteClientCode(options.quoteClientCode);
+    }
+    if (newView === 'clients' && options?.newClient) {
+      setNewClientIntent(true);
+    }
   };
 
   const renderContent = () => {
+    if (!canAccessView(view, currentUser.role, permissions.matrix, { assigned: true })) {
+      return <NoAccessView view={view} onNavigate={(next) => handleNavigate(next)} />;
+    }
+
+    // A limited role reaches the register but only its own client records.
+    const assignedOnlyClients =
+      !can(currentUser.role, 'Clients', 'view', permissions.matrix) &&
+      can(currentUser.role, 'Clients', 'view', permissions.matrix, { assigned: true });
+
     switch (view) {
       case 'dashboard':
         return <DashboardView onNavigate={handleNavigate} />;
       case 'inbox':
         return <InboxView onNavigate={handleNavigate} />;
       case 'clients':
-        return <ClientsView onNavigate={handleNavigate} />;
-      case 'people':
-        return <PeopleView onNavigate={handleNavigate} />;
+        return (
+          <ClientsView
+            onNavigate={handleNavigate}
+            initialCreateOpen={newClientIntent}
+            onCreateIntentHandled={() => setNewClientIntent(false)}
+          />
+        );
+      case 'team':
+        return <TeamView />;
       case 'deadlines':
         return (
           <DeadlinesView
             onNavigate={handleNavigate}
             clientFilter={clientCode}
+            staffFilter={deadlineStaffId}
+            kpiFilter={deadlineKpiFilter}
             onClearClientFilter={() => setClientCode(undefined)}
           />
         );
-      case 'estimator':
-      case 'quote':
-      case 'pipeline':
-        return <EstimatorView onNavigate={handleNavigate} />;
+      case 'analytics':
+        return <AnalyticsView />;
+      case 'sales-pipeline':
+        return (
+          <SalesPipelineView
+            onOpenInvoice={(invoiceId) => setInvoiceEditor({ invoiceId })}
+            onCreateInvoice={(quote) => setInvoiceEditor({ quote })}
+            initialClientCode={quoteClientCode}
+            onInitialClientConsumed={() => setQuoteClientCode(undefined)}
+          />
+        );
+      case 'time':
+        return <TimeView />;
+      case 'govlog':
+        return <GovernanceLogView />;
       case 'settings':
-        return <SettingsView />;
+        return (
+          <SettingsView key={settingsPane ?? 'profile'} initialPane={settingsPane} />
+        );
       case 'client':
+        if (
+          assignedOnlyClients &&
+          (!activeClient || !isAssignedTo(currentUser.id, activeClient))
+        ) {
+          return (
+            <NoAccessView
+              view="client"
+              label="This client record"
+              onNavigate={(next) => handleNavigate(next)}
+            />
+          );
+        }
         if (!clientCode) {
           return (
             <div className="p-8 max-w-2xl mx-auto text-center space-y-4">
@@ -87,21 +162,32 @@ function AppContent() {
   };
 
   return (
-    <Layout
-      currentView={view}
-      clientCode={clientCode}
-      clientName={activeClient?.name}
-      onViewChange={handleNavigate}
-    >
-      {renderContent()}
-    </Layout>
+    <TimerProvider>
+      <Layout
+        currentView={view}
+        clientCode={clientCode}
+        clientName={activeClient?.name}
+        onViewChange={handleNavigate}
+      >
+        {renderContent()}
+      </Layout>
+      {invoiceEditor && (
+        <InvoiceEditor
+          invoiceId={invoiceEditor.invoiceId}
+          initialQuote={invoiceEditor.quote}
+          onClose={() => setInvoiceEditor(null)}
+        />
+      )}
+    </TimerProvider>
   );
 }
 
 export default function App() {
   return (
-    <PracticeStoreProvider>
-      <AppContent />
-    </PracticeStoreProvider>
+    <ThemeProvider>
+      <PracticeStoreProvider>
+        <AppContent />
+      </PracticeStoreProvider>
+    </ThemeProvider>
   );
 }

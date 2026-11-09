@@ -1,15 +1,114 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CLIENT_SHOW_TABS, formatClientSummary } from './ClientSummaryBar';
+import {
+  CLIENT_SHOW_TABS,
+  canLogTimeOnClient,
+  clientRecordTabs,
+  formatClientSummary,
+} from './ClientShowView';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { DEFAULT_PERMISSION_MATRIX } from '@/lib/permissions';
 
 describe('ClientShowView header and tab definitions', () => {
   const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
 
-  it('defines the focused client master data tab (details)', () => {
-    expect(CLIENT_SHOW_TABS).toHaveLength(1);
+  it('defines the seven client record tabs in record order', () => {
     expect(CLIENT_SHOW_TABS.map((t) => t.id)).toEqual([
-      'details',
+      'overview',
+      'organization',
+      'history',
+      'tasks',
+      'estimate',
+      'vault',
+      'notes',
     ]);
+    expect(CLIENT_SHOW_TABS.map((t) => t.label)).toEqual([
+      'Overview',
+      'Organization',
+      'History',
+      'Tasks',
+      'Estimate',
+      'Vault',
+      'Notes',
+    ]);
+  });
+
+  it('hides the Estimate tab and quote exports without `Clients — view billing`', () => {
+    expect(clientRecordTabs(true).map((tab) => tab.id)).toEqual([
+      'overview',
+      'organization',
+      'history',
+      'tasks',
+      'estimate',
+      'vault',
+      'notes',
+    ]);
+    expect(clientRecordTabs(false).map((tab) => tab.id)).toEqual([
+      'overview',
+      'organization',
+      'history',
+      'tasks',
+      'vault',
+      'notes',
+    ]);
+
+    const showSrc = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+    expect(showSrc).toContain("'Clients',");
+    expect(showSrc).toContain("'view-billing'");
+    expect(showSrc).toContain('clientRecordTabs(canViewBilling)');
+    expect(showSrc).toContain('canViewBilling ? handlePdf : undefined');
+    expect(showSrc).toContain('canViewBilling ? handleExcel : undefined');
+    // The statutory / deadlines tabs remain available.
+    expect(showSrc).toContain("activeTab === 'tasks'");
+    expect(showSrc).toContain("activeTab === 'vault'");
+  });
+
+  it('wires the previously unwired estimate, vault and deadlines tabs into the record', () => {
+    const showSrc = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+
+    expect(showSrc).toContain('EstimateTab');
+    expect(showSrc).toContain('VaultTab');
+    expect(showSrc).toContain('DeadlinesTab');
+    expect(showSrc).toContain('ContactProfileLayout');
+    expect(showSrc).toContain('StatutoryProfileTab');
+  });
+
+  it('uses the shared contact profile layout with identity, meta and actions', () => {
+    const showSrc = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+
+    expect(showSrc).toContain('identity=');
+    expect(showSrc).toContain('meta=');
+    expect(showSrc).toContain('onTab=');
+    expect(showSrc).toContain('CLIENT_SHOW_TABS');
+  });
+
+  it('keeps the deadlines deep link and quote exports reachable from the summary bar', () => {
+    const barSrc = fs.readFileSync('src/components/client-show/ClientSummaryBar.tsx', 'utf8');
+    expect(barSrc).toContain('Export PDF Quote');
+    expect(barSrc).toContain('View Client Deadlines');
+
+    const showSrc = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+    expect(showSrc).toContain("'deadlines'");
+    expect(showSrc).toContain('downloadPdfQuote');
+    expect(showSrc).toContain('downloadExcelQuote');
+  });
+
+  it('adds optional client contact channels and contact records to the domain type', () => {
+    const typesSrc = fs.readFileSync('../../packages/domain/src/domain/types.ts', 'utf8');
+
+    expect(typesSrc).toContain('email?: string');
+    expect(typesSrc).toContain('phone?: string');
+    expect(typesSrc).toContain('location?: string');
+    expect(typesSrc).toContain('timezone?: string');
+    expect(typesSrc).toContain('contacts?: ClientContact[]');
+    expect(typesSrc).toContain('export interface ClientContact');
+  });
+
+  it('migrates the seeded director onto its client record', () => {
+    const marthinus = muse.contacts?.find((c) => c.name === 'Marthinus De Villiers');
+    expect(marthinus).toBeDefined();
+    expect(marthinus?.role).toBe('Director');
+    expect(marthinus?.email).toBe('marthinus@muse1399.co.za');
   });
 
   it('formats client summary meta for MUS-875', () => {
@@ -18,5 +117,38 @@ describe('ClientShowView header and tab definitions', () => {
     expect(summary.code).toBe('MUS-875');
     expect(summary.entityType).toBe('Company');
     expect(summary.partnerLabel).toBe('Erik (Partner)');
+  });
+});
+
+describe('Add Action → Log Time permission', () => {
+  const unassigned = CLIENTS.find((c) => c.code === 'MUS-875')!;
+  const assignedToCaroline = CLIENTS.find((c) => c.code === 'LES-841')!;
+
+  it('refuses a Subcontractor on a client they are not assigned to', () => {
+    expect(canLogTimeOnClient('Subcontractor', DEFAULT_PERMISSION_MATRIX, 'hannes', unassigned)).toBe(
+      false
+    );
+  });
+
+  it('allows a Subcontractor on their assigned client', () => {
+    expect(
+      canLogTimeOnClient('Subcontractor', DEFAULT_PERMISSION_MATRIX, 'caroline', assignedToCaroline)
+    ).toBe(true);
+  });
+
+  it('allows roles holding a full Time — log own grant', () => {
+    expect(canLogTimeOnClient('Accountant', DEFAULT_PERMISSION_MATRIX, 'mia', unassigned)).toBe(
+      true
+    );
+    expect(canLogTimeOnClient('Support Tech', DEFAULT_PERMISSION_MATRIX, 'sam', unassigned)).toBe(
+      false
+    );
+  });
+
+  it('wires the check into the Add Action menu', () => {
+    const source = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+    expect(source).toContain('canLogTimeOnClient(');
+    expect(source).toContain('canLogTime={canLogTime}');
+    expect(source).toContain('permitted: canLogTime');
   });
 });

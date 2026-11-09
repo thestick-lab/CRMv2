@@ -30,6 +30,7 @@ export const SEEDED_STAFF_ACCOUNTS = [
   { id: 'lungani', name: 'Lungani', email: 'lungani@fdoncall.co.za', role: 'Team member', kind: 'employee' },
   { id: 'hannes', name: 'Hannes', email: 'hannes@fdoncall.co.za', role: 'Subcontractor', kind: 'subcontractor' },
   { id: 'caroline', name: 'Caroline', email: 'caroline@fdoncall.co.za', role: 'Subcontractor', kind: 'subcontractor' },
+  { id: 'support-tech', name: 'Support Tech', email: 'support.tech@fdoncall.co.za', role: 'Support Tech', kind: 'employee' },
 ];
 
 const app = new Hono<{ Bindings: { DB: D1Database } }>();

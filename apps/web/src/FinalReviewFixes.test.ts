@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { canTransitionQuote } from '@/lib/quote-lifecycle';
 
 describe('Final review fixes: cross-view reactivity and user experience', () => {
   it('wires usePracticeStore into ClientsView, ClientShowView, DashboardView, Layout, and EstimateTab', () => {
@@ -19,14 +20,15 @@ describe('Final review fixes: cross-view reactivity and user experience', () => 
     expect(deadlinesDashboard).toContain('usePracticeStore');
   });
 
-  it('verifies DeadlinesKanban card navigation does not preempt double-click action modal', () => {
+  it('verifies the shared board opens card detail without preempting client navigation', () => {
     const kanbanSrc = fs.readFileSync('src/components/deadlines/DeadlinesKanban.tsx', 'utf8');
+    const boardSrc = fs.readFileSync('src/components/kanban/KanbanBoard.tsx', 'utf8');
 
     // Card should not bind whole-card onClick to onSelectClient directly
     expect(kanbanSrc).not.toContain('onClick={() => onSelectClient(task.clientCode)}');
-    // Double click must trigger action modal
-    expect(kanbanSrc).toContain('onDoubleClick');
-    // Must pass initialStatus / targetStatus to StatutoryActionModal
+    // Double click must trigger the detail surface
+    expect(boardSrc).toContain('onDoubleClick');
+    // Must pass initialStatus / targetStatus to the statutory form
     expect(kanbanSrc).toContain('initialStatus');
   });
 
@@ -37,9 +39,18 @@ describe('Final review fixes: cross-view reactivity and user experience', () => 
     expect(userPopoverSrc).toContain('logout');
   });
 
-  it('ensures OnboardingPipeline dragStart invokes dataTransfer.setData', () => {
-    const pipelineSrc = fs.readFileSync('src/components/pipeline/OnboardingPipeline.tsx', 'utf8');
-
-    expect(pipelineSrc).toContain('dataTransfer.setData');
+  it('routes prospect progression through validated quote stage transitions', () => {
+    expect(canTransitionQuote('Draft Quote', 'Quote Sent', { hasClient: true, hasFeeLines: true })).toBe(
+      true
+    );
+    expect(
+      canTransitionQuote('Draft Quote', 'Quote Sent', { hasClient: false, hasFeeLines: true })
+    ).toBe(false);
+    expect(canTransitionQuote('Quote Sent', 'Accepted', { hasClient: false, hasFeeLines: false })).toBe(
+      true
+    );
+    expect(canTransitionQuote('Signed', 'Closed Lost', { hasClient: true, hasFeeLines: true })).toBe(
+      false
+    );
   });
 });

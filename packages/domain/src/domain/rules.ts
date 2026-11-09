@@ -43,6 +43,10 @@ const isCompanyLike = (c: Client) => c.entityType === 'Company' || c.entityType 
 
 /** The services a client gets by default, read from what we know about them. Onboarding can switch any on or off. */
 export function defaultServices(c: Client): ServiceCode[] {
+  // An explicit scope — recorded by quote conversion or the client record's
+  // service checkboxes — wins over the attribute-derived defaults.
+  if (c.services) return [...c.services];
+
   const s: ServiceCode[] = [];
   if (c.entityType !== 'Individual' && c.lastAfsYear !== null) s.push('AFS');
   if (!c.taxElsewhere) {

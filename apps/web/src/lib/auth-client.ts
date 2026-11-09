@@ -6,7 +6,13 @@ export interface AuthenticatedUser {
   id: string;
   name: string;
   email: string;
-  role: 'Partner' | 'Compliance Officer' | 'Accountant' | 'Team member' | 'Subcontractor';
+  role:
+    | 'Partner'
+    | 'Compliance Officer'
+    | 'Accountant'
+    | 'Team member'
+    | 'Subcontractor'
+    | 'Support Tech';
   kind: 'employee' | 'subcontractor';
 }
 

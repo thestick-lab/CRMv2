@@ -72,12 +72,75 @@ describe('App shell and view integration', () => {
     expect(estimateSource).toContain('XeroSyncDialog');
   });
 
-  it('mounts PracticeStoreProvider and integrates InboxView, EstimatorView, PeopleView, and SettingsView', () => {
+  it('searches quotes and time entries from the command palette', () => {
+    const layoutSource = fs.readFileSync('src/components/layout/Layout.tsx', 'utf8');
+    expect(layoutSource).toContain('quotes');
+    expect(layoutSource).toContain('timeEntries');
+    expect(layoutSource).toContain(`section: 'Quotes'`);
+    expect(layoutSource).toContain(`section: 'Time entries'`);
+  });
+
+  it('mounts PracticeStoreProvider and routes every ViewKey to its view', () => {
     const appSource = fs.readFileSync('src/App.tsx', 'utf8');
     expect(appSource).toContain('PracticeStoreProvider');
     expect(appSource).toContain('InboxView');
-    expect(appSource).toContain('EstimatorView');
-    expect(appSource).toContain('PeopleView');
+    expect(appSource).toContain('AnalyticsView');
+    expect(appSource).toContain('TeamView');
+    expect(appSource).toContain('TimeView');
+    expect(appSource).toContain('SalesPipelineView');
+    expect(appSource).toContain('GovernanceLogView');
     expect(appSource).toContain('SettingsView');
+
+    for (const view of [
+      'dashboard',
+      'analytics',
+      'inbox',
+      'clients',
+      'team',
+      'deadlines',
+      'sales-pipeline',
+      'time',
+      'settings',
+      'govlog',
+      'client',
+    ]) {
+      expect(appSource).toContain(`case '${view}':`);
+    }
+
+    // Legacy views are gone from the router (clean cutover)
+    expect(appSource).not.toContain('PeopleView');
+    expect(appSource).not.toContain('EstimatorView');
+    expect(appSource).not.toContain("case 'people':");
+    expect(appSource).not.toContain("case 'estimator':");
+  });
+
+  it('renders the time view as Log and Report tabs over the shared timesheet and report', () => {
+    const timeSource = fs.readFileSync('src/components/time/TimeView.tsx', 'utf8');
+    expect(timeSource).toContain('PageHeader');
+    expect(timeSource).toContain("from './Timesheet'");
+    expect(timeSource).toContain("from './TimeReport'");
+    expect(timeSource).toContain("id: 'log'");
+    expect(timeSource).toContain("id: 'report'");
+    expect(timeSource).toContain('openEntrySheet');
+
+    const sheetSource = fs.readFileSync('src/components/time/Timesheet.tsx', 'utf8');
+    expect(sheetSource).toContain('editEntry');
+    expect(sheetSource).toContain('updateTimeEntry');
+    expect(sheetSource).toContain('EmptyStateCard');
+  });
+
+  it('renders a shared PageHeader and empty state on every new foundation view', () => {
+    const views = [
+      'src/components/analytics/AnalyticsView.tsx',
+      'src/components/pipeline/SalesPipelineView.tsx',
+      'src/components/team/TeamView.tsx',
+      'src/components/govlog/GovernanceLogView.tsx',
+    ];
+    for (const path of views) {
+      const source = fs.readFileSync(path, 'utf8');
+      expect(source).toContain("from '@/components/ui/page-header'");
+      expect(source).toContain('PageHeader');
+      expect(source).toContain('EmptyStateCard');
+    }
   });
 });

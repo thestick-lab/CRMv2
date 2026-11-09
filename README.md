@@ -23,6 +23,16 @@ Combines Twenty CRM's modern dark/light UI aesthetic with South African statutor
   * `estimate.ts`: 12-month rolling fee matrix with March escalation
 * **Export Generators:** [`packages/domain/src/export/`](packages/domain/src/export/) (`pdf.ts`, `sheet.ts`, `xlsx.ts`)
 * **Brand Assets:** [`assets/`](assets/) (Official FD on Call logos, badges, and favicons)
+* **Redesign spec & plan (2026-11-09):** [`docs/superpowers/specs/2026-11-09-crm-redesign-design.md`](docs/superpowers/specs/2026-11-09-crm-redesign-design.md) · [`docs/superpowers/plans/2026-11-09-crm-redesign.md`](docs/superpowers/plans/2026-11-09-crm-redesign.md) (the plan's appendix lists the open product decisions)
+
+---
+
+## Practice workflow (shipped with the 2026-11 redesign)
+
+* **Quotes → signature → invoice:** a three-step quote builder (client, scope, fee schedule) with a live branded document preview, stage rules enforced (`Draft → Sent → Accepted → Signed → Active Client`, `Closed Lost` only from draft/sent/accepted), a simulated Documenso dual-signer envelope, and invoice creation from an accepted quote with 15% VAT reconciliation and a simulated Xero `ACCREC` draft push.
+* **Time tracking:** quarter-hour rounding (nearest 15 minutes, 15-minute floor), a topbar timer, a timesheet Log tab, and a Report tab whose KPIs, client bars and grouped rows reconcile to the underlying entries; billed retainer overage flows onto the invoice as a priced line.
+* **Roles & permissions:** a six-role matrix (Partner, Compliance Officer, Accountant, Team member, Subcontractor, Support Tech) over Clients, Deadlines & Tasks, Quotes & Invoices, Time, People and Settings, enforced across navigation and every action — partner sign-off stays locked to Partner.
+* **Governance log:** a read-only, derived audit trail of sign-offs, statutory submissions, quote and invoice decisions, time and permission changes, filterable per client and exportable to CSV/PDF.
 
 ---
 

@@ -1,40 +1,41 @@
 import type { ViewKey } from '@/types/navigation';
 import { PartnerReviewQueue } from '@/components/inbox/PartnerReviewQueue';
 import { Badge } from '@/components/ui/badge';
-import { Inbox } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { NoAccessView } from '@/components/layout/NoAccessView';
+import { canAccessView } from '@/components/layout/navigation-helpers';
 
 export interface InboxViewProps {
   onNavigate: (view: ViewKey, clientCode?: string) => void;
 }
 
 export function InboxView({ onNavigate }: InboxViewProps) {
-  const { taskStatusOverrides } = usePracticeStore();
+  const { taskStatusOverrides, currentUser, permissions } = usePracticeStore();
   const pendingCount = Object.values(taskStatusOverrides).filter(
     (o) => o.status === 'Partner Review Gate'
   ).length;
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
-              <Inbox className="h-5 w-5 text-[#c4161c]" />
-              Partner Review Queue
-            </h1>
-            <Badge variant="crimsonSubdued" className="font-mono text-xs py-0 px-1.5 h-5">
-              {pendingCount} Pending Approvals
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Statutory compliance review gates mandated by SAICA &amp; SARS Tax Administration Act prior to final submission.
-          </p>
-        </div>
-      </div>
+  if (!canAccessView('inbox', currentUser.role, permissions.matrix, { assigned: true })) {
+    return <NoAccessView view="inbox" onNavigate={(view) => onNavigate(view)} />;
+  }
 
-      {/* Review Queue Component */}
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <PageHeader
+        eyebrow="Inbox"
+        title="Partner Review Queue"
+        subtitle="Statutory compliance review gates mandated by SAICA & SARS Tax Administration Act prior to final submission."
+        actions={
+          <Badge
+            variant="crimsonSubdued"
+            className="h-6 px-2 font-mono text-[10px] font-medium uppercase tracking-wide"
+          >
+            {pendingCount} Pending Approvals
+          </Badge>
+        }
+      />
+
       <PartnerReviewQueue onNavigateClient={(code) => onNavigate('client', code)} />
     </div>
   );

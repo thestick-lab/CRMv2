@@ -125,6 +125,21 @@ describe('deadline rules for the dummy clients (as at 28 Oct 2026)', () => {
     expect(tasksFor(client('KHE-615')).every((t) => t.assigneeId === 'hannes')).toBe(true);
     expect(tasksFor(client('TOP-435')).every((t) => t.assigneeId === 'caroline')).toBe(true);
   });
+  test('An explicit service scope wins over the attribute-derived list', () => {
+    const muse = client('MUS-875');
+    expect(muse.services).toBeUndefined();
+    expect(defaultServices(muse)).toEqual(['AFS', 'ITR14', 'IRP6', 'VAT201', 'CIPC_AR', 'BO']);
+
+    const explicit = { ...muse, services: ['VAT201', 'EMP201'] as Client['services'] };
+    expect(defaultServices(explicit!)).toEqual(['VAT201', 'EMP201']);
+  });
+  test('Deadlines follow the explicit scope only', () => {
+    const muse = client('MUS-875');
+    const narrowed: Client = { ...muse, services: ['VAT201'] };
+    const tasks = generateTasks(narrowed, defaultServices(narrowed), AS_OF);
+    expect(tasks.length).toBeGreaterThan(0);
+    expect(new Set(tasks.map((t) => t.service))).toEqual(new Set(['VAT201']));
+  });
   test('The team: seven staff and two subcontractors', () => {
     expect(STAFF.filter((s) => s.kind === 'employee').map((s) => s.name)).toEqual(['André', 'Erik', 'Lungani', 'Mia', 'Nikita', 'Willem', 'Wouter']);
     expect(STAFF.filter((s) => s.kind === 'subcontractor').map((s) => s.name)).toEqual(['Hannes', 'Caroline']);

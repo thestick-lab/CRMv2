@@ -43,19 +43,25 @@ describe('Unified operations and governance review fixes', () => {
     expect(nextState.savedEstimates['ALC-610'].hours.BOOKKEEPING).toBe(6);
   });
 
-  it('verifies SettingsView role-gates the Admin Panel to Partners and Compliance Officers', () => {
+  it('verifies SettingsView gates its panes through the permission matrix', () => {
     const settingsSrc = fs.readFileSync('src/components/settings/SettingsView.tsx', 'utf8');
 
     expect(settingsSrc).toContain('usePracticeStore');
     expect(settingsSrc).toContain('currentUser.role');
-    expect(settingsSrc).toContain('isPartnerOrAdmin');
+    expect(settingsSrc).toContain("can(currentUser.role, 'Settings', 'view'");
+    expect(settingsSrc).toContain("can(currentUser.role, 'Settings', 'edit'");
+    // The old coarse role check is gone — permissions own this decision.
+    expect(settingsSrc).not.toContain('isPartnerOrAdmin');
   });
 
   it('verifies DeadlinesKanban drops to Not Started and In Progress update status without premature submit', () => {
     const kanbanSrc = fs.readFileSync('src/components/deadlines/DeadlinesKanban.tsx', 'utf8');
 
-    // Should update status for Not Started and In Progress directly
-    expect(kanbanSrc).toContain('updateTaskStatus(taskId, targetStatus)');
+    // Should update status for Not Started and In Progress directly, clearing
+    // any stale partner sign-off the move leaves behind.
+    expect(kanbanSrc).toContain(
+      'updateTaskStatus(taskId, targetStatus, clearedApprovalMetadata(targetStatus))'
+    );
     // Should NOT prematurely call updateTaskStatus on Submitted before modal saves
     expect(kanbanSrc).not.toContain("updateTaskStatus(taskId, 'Submitted');");
   });
@@ -74,11 +80,11 @@ describe('Unified operations and governance review fixes', () => {
     expect(tabSrc).not.toContain('disabled: !client.payroll');
   });
 
-  it('verifies TaskStatusOverride stores approvedBy partner and SaicaGovernanceLogPane displays signing partner', () => {
-    const saicaSrc = fs.readFileSync('src/components/settings/panes/SaicaGovernanceLogPane.tsx', 'utf8');
+  it('verifies TaskStatusOverride stores approvedBy partner and the audit trail displays the signing partner', () => {
+    const auditSrc = fs.readFileSync('src/components/govlog/audit-log.ts', 'utf8');
     const queueSrc = fs.readFileSync('src/components/inbox/PartnerReviewQueue.tsx', 'utf8');
 
     expect(queueSrc).toContain('approvedBy: currentUser.name');
-    expect(saicaSrc).toContain('approvedBy');
+    expect(auditSrc).toContain('approvedBy');
   });
 });

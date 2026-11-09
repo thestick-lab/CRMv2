@@ -1,7 +1,23 @@
 import { describe, expect, it, beforeEach } from 'vitest';
+import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
+import { defaultServices, generateTasks } from 'fdoncall-practice/domain/rules';
+import { servicesFromEstimate } from 'fdoncall-practice/domain/estimate';
+import { personInitials } from '@/lib/initials';
 import {
+  ACTIVITY_SEEDS,
+  INITIAL_LEADS,
+  convertQuoteToClient,
+  generateCodeForName,
   getInitialPracticeState,
+  loadPracticeState,
+  mergePracticeState,
   practiceReducer,
+  type Invoice,
+  type LegacyLead,
+  type PracticeState,
+  type PracticeStateStorage,
+  type Quote,
+  type TimeEntry,
 } from './PracticeStoreContext';
 
 describe('PracticeStore state initialization and persistence', () => {
@@ -11,11 +27,14 @@ describe('PracticeStore state initialization and persistence', () => {
     }
   });
 
-  it('hydrates with 13 clients, 9 staff, default pipeline leads, and default rates', () => {
+  it('hydrates with 13 clients, 9 staff, four quote prospects, and default rates', () => {
     const state = getInitialPracticeState();
     expect(state.clients).toHaveLength(13);
     expect(state.staff).toHaveLength(9);
-    expect(state.leads.length).toBeGreaterThanOrEqual(4);
+    expect(state.quotes).toHaveLength(4);
+    expect(state.quotes.map((q) => q.number)).toEqual(['Q-1', 'Q-2', 'Q-3', 'Q-4']);
+    expect(state.quotes[0].prospect?.name).toBe('Cape Agulhas Distillers (Pty) Ltd');
+    expect(state.sequences.quote).toBe(4);
     expect(state.currentUser.name).toBe('Erik');
     expect(state.currentUser.role).toBe('Partner');
     expect(state.rates.standardHourlyRate).toBe(625);
@@ -23,26 +42,134 @@ describe('PracticeStore state initialization and persistence', () => {
     expect(state.division).toBe('fd-on-call');
   });
 
-  it('converts a pipeline lead to an active practice client', () => {
+  it('adds a quote, advances its stage, and bumps the quote sequence', () => {
     const state = getInitialPracticeState();
-    const lead = state.leads[0];
-    expect(lead).toBeDefined();
+    const draft: Quote = {
+      ...PERSISTED_QUOTE,
+      id: 'quote-new',
+      number: 'Q-5',
+      stage: 'Draft Quote',
+    };
 
-    const nextState = practiceReducer(state, {
-      type: 'CONVERT_LEAD',
-      payload: { leadId: lead.id },
+    const added = practiceReducer(state, { type: 'ADD_QUOTE', payload: draft });
+    expect(added.quotes).toHaveLength(5);
+    expect(added.quotes.at(-1)).toEqual(draft);
+    expect(added.sequences.quote).toBe(5);
+
+    const sent = practiceReducer(added, {
+      type: 'UPDATE_QUOTE',
+      payload: { id: 'quote-new', patch: { stage: 'Quote Sent', nextStep: 'Follow up' } },
+    });
+    expect(sent.quotes.at(-1)?.stage).toBe('Quote Sent');
+    expect(sent.quotes.at(-1)?.nextStep).toBe('Follow up');
+    expect(sent.quotes.at(-1)?.updatedAt).not.toBe(draft.updatedAt);
+
+    // Unknown ids and duplicate adds leave state untouched.
+    expect(practiceReducer(added, { type: 'ADD_QUOTE', payload: draft })).toBe(added);
+    expect(
+      practiceReducer(added, { type: 'UPDATE_QUOTE', payload: { id: 'missing', patch: {} } })
+    ).toBe(added);
+  });
+
+  it('keeps the stage clock when a quote is edited without a stage change', () => {
+    const state = getInitialPracticeState();
+    const quote = state.quotes[0];
+    expect(quote.stageChangedAt).toBeTruthy();
+
+    const edited = practiceReducer(state, {
+      type: 'UPDATE_QUOTE',
+      payload: { id: quote.id, patch: { paymentTerms: '14 days', stage: quote.stage } },
+    }).quotes.find((entry) => entry.id === quote.id)!;
+
+    expect(edited.updatedAt).not.toBe(quote.updatedAt);
+    expect(edited.stageChangedAt).toBe(quote.stageChangedAt);
+  });
+
+  it('advances the stage clock only when the stage actually changes', () => {
+    const state = getInitialPracticeState();
+    const quote = state.quotes[0];
+
+    const sent = practiceReducer(state, {
+      type: 'UPDATE_QUOTE',
+      payload: { id: quote.id, patch: { stage: 'Quote Sent' } },
+    }).quotes.find((entry) => entry.id === quote.id)!;
+
+    expect(sent.stage).toBe('Quote Sent');
+    expect(sent.stageChangedAt).toBeTruthy();
+    expect(Date.parse(sent.stageChangedAt!)).toBeGreaterThan(Date.parse(quote.stageChangedAt!));
+  });
+
+  it('adds an invoice and updates its status through UPDATE_INVOICE', () => {
+    const state = getInitialPracticeState();
+    const invoice: Invoice = {
+      id: 'invoice-new',
+      number: 'INV-1',
+      clientCode: 'ALC-610',
+      lineItems: [
+        {
+          id: 'line-1',
+          description: 'Monthly bookkeeping',
+          quantity: 1,
+          unitAmount: 3750,
+          taxType: 'OUTPUT2',
+          lineAmount: 3750,
+        },
+      ],
+      taxRate: 0.15,
+      subtotal: 3750,
+      vat: 562.5,
+      total: 4312.5,
+      status: 'Draft',
+      issueDate: '2026-11-09',
+      dueDate: '2026-12-09',
+      createdAt: '2026-11-09T08:00:00.000Z',
+    };
+
+    const added = practiceReducer(state, { type: 'ADD_INVOICE', payload: invoice });
+    expect(added.invoices).toEqual([invoice]);
+    expect(added.sequences.invoice).toBe(1);
+
+    const paid = practiceReducer(added, {
+      type: 'UPDATE_INVOICE',
+      payload: { id: 'invoice-new', patch: { status: 'Paid' } },
+    });
+    expect(paid.invoices[0].status).toBe('Paid');
+
+    expect(practiceReducer(added, { type: 'ADD_INVOICE', payload: invoice })).toBe(added);
+    expect(
+      practiceReducer(added, { type: 'UPDATE_INVOICE', payload: { id: 'missing', patch: {} } })
+    ).toBe(added);
+  });
+
+  it('keeps persisted invoice payment details and leaves absent ones undefined', () => {
+    const invoice: Invoice = {
+      id: 'invoice-new',
+      number: 'INV-1',
+      clientCode: 'ALC-610',
+      lineItems: [],
+      taxRate: 0.15,
+      subtotal: 0,
+      vat: 0,
+      total: 0,
+      status: 'Sent',
+      issueDate: '2026-11-09',
+      dueDate: '2026-12-09',
+      createdAt: '2026-11-09T08:00:00.000Z',
+    };
+
+    const state = mergePracticeState({
+      ...getInitialPracticeState(),
+      invoices: [
+        { ...invoice, paymentTerms: '14 days', paymentMethods: ['EFT', 'Debit order'] },
+        { ...invoice, id: 'invoice-legacy', number: 'INV-2' },
+      ],
     });
 
-    // Client count should increase from 13 to 14
-    expect(nextState.clients).toHaveLength(14);
-    const convertedClient = nextState.clients.find((c) => c.name === lead.companyName);
-    expect(convertedClient).toBeDefined();
-    expect(convertedClient?.status).toBe('Active');
-    expect(convertedClient?.code).toMatch(/^[A-Z]{3}-\d{3}$/);
-
-    // Lead stage should be Active Client
-    const updatedLead = nextState.leads.find((l) => l.id === lead.id);
-    expect(updatedLead?.stage).toBe('Active Client');
+    expect(state.invoices[0].paymentTerms).toBe('14 days');
+    expect(state.invoices[0].paymentMethods).toEqual(['EFT', 'Debit order']);
+    // Invoices saved before the fields existed keep today's fallback behaviour.
+    expect(state.invoices[1].paymentTerms).toBeUndefined();
+    expect(state.invoices[1].paymentMethods).toBeUndefined();
   });
 
   it('updates task status with SARS reference and partner sign-off', () => {
@@ -128,5 +255,706 @@ describe('PracticeStore state initialization and persistence', () => {
     const resetState = practiceReducer(modified, { type: 'RESET_DATA' });
     expect(resetState.rates.standardHourlyRate).toBe(625);
     expect(resetState.clients).toHaveLength(13);
+  });
+});
+
+function storageWith(value: unknown): PracticeStateStorage {
+  return { getItem: () => JSON.stringify(value) };
+}
+
+const LEGACY_LEAD = {
+  id: 'lead-legacy-1',
+  companyName: 'Cape Agulhas Distillers (Pty) Ltd',
+  contactPerson: 'Francois Marais',
+  email: 'francois@capeagulhas.co.za',
+  phone: '+27 21 887 4100',
+  stage: 'Lead',
+  turnover: 6500000,
+  estimatedMonthlyFee: 6500,
+  partnerId: 'erik',
+};
+
+const LEGACY_STATE = {
+  leads: [LEGACY_LEAD],
+  clients: [],
+  staff: [],
+  taskStatusOverrides: {},
+};
+
+const PERSISTED_QUOTE: Quote = {
+  id: 'quote-1',
+  number: 'Q-3',
+  clientCode: 'ALC-610',
+  estimateInput: {
+    startMonth: '2026-11',
+    entityType: 'Company',
+    yearEndMonth: 2,
+    payroll: false,
+    provisionalTaxpayer: false,
+    directors: 2,
+    rate: 625,
+    marchIncreasePct: 6,
+    irp6Payable: false,
+    selected: {},
+    hours: { BOOKKEEPING: 0, PAYROLL: 0, MGMT: 0, AFS: 0, REVIEW: 0 },
+    months: { AFS: 2, REVIEW: 2, ITR: 2, CIPC_AR: 2 },
+    recharges: { XERO: 0, SIMPLEPAY: 0 },
+  },
+  monthlyRetainerHours: 12,
+  adHocHourlyRate: 625,
+  vatInclusive: false,
+  paymentTerms: '30 days',
+  stage: 'Quote Sent',
+  ownerStaffId: 'erik',
+  createdAt: '2026-11-01T08:00:00Z',
+  updatedAt: '2026-11-02T08:00:00Z',
+};
+
+const PERSISTED_TIME_ENTRY: TimeEntry = {
+  id: 'time-1',
+  clientCode: 'ALC-610',
+  staffUserId: 'erik',
+  startedAt: '2026-11-03T08:00:00Z',
+  endedAt: '2026-11-03T09:00:00Z',
+  durationMinutes: 60,
+  roundedMinutes: 60,
+  billable: true,
+  description: 'Year-end file review',
+  createdAt: '2026-11-03T09:00:00Z',
+};
+
+describe('PracticeStore foundation fields and legacy-state load', () => {
+  it('migrates legacy leads into quotes and fills missing foundation fields with defaults', () => {
+    const state = loadPracticeState(storageWith(LEGACY_STATE));
+
+    expect(state.quotes).toHaveLength(1);
+    const [migrated] = state.quotes;
+    expect(migrated.id).toBe('quote-lead-legacy-1');
+    expect(migrated.number).toBe('Q-1');
+    expect(migrated.stage).toBe('Draft Quote');
+    expect(migrated.prospect?.name).toBe('Cape Agulhas Distillers (Pty) Ltd');
+    expect(migrated.prospect?.contactPerson).toBe('Francois Marais');
+    expect(migrated.prospect?.turnover).toBe(6500000);
+    expect(migrated.ownerStaffId).toBe('erik');
+    // 6500 monthly fee ÷ R625 hourly rate seeds the retainer hours.
+    expect(migrated.monthlyRetainerHours).toBeCloseTo(10.4);
+    expect(migrated.adHocHourlyRate).toBe(625);
+    expect(migrated.estimateInput.hours.BOOKKEEPING).toBeCloseTo(10.4);
+    expect(migrated.estimateInput.selected.BOOKKEEPING).toBe(true);
+
+    expect(state.invoices).toEqual([]);
+    expect(state.timeEntries).toEqual([]);
+    expect(state.permissions).toEqual(getInitialPracticeState().permissions);
+    expect(state.activity).toEqual([]);
+    expect(state.adhocTasks).toEqual([]);
+    expect(state.sequences).toEqual({ quote: 1, invoice: 0 });
+
+    // Clean cutover: the legacy `leads` field is dropped from practice state.
+    expect('leads' in state).toBe(false);
+    expect(state.clients).toEqual([]);
+  });
+
+  it('maps every legacy lead stage onto its quote stage through MIGRATE_LEADS', () => {
+    const stages: LegacyLead['stage'][] = [
+      'Lead',
+      'Discovery',
+      'Estimate Sent',
+      'KYC & Transfer',
+      'Active Client',
+    ];
+    const leads = stages.map((stage, index) => ({
+      ...INITIAL_LEADS[0],
+      id: `lead-stage-${index}`,
+      stage,
+    }));
+    const base = { ...getInitialPracticeState(), quotes: [], sequences: { quote: 0, invoice: 0 } };
+
+    const migrated = practiceReducer(base, { type: 'MIGRATE_LEADS', payload: { leads } });
+
+    expect(migrated.quotes.map((q) => q.stage)).toEqual([
+      'Draft Quote',
+      'Draft Quote',
+      'Quote Sent',
+      'Accepted',
+      'Active Client',
+    ]);
+    expect(migrated.quotes.map((q) => q.number)).toEqual(['Q-1', 'Q-2', 'Q-3', 'Q-4', 'Q-5']);
+    expect(migrated.sequences.quote).toBe(5);
+
+    // Re-running the migration for the same leads adds nothing.
+    expect(practiceReducer(migrated, { type: 'MIGRATE_LEADS', payload: { leads } })).toBe(
+      migrated
+    );
+  });
+
+  it('never overwrites persisted foundation values', () => {
+    const state = loadPracticeState(
+      storageWith({
+        ...LEGACY_STATE,
+        leads: [],
+        quotes: [PERSISTED_QUOTE],
+        timeEntries: [PERSISTED_TIME_ENTRY],
+        sequences: { quote: 3, invoice: 2 },
+        permissions: { matrix: { Partner: { 'Clients.view': 'Allowed' } }, lastEditedBy: 'Erik' },
+      })
+    );
+
+    expect(state.quotes[0]).toMatchObject(PERSISTED_QUOTE);
+    expect(state.quotes[0].stageChangedAt).toBe(PERSISTED_QUOTE.updatedAt);
+    expect(state.timeEntries).toEqual([PERSISTED_TIME_ENTRY]);
+    expect(state.sequences).toEqual({ quote: 3, invoice: 2 });
+    expect(state.permissions.matrix.Partner?.['Clients.view']).toBe('Allowed');
+    expect(state.permissions.lastEditedBy).toBe('Erik');
+  });
+
+  it('defaults the stage clock for quotes persisted before stage ageing existed', () => {
+    const legacyQuote: Record<string, unknown> = { ...PERSISTED_QUOTE };
+    delete legacyQuote.stageChangedAt;
+
+    const state = loadPracticeState(storageWith({ ...LEGACY_STATE, leads: [], quotes: [legacyQuote] }));
+
+    expect(state.quotes[0].stageChangedAt).toBe(PERSISTED_QUOTE.updatedAt);
+  });
+
+  it('keeps an explicit stage clock already persisted on a quote', () => {
+    const state = loadPracticeState(
+      storageWith({
+        ...LEGACY_STATE,
+        leads: [],
+        quotes: [{ ...PERSISTED_QUOTE, stageChangedAt: '2026-10-02T08:00:00Z' }],
+      })
+    );
+
+    expect(state.quotes[0].stageChangedAt).toBe('2026-10-02T08:00:00Z');
+  });
+
+  it('migrates seeded director contacts onto persisted clients that predate contacts', () => {
+    const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
+    const axe = CLIENTS.find((c) => c.code === 'AXE-460')!;
+    const legacyMuse: Record<string, unknown> = { ...muse };
+    delete legacyMuse.contacts;
+
+    const state = loadPracticeState(
+      storageWith({ clients: [legacyMuse, { ...axe, contacts: [] }] })
+    );
+
+    expect(state.clients[0].contacts?.[0].name).toBe('Marthinus De Villiers');
+    // A client that already carries an explicit (empty) contact list keeps it.
+    expect(state.clients[1].contacts).toEqual([]);
+  });
+
+  it('defaults PracticeUser.contract for legacy persisted users', () => {
+    const state = loadPracticeState(
+      storageWith({
+        ...LEGACY_STATE,
+        currentUser: {
+          id: 'erik',
+          name: 'Erik',
+          role: 'Partner',
+          email: 'erik@fdoncall.co.za',
+          kind: 'employee',
+        },
+      })
+    );
+
+    expect(state.currentUser.contract).toEqual({ contractType: 'employee' });
+  });
+
+  it('preserves persisted contract terms over the default', () => {
+    const contract = {
+      contractType: 'subcontractor' as const,
+      startDate: '2025-02-01',
+      hourlyRate: 850,
+      phone: '+27 21 975 1099',
+    };
+    const state = loadPracticeState(
+      storageWith({
+        ...LEGACY_STATE,
+        currentUser: {
+          id: 'hannes',
+          name: 'Hannes',
+          role: 'Subcontractor',
+          email: 'hannes@fdoncall.co.za',
+          kind: 'subcontractor',
+          contract,
+        },
+      })
+    );
+
+    expect(state.currentUser.contract).toEqual(contract);
+  });
+
+  it('is idempotent across repeated loads of the same legacy state', () => {
+    const legacy = {
+      ...getInitialPracticeState(),
+      leads: INITIAL_LEADS,
+      quotes: [],
+      sequences: { quote: 0, invoice: 0 },
+    };
+    const storage = storageWith(legacy);
+
+    const first = loadPracticeState(storage);
+    const second = loadPracticeState(storage);
+
+    expect(second).toEqual(first);
+    expect(first.quotes).toHaveLength(4);
+    expect(first.quotes.map((q) => q.stage)).toEqual([
+      'Draft Quote',
+      'Draft Quote',
+      'Quote Sent',
+      'Accepted',
+    ]);
+    expect(first.sequences.quote).toBe(4);
+    expect('leads' in first).toBe(false);
+  });
+
+  it('ships the four seeded quote prospects and empty foundation defaults on a pristine state', () => {
+    const state = getInitialPracticeState();
+    expect(state.quotes).toHaveLength(4);
+    expect(state.quotes.map((q) => q.prospect?.name)).toEqual(
+      INITIAL_LEADS.map((lead) => lead.companyName)
+    );
+    expect(state.invoices).toEqual([]);
+    expect(state.timeEntries).toEqual([]);
+    expect(state.activity).toEqual([]);
+    expect(state.adhocTasks).toEqual([]);
+    expect(state.sequences).toEqual({ quote: 4, invoice: 0 });
+    expect(state.permissions).toEqual({ matrix: {} });
+  });
+
+  it('round-trips an ad-hoc task through add, update and delete and survives reload', () => {
+    const state = getInitialPracticeState();
+    const task = {
+      id: 'adhoc-test-1',
+      clientCode: 'ALC-610',
+      description: 'Reconcile October bank feed',
+      assigneeId: 'erik',
+      dueDate: '2026-11-14',
+      status: 'Not Started' as const,
+      createdAt: '2026-11-09T08:00:00.000Z',
+    };
+
+    const added = practiceReducer(state, { type: 'ADD_ADHOC_TASK', payload: task });
+    expect(added.adhocTasks).toHaveLength(1);
+    expect(added.adhocTasks[0]).toEqual(task);
+
+    const updated = practiceReducer(added, {
+      type: 'UPDATE_ADHOC_TASK',
+      payload: { id: task.id, patch: { status: 'In Progress', description: 'Bank feed reconciled' } },
+    });
+    expect(updated.adhocTasks[0].status).toBe('In Progress');
+    expect(updated.adhocTasks[0].description).toBe('Bank feed reconciled');
+    expect(updated.adhocTasks[0].createdAt).toBe(task.createdAt);
+
+    // Persisted state reloads the ad-hoc task unchanged.
+    const reloaded = loadPracticeState({
+      getItem: () => JSON.stringify(updated),
+    });
+    expect(reloaded.adhocTasks).toEqual(updated.adhocTasks);
+
+    const deleted = practiceReducer(updated, {
+      type: 'DELETE_ADHOC_TASK',
+      payload: { id: task.id },
+    });
+    expect(deleted.adhocTasks).toEqual([]);
+    // Deleting an unknown task leaves state untouched.
+    expect(
+      practiceReducer(deleted, { type: 'DELETE_ADHOC_TASK', payload: { id: 'missing' } })
+    ).toBe(deleted);
+  });
+
+  it('appends logged activity events with a generated id and timestamp', () => {
+    const state = getInitialPracticeState();
+    const next = practiceReducer(state, {
+      type: 'LOG_ACTIVITY',
+      payload: {
+        type: 'task',
+        actorName: 'Erik',
+        actorInitials: 'E',
+        tint: 'crimson',
+        text: 'Commented on a task',
+        subline: 'ALC-610 · AFS',
+      },
+    });
+    expect(next.activity).toHaveLength(1);
+    expect(next.activity[0].id).toBeTruthy();
+    expect(next.activity[0].at).toBeTruthy();
+    expect(next.activity[0].text).toBe('Commented on a task');
+  });
+
+  it('sources every activity seed from seeded clients and staff', () => {
+    const clientCodes = CLIENTS.map((c) => c.code);
+    const staffNames = [...STAFF.map((s) => s.name), getInitialPracticeState().currentUser.name];
+
+    expect(ACTIVITY_SEEDS.length).toBeGreaterThan(0);
+    for (const event of ACTIVITY_SEEDS) {
+      expect(staffNames).toContain(event.actorName);
+      for (const code of event.subline.match(/[A-Z]{3}-\d{3}/g) ?? []) {
+        expect(clientCodes).toContain(code);
+      }
+      expect(event.subline).not.toMatch(/SARS-|env-/);
+    }
+  });
+
+  it('stamps every activity seed with the person avatar initials for its actor', () => {
+    // Home's Team Activity card and the Analytics feed render `actorInitials`
+    // verbatim, so a hardcoded seed letter would disagree with the topbar and
+    // the Team register. Derive-and-pin: single-word staff read ER / LU / NI.
+    for (const event of ACTIVITY_SEEDS) {
+      expect(event.actorInitials).toBe(personInitials(event.actorName));
+    }
+    expect(ACTIVITY_SEEDS.map((event) => event.actorInitials)).toEqual([
+      'ER',
+      'LU',
+      'ER',
+      'NI',
+      'ER',
+    ]);
+  });
+});
+
+describe('quote→client conversion', () => {
+  it('derives a collision-safe three-letter client code from the prospect name', () => {
+    expect(generateCodeForName('Kouga Fynbos Exports (Pty) Ltd', [])).toBe('KFE-100');
+    expect(generateCodeForName('Kouga Fynbos Exports (Pty) Ltd', [{ code: 'KFE-100' }])).toBe(
+      'KFE-101'
+    );
+    // Seeded codes never collide, so the name's initial letters survive intact.
+    expect(generateCodeForName('Kouga Fynbos Exports (Pty) Ltd', CLIENTS)).toBe('KFE-100');
+  });
+
+  it('creates the client from the quote alone, independent of the reducer', () => {
+    const client = convertQuoteToClient(SIGNED_PROSPECT_QUOTE, [], '2026-11-09');
+    expect(client.code).toBe('KFE-100');
+    expect(client.services).toEqual(servicesFromEstimate(SIGNED_PROSPECT_QUOTE.estimateInput));
+    expect(client.notes).toContain('fee quote Q-9');
+  });
+
+  it('converts a signed prospect quote into an active client with the quoted scope', () => {
+    const base: PracticeState = {
+      ...getInitialPracticeState(),
+      clients: [],
+      quotes: [SIGNED_PROSPECT_QUOTE],
+      sequences: { quote: 9, invoice: 0 },
+    };
+
+    const next = practiceReducer(base, {
+      type: 'CONVERT_QUOTE_TO_CLIENT',
+      payload: { quoteId: SIGNED_PROSPECT_QUOTE.id },
+    });
+
+    expect(next.clients).toHaveLength(1);
+    const client = next.clients[0];
+    const scope = servicesFromEstimate(SIGNED_PROSPECT_QUOTE.estimateInput);
+
+    expect(client.name).toBe('Kouga Fynbos Exports (Pty) Ltd');
+    expect(client.code).toBe('KFE-100');
+    expect(client.entityType).toBe('Company');
+    expect(client.vatCategory).toBe('B');
+    expect(client.yearEndMonth).toBe(2);
+    expect(client.yearEndAssumed).toBe(true);
+    expect(client.payroll).toBe(true);
+    expect(client.employeeCount).toBe(6);
+    expect(client.incorporationDate).toBe('2019-07-14');
+    expect(client.turnover).toBe(4200000);
+    expect(client.staffId).toBe('erik');
+    expect(client.status).toBe('Active');
+    expect(client.services).toEqual(scope);
+    expect(scope).toEqual(['AFS', 'ITR14', 'IRP6', 'VAT201', 'EMP201', 'EMP501', 'CIPC_AR']);
+    expect(client.contacts?.[0]?.name).toBe('Lize van der Merwe');
+    expect(client.notes).toContain('Added from a fee quote Q-9');
+
+    // The estimate is saved against the new code and the quote becomes active.
+    expect(next.savedEstimates[client.code]).toEqual(SIGNED_PROSPECT_QUOTE.estimateInput);
+    const quote = next.quotes.find((entry) => entry.id === SIGNED_PROSPECT_QUOTE.id)!;
+    expect(quote.stage).toBe('Active Client');
+    expect(quote.clientCode).toBe(client.code);
+    expect(quote.nextStep).toBe('Onboarding complete');
+
+    // The audit trail reads from this activity event.
+    expect(next.activity[0].type).toBe('client');
+    expect(next.activity[0].text).toBe('Client created from quote: Kouga Fynbos Exports (Pty) Ltd');
+    expect(next.activity[0].subline).toContain(client.code);
+    expect(next.activity[0].subline).toContain('Q-9');
+
+    // Only the quoted scope's deadlines materialise.
+    const tasks = generateTasks(client, defaultServices(client), '2026-11-09');
+    const taskServices = new Set(tasks.map((task) => task.service));
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const service of taskServices) expect(scope).toContain(service);
+    expect(taskServices.has('VAT201')).toBe(true);
+    expect(taskServices.has('EMP201')).toBe(true);
+  });
+
+  it('materialises no VAT or payroll deadlines for a scope that excludes them', () => {
+    const quote: Quote = {
+      ...SIGNED_PROSPECT_QUOTE,
+      id: 'quote-narrow',
+      number: 'Q-10',
+      estimateInput: {
+        ...SIGNED_PROSPECT_QUOTE.estimateInput,
+        vatCategory: undefined,
+        payroll: false,
+        employeeCount: undefined,
+        provisionalTaxpayer: false,
+        selected: { AFS: true, ITR: true, IRP6: false, CIPC_AR: false },
+      },
+    };
+    const base: PracticeState = {
+      ...getInitialPracticeState(),
+      clients: [],
+      quotes: [quote],
+      sequences: { quote: 10, invoice: 0 },
+    };
+
+    const next = practiceReducer(base, {
+      type: 'CONVERT_QUOTE_TO_CLIENT',
+      payload: { quoteId: quote.id },
+    });
+    const client = next.clients[0];
+    expect(client.services).toEqual(['AFS', 'ITR14']);
+
+    const taskServices = new Set(
+      generateTasks(client, defaultServices(client), '2026-11-09').map((task) => task.service)
+    );
+    expect(taskServices.has('VAT201')).toBe(false);
+    expect(taskServices.has('EMP201')).toBe(false);
+    expect(taskServices.has('EMP501')).toBe(false);
+  });
+
+  it('updates an existing client’s scope instead of duplicating the record', () => {
+    const quote: Quote = {
+      ...SIGNED_PROSPECT_QUOTE,
+      id: 'quote-requote',
+      number: 'Q-11',
+      clientCode: 'ALC-610',
+      prospect: undefined,
+      estimateInput: {
+        ...SIGNED_PROSPECT_QUOTE.estimateInput,
+        entityType: 'Company',
+        selected: {
+          AFS: false,
+          ITR: false,
+          IRP6: false,
+          CIPC_AR: false,
+          VAT201: true,
+        },
+      },
+    };
+    const base: PracticeState = {
+      ...getInitialPracticeState(),
+      quotes: [quote],
+    };
+
+    const next = practiceReducer(base, {
+      type: 'CONVERT_QUOTE_TO_CLIENT',
+      payload: { quoteId: quote.id },
+    });
+
+    expect(next.clients).toHaveLength(base.clients.length);
+    const existing = next.clients.find((client) => client.code === 'ALC-610')!;
+    expect(existing.services).toEqual(servicesFromEstimate(quote.estimateInput));
+    expect(next.savedEstimates['ALC-610']).toEqual(quote.estimateInput);
+    expect(next.quotes.find((entry) => entry.id === quote.id)?.stage).toBe('Active Client');
+    expect(next.activity[0].text).toContain('Services updated for A & L Contracting');
+  });
+
+  it('records no VAT or payroll facts outside the quoted scope', () => {
+    const quote: Quote = {
+      ...SIGNED_PROSPECT_QUOTE,
+      id: 'quote-registration',
+      number: 'Q-12',
+      estimateInput: {
+        ...SIGNED_PROSPECT_QUOTE.estimateInput,
+        vatCategory: 'B',
+        payroll: true,
+        employeeCount: 9,
+        selected: {
+          AFS: false,
+          ITR: false,
+          IRP6: false,
+          VAT201: false,
+          EMP201: false,
+          EMP501: false,
+          CIPC_AR: false,
+          BO: false,
+        },
+      },
+    };
+
+    const client = convertQuoteToClient(quote, [], '2026-11-09');
+    expect(client.services).toEqual([]);
+    expect(client.vatCategory).toBeUndefined();
+    expect(client.payroll).toBe(false);
+    expect(client.employeeCount).toBeUndefined();
+    // The prospect's other entity fields still carry across.
+    expect(client.entityType).toBe('Company');
+    expect(client.yearEndMonth).toBe(2);
+    expect(client.turnover).toBe(4200000);
+  });
+
+  it('refuses to convert a quote that is not signed', () => {
+    const base = getInitialPracticeState();
+    const draft = base.quotes.find((quote) => quote.stage === 'Draft Quote')!;
+
+    expect(
+      practiceReducer(base, { type: 'CONVERT_QUOTE_TO_CLIENT', payload: { quoteId: draft.id } })
+    ).toBe(base);
+  });
+});
+
+const SIGNED_PROSPECT_QUOTE: Quote = {
+  id: 'quote-signed-prospect',
+  number: 'Q-9',
+  prospect: {
+    name: 'Kouga Fynbos Exports (Pty) Ltd',
+    contactPerson: 'Lize van der Merwe',
+    entityType: 'Company',
+    turnover: 4200000,
+    payroll: true,
+    employeeCount: 6,
+    vatCategory: 'B',
+    yearEndMonth: 2,
+    incorporationDate: '2019-07-14',
+    staffId: 'erik',
+  },
+  estimateInput: {
+    startMonth: '2026-11',
+    entityType: 'Company',
+    yearEndMonth: 2,
+    vatCategory: 'B',
+    turnover: 4200000,
+    payroll: true,
+    employeeCount: 6,
+    provisionalTaxpayer: false,
+    incorporationDate: '2019-07-14',
+    directors: 1,
+    rate: 625,
+    marchIncreasePct: 6,
+    irp6Payable: false,
+    selected: {
+      AFS: true,
+      ITR: true,
+      IRP6: true,
+      VAT201: true,
+      EMP201: true,
+      EMP501: true,
+      CIPC_AR: true,
+      BO: false,
+    },
+    hours: { BOOKKEEPING: 6, PAYROLL: 2, MGMT: 0, AFS: 4, REVIEW: 0 },
+    months: { AFS: 8, REVIEW: 8, ITR: 9, CIPC_AR: 7 },
+    recharges: { XERO: 0, SIMPLEPAY: 0 },
+  },
+  monthlyRetainerHours: 8,
+  adHocHourlyRate: 625,
+  vatInclusive: false,
+  paymentTerms: '30 days',
+  stage: 'Signed',
+  ownerStaffId: 'erik',
+  createdAt: '2026-11-01T08:00:00Z',
+  updatedAt: '2026-11-02T08:00:00Z',
+  stageChangedAt: '2026-11-02T08:00:00Z',
+};
+
+const TIMER_ENTRY: TimeEntry = {
+  id: 'time-timer-1',
+  clientCode: 'ALC-610',
+  serviceCode: 'VAT201',
+  staffUserId: 'erik',
+  startedAt: '2026-11-09T09:02:00.000Z',
+  endedAt: '2026-11-09T09:09:00.000Z',
+  durationMinutes: 7,
+  roundedMinutes: 15,
+  billable: true,
+  description: 'VAT201 2026-09',
+  createdAt: '2026-11-09T09:09:00.000Z',
+};
+
+describe('time entry actions', () => {
+  it('adds an entry and records the logged time on the activity feed', () => {
+    const state = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+
+    expect(state.timeEntries).toEqual([TIMER_ENTRY]);
+    expect(state.activity[0]).toMatchObject({
+      type: 'time',
+      actorName: 'Erik',
+      text: 'Logged 0.25h — VAT201 2026-09',
+      subline: 'ALC-610 · VAT201',
+    });
+  });
+
+  it('never adds the same entry twice', () => {
+    const once = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const twice = practiceReducer(once, { type: 'ADD_TIME_ENTRY', payload: TIMER_ENTRY });
+
+    expect(twice).toBe(once);
+    expect(twice.timeEntries).toHaveLength(1);
+  });
+
+  it('updates an entry in place without touching its identity', () => {
+    const added = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const updated = practiceReducer(added, {
+      type: 'UPDATE_TIME_ENTRY',
+      payload: {
+        id: TIMER_ENTRY.id,
+        patch: { roundedMinutes: 30, billable: false, description: 'VAT201 2026-09 review' },
+      },
+    });
+
+    expect(updated.timeEntries[0]).toMatchObject({
+      id: TIMER_ENTRY.id,
+      startedAt: TIMER_ENTRY.startedAt,
+      durationMinutes: 7,
+      roundedMinutes: 30,
+      billable: false,
+      description: 'VAT201 2026-09 review',
+    });
+  });
+
+  it('ignores updates and deletes for an entry that is not in the store', () => {
+    const state = getInitialPracticeState();
+
+    expect(
+      practiceReducer(state, {
+        type: 'UPDATE_TIME_ENTRY',
+        payload: { id: 'missing', patch: { roundedMinutes: 30 } },
+      })
+    ).toBe(state);
+    expect(practiceReducer(state, { type: 'DELETE_TIME_ENTRY', payload: { id: 'missing' } })).toBe(
+      state
+    );
+  });
+
+  it('deletes an entry', () => {
+    const added = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const deleted = practiceReducer(added, {
+      type: 'DELETE_TIME_ENTRY',
+      payload: { id: TIMER_ENTRY.id },
+    });
+
+    expect(deleted.timeEntries).toEqual([]);
+  });
+
+  it('keeps stored entries across a save and reload', () => {
+    const added = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const reloaded = loadPracticeState(storageWith(added));
+
+    expect(reloaded.timeEntries).toEqual([TIMER_ENTRY]);
   });
 });

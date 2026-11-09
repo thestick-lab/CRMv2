@@ -2,57 +2,75 @@ import { describe, expect, it } from 'vitest';
 import { buildBreadcrumbs, NAV_ITEMS } from './navigation-helpers';
 
 describe('Layout navigation helpers and breadcrumbs', () => {
-  it('defines the 4 primary navigation items with correct sections and badges', () => {
-    expect(NAV_ITEMS).toHaveLength(4);
+  it('defines the 10 grouped navigation items in Practice / Work / Admin order', () => {
+    expect(NAV_ITEMS).toHaveLength(10);
+    expect(NAV_ITEMS.map((item) => item.id)).toEqual([
+      'dashboard',
+      'analytics',
+      'inbox',
+      'clients',
+      'team',
+      'deadlines',
+      'sales-pipeline',
+      'time',
+      'settings',
+      'govlog',
+    ]);
 
-    const clientsItem = NAV_ITEMS.find((item) => item.id === 'clients');
-    expect(clientsItem).toBeDefined();
-    expect(clientsItem?.section).toBe('PRACTICE REGISTERS');
-
-    const peopleItem = NAV_ITEMS.find((item) => item.id === 'people');
-    expect(peopleItem).toBeDefined();
-    expect(peopleItem?.section).toBe('PRACTICE REGISTERS');
-
-    const deadlinesItem = NAV_ITEMS.find((item) => item.id === 'deadlines');
-    expect(deadlinesItem).toBeDefined();
-    expect(deadlinesItem?.section).toBe('OPERATIONS & GROWTH');
-    expect(deadlinesItem?.badge).toBe(4);
-
-    const estimatorItem = NAV_ITEMS.find((item) => item.id === 'estimator');
-    expect(estimatorItem).toBeDefined();
-    expect(estimatorItem?.section).toBe('OPERATIONS & GROWTH');
+    expect(NAV_ITEMS.filter((item) => item.section === 'Practice').map((item) => item.id)).toEqual([
+      'dashboard',
+      'analytics',
+      'inbox',
+    ]);
+    expect(NAV_ITEMS.filter((item) => item.section === 'Work').map((item) => item.id)).toEqual([
+      'clients',
+      'team',
+      'deadlines',
+      'sales-pipeline',
+      'time',
+    ]);
+    expect(NAV_ITEMS.filter((item) => item.section === 'Admin').map((item) => item.id)).toEqual([
+      'settings',
+      'govlog',
+    ]);
   });
 
-  it('generates expected breadcrumb trails for each view', () => {
+  it('generates a breadcrumb trail for every view key', () => {
     expect(buildBreadcrumbs('dashboard')).toEqual([{ label: 'Home' }]);
+    expect(buildBreadcrumbs('analytics')).toEqual([
+      { label: 'Practice' },
+      { label: 'Analytics', view: 'analytics' },
+    ]);
     expect(buildBreadcrumbs('inbox')).toEqual([
       { label: 'Home', view: 'dashboard' },
-      { label: 'Inbox (Review Queue)' },
-    ]);
-    expect(buildBreadcrumbs('settings')).toEqual([
-      { label: 'Home', view: 'dashboard' },
-      { label: 'Settings' },
+      { label: 'Inbox' },
     ]);
     expect(buildBreadcrumbs('clients')).toEqual([
-      { label: 'Practice Registers' },
+      { label: 'Work' },
       { label: 'Clients', view: 'clients' },
     ]);
     expect(buildBreadcrumbs('client', 'ALC-610', 'A & L Contracting')).toEqual([
-      { label: 'Practice Registers' },
+      { label: 'Work' },
       { label: 'Clients', view: 'clients' },
       { label: 'A & L Contracting [ALC-610]', clientCode: 'ALC-610' },
     ]);
-    expect(buildBreadcrumbs('people')).toEqual([
-      { label: 'Practice Registers' },
-      { label: 'People' },
-    ]);
+    expect(buildBreadcrumbs('team')).toEqual([{ label: 'Work' }, { label: 'Team', view: 'team' }]);
     expect(buildBreadcrumbs('deadlines')).toEqual([
-      { label: 'Operations & Growth' },
+      { label: 'Work' },
       { label: 'Deadlines', view: 'deadlines' },
     ]);
-    expect(buildBreadcrumbs('estimator')).toEqual([
-      { label: 'Operations & Growth' },
-      { label: 'Estimator' },
+    expect(buildBreadcrumbs('sales-pipeline')).toEqual([
+      { label: 'Work' },
+      { label: 'Sales Pipeline', view: 'sales-pipeline' },
+    ]);
+    expect(buildBreadcrumbs('time')).toEqual([{ label: 'Work' }, { label: 'Time', view: 'time' }]);
+    expect(buildBreadcrumbs('settings')).toEqual([
+      { label: 'Admin' },
+      { label: 'Settings', view: 'settings' },
+    ]);
+    expect(buildBreadcrumbs('govlog')).toEqual([
+      { label: 'Admin' },
+      { label: 'Governance Log', view: 'govlog' },
     ]);
   });
 });

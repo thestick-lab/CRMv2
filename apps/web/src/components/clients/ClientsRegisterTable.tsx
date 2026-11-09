@@ -306,7 +306,7 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
   }, [rowCount, selectedIndex, table, onRowClick]);
 
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-3">
       {/* Controls Bar: Search Input */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="text-[11px] font-mono text-muted-foreground hidden sm:block">
@@ -322,26 +322,26 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder="Search code (ALC), name, or staff..."
-            className="w-full h-8 pl-8 pr-3 text-xs rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[#c4161c]"
+            className="h-8 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[#c4161c]"
           />
         </div>
       </div>
 
       {/* TanStack Table Grid */}
-      <div className="border border-border/80 rounded-lg bg-card/60 overflow-hidden shadow-xs">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[10px] border-b border-border select-none">
+          <table className="w-full text-left text-xs">
+            <thead className="select-none border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="py-2.5 px-3 font-medium">
+                    <th key={header.id} className="px-3 py-2.5 font-medium">
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
-                  <th className="py-2.5 px-3 text-right font-medium font-mono uppercase text-[10px]">Action</th>
+                  <th className="px-3 py-2.5 text-right font-mono text-[10px] font-medium uppercase">Action</th>
                 </tr>
               ))}
             </thead>
@@ -362,16 +362,16 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
                       role="link"
                       aria-label={`Open ${row.original.name} (${row.original.code})`}
                       onClick={() => onRowClick(row.original.code)}
-                      className={`hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#c4161c] transition-colors cursor-pointer group ${
+                      className={`group cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#c4161c] ${
                         isSelected ? 'bg-muted/30 ring-1 ring-inset ring-[#c4161c]/30' : ''
                       }`}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="py-2.5 px-3">
+                        <td key={cell.id} className="px-3 py-3">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
-                      <td className="py-2.5 px-3 text-right">
+                      <td className="px-3 py-3 text-right">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -393,7 +393,7 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
         </div>
 
         {/* Footer Meta */}
-        <div className="px-4 py-2 border-t border-border/60 bg-muted/20 text-[11px] font-mono text-muted-foreground flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2 font-mono text-[11px] text-muted-foreground">
           <span>
             Displaying {rowCount} of {data.length} practice clients
           </span>

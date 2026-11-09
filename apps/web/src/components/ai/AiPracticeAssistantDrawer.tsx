@@ -9,7 +9,7 @@ import {
   Trash2,
   Key,
 } from 'lucide-react';
-import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { usePracticeStore, type PracticeState } from '@/context/PracticeStoreContext';
 import { answerPracticeAssistantQuery } from './assistant-engine';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,14 +26,18 @@ export interface AiPracticeAssistantDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenSettings?: () => void;
+  /** Role-scoped state slice; falls back to the live store when omitted. */
+  stateOverride?: PracticeState;
 }
 
 export function AiPracticeAssistantDrawer({
   open,
   onOpenChange,
   onOpenSettings,
+  stateOverride,
 }: AiPracticeAssistantDrawerProps) {
-  const practiceState = usePracticeStore();
+  const store = usePracticeStore();
+  const practiceState = stateOverride ?? store;
   const { aiKeys } = practiceState;
 
   const [input, setInput] = React.useState('');
@@ -121,7 +125,7 @@ export function AiPracticeAssistantDrawer({
                     className={cn(
                       'text-[10px] font-mono px-1 py-0 h-4',
                       activeProvider.active
-                        ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                        ? 'border-[#c4161c]/30 bg-[#c4161c]/5 text-[#c4161c] dark:text-[#f87171]'
                         : 'border-border text-muted-foreground'
                     )}
                   >

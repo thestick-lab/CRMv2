@@ -16,8 +16,6 @@ const badgeVariants = cva(
         outline: 'text-foreground border-border',
         crimsonSubdued:
           'border-[#c4161c]/20 bg-[#c4161c]/10 text-[#c4161c] dark:text-[#f87171]',
-        success:
-          'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
         warning:
           'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
       },

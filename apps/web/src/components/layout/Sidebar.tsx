@@ -1,7 +1,7 @@
-import type { ViewKey } from '@/types/navigation';
-import { NAV_ITEMS, type NavItemDef } from './navigation-helpers';
+import type { NavSection, ViewKey } from '@/types/navigation';
+import { visibleNavItems, type NavItemDef } from './navigation-helpers';
 import { UserPopover } from '@/components/ui/user-popover';
-import { Home, Inbox, Settings, PanelLeftClose } from 'lucide-react';
+import { PanelLeftClose } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkspaceMenuPopover } from './WorkspaceMenuPopover';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
@@ -13,13 +13,15 @@ export interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
+const NAV_SECTIONS: NavSection[] = ['Practice', 'Work', 'Admin'];
+
 export function Sidebar({
   currentView,
   onViewChange,
   collapsed,
   onToggleCollapse,
 }: SidebarProps) {
-  const { division, taskStatusOverrides } = usePracticeStore();
+  const { division, taskStatusOverrides, currentUser, permissions } = usePracticeStore();
   const isFd = division === 'fd-on-call';
   const activeLogo = isFd ? '/fd-on-call-logo.png' : '/accountant-on-call-logo.png';
 
@@ -27,20 +29,30 @@ export function Sidebar({
     (o) => o.status === 'Partner Review Gate'
   ).length;
 
-  const registersItems = NAV_ITEMS.filter((i) => i.section === 'PRACTICE REGISTERS');
-  const operationsItems = NAV_ITEMS.filter((i) => i.section === 'OPERATIONS & GROWTH');
+  const navItems: NavItemDef[] = visibleNavItems(currentUser.role, permissions.matrix).map(
+    (item) =>
+      item.id === 'inbox' && pendingReviewCount > 0
+        ? { ...item, badge: pendingReviewCount }
+        : item
+  );
+
+  // Sections with no permitted item disappear entirely; a heading over an
+  // empty list would advertise areas the role cannot reach.
+  const navSections = NAV_SECTIONS.map((section) => ({
+    section,
+    items: navItems.filter((item) => item.section === section),
+  })).filter((entry) => entry.items.length > 0);
 
   const renderItem = (item: NavItemDef) => {
     const isActive =
-      currentView === item.id ||
-      (item.id === 'clients' && currentView === 'client') ||
-      (item.id === 'estimator' && (currentView === 'quote' || currentView === 'pipeline'));
+      currentView === item.id || (item.id === 'clients' && currentView === 'client');
     const Icon = item.icon;
 
     return (
       <button
         key={item.id}
         onClick={() => onViewChange(item.id)}
+        aria-current={isActive ? 'page' : undefined}
         title={collapsed ? `${item.label}${item.badge !== undefined ? ` (${item.badge})` : ''}` : undefined}
         className={cn(
           'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors text-left group outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c]',
@@ -114,75 +126,21 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Horizontal Utility Icon Bar: Home, Inbox, Settings */}
-        <div
-          className={cn(
-            'p-1.5 border-b border-border/60 flex items-center gap-1',
-            collapsed ? 'flex-col justify-center' : 'justify-around'
-          )}
-        >
-          <button
-            onClick={() => onViewChange('dashboard')}
-            title="Home"
-            aria-label="Home"
-            className={cn(
-              'p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative flex items-center justify-center',
-              currentView === 'dashboard' && 'bg-primary/10 text-primary font-semibold'
-            )}
-          >
-            <Home className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={() => onViewChange('inbox')}
-            title="Inbox"
-            aria-label="Inbox"
-            className={cn(
-              'p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative flex items-center justify-center',
-              currentView === 'inbox' && 'bg-primary/10 text-primary font-semibold'
-            )}
-          >
-            <Inbox className="h-4 w-4" />
-            {pendingReviewCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#c4161c]" />
-            )}
-          </button>
-
-          <button
-            onClick={() => onViewChange('settings')}
-            title="Settings"
-            aria-label="Settings"
-            className={cn(
-              'p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative flex items-center justify-center',
-              currentView === 'settings' && 'bg-primary/10 text-primary font-semibold'
-            )}
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Primary Navigation List */}
-        <div className="p-2 space-y-4 overflow-y-auto max-h-[calc(100vh-160px)]">
-          {/* Practice Registers */}
-          <div className="space-y-1">
-            {!collapsed && (
-              <div className="px-2.5 text-[10px] font-mono font-medium text-muted-foreground uppercase tracking-wider">
-                Practice Registers
+        {/* Grouped primary navigation */}
+        <nav aria-label="Primary" className="p-2 space-y-4 overflow-y-auto max-h-[calc(100vh-120px)]">
+          {navSections.map(({ section, items }) => {
+            return (
+              <div key={section} className="space-y-1">
+                {!collapsed && (
+                  <div className="px-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                    {section}
+                  </div>
+                )}
+                <div className="space-y-0.5">{items.map(renderItem)}</div>
               </div>
-            )}
-            <div className="space-y-0.5">{registersItems.map(renderItem)}</div>
-          </div>
-
-          {/* Operations & Growth */}
-          <div className="space-y-1">
-            {!collapsed && (
-              <div className="px-2.5 text-[10px] font-mono font-medium text-muted-foreground uppercase tracking-wider">
-                Operations &amp; Growth
-              </div>
-            )}
-            <div className="space-y-0.5">{operationsItems.map(renderItem)}</div>
-          </div>
-        </div>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Footer User Popover */}

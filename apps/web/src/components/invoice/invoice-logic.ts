@@ -1,0 +1,244 @@
+import {
+  cents,
+  computeEstimate,
+  estimateMonths,
+  formatMonthShort,
+  type EstimateLine,
+} from 'fdoncall-practice/domain/estimate';
+import { addDays, todayInSouthAfrica, type ISODate } from 'fdoncall-practice/domain/dates';
+import { GROUP_ACCOUNT_CODES } from '@/lib/integrations/xero';
+import type {
+  Invoice,
+  InvoiceLine,
+  InvoiceStatus,
+  Quote,
+} from '@/context/PracticeStoreContext';
+
+/**
+ * Invoice arithmetic and lifecycle helpers.
+ *
+ * Money follows the same rule as the Xero preview (`summariseXeroDraft`): the
+ * subtotal is the sum of the line amounts and VAT is rounded to the cent on
+ * each taxable line. That per-line basis is what keeps the invoice document
+ * and the Xero draft payload reconciling to the cent, even for fractional
+ * (time-based) quantities.
+ */
+
+/** South African standard VAT rate, fixed for the practice's invoices. */
+export const INVOICE_TAX_RATE = 0.15;
+
+/** Placeholder client code for a migrated prospect quote with no client record. */
+export const UNREGISTERED_CLIENT_CODE = 'UNREGISTERED';
+
+export interface InvoiceTotals {
+  subtotal: number;
+  vat: number;
+  total: number;
+}
+
+/**
+ * Cent-exact totals for a set of invoice lines.
+ *
+ * Both bases come from the amount the Xero payload sends: the unit price is
+ * rounded to the cent first (`buildXeroDraftInvoicePayload` sends
+ * `UnitAmount: cents(unitAmount)`), the line amount is
+ * `cents(quantity × roundedUnit)`, and VAT is `cents(quantity × roundedUnit ×
+ * taxRate)` per taxable line — exactly `summariseXeroDraft`'s rule. A document
+ * and its Xero draft therefore cannot disagree, even for a sub-cent unit price.
+ */
+export function reconcileInvoice(
+  lines: InvoiceLine[],
+  taxRate: number = INVOICE_TAX_RATE
+): InvoiceTotals {
+  let subtotal = 0;
+  let vat = 0;
+
+  for (const line of lines) {
+    const unitAmount = cents(line.unitAmount);
+    const lineAmount = cents(line.quantity * unitAmount);
+    subtotal = cents(subtotal + lineAmount);
+    if (line.taxType === 'OUTPUT2') {
+      vat = cents(vat + cents(line.quantity * unitAmount * taxRate));
+    }
+  }
+
+  return {
+    subtotal: cents(subtotal),
+    vat: cents(vat),
+    total: cents(subtotal + vat),
+  };
+}
+
+/**
+ * Display status for an invoice. `Overdue` is derived at render time and is
+ * never written to the store: a draft is unaffected by its due date, a paid
+ * invoice is always paid, and only a sent invoice past its due date reads
+ * overdue.
+ */
+export function computeInvoiceStatus(
+  invoice: Pick<Invoice, 'status' | 'dueDate'>,
+  today: ISODate
+): InvoiceStatus | 'Overdue' {
+  if (invoice.status === 'Draft') return 'Draft';
+  if (invoice.status === 'Paid') return 'Paid';
+  return invoice.dueDate < today ? 'Overdue' : 'Sent';
+}
+
+/**
+ * Whether an invoice's line items may still be edited. Only a draft is
+ * mutable: once `Sent` (or `Paid`) the document is issued and read-only.
+ */
+export function invoiceIsEditable(status: InvoiceStatus): boolean {
+  return status === 'Draft';
+}
+
+/** Days from issue to due for the quote's payment terms (`On presentation` = same day). */
+export function paymentTermsDays(terms: string | undefined): number {
+  if (!terms) return 30;
+  const match = terms.match(/(\d+)\s*day/i);
+  if (match) return Number(match[1]);
+  if (/presentation|immediate|on receipt/i.test(terms)) return 0;
+  return 30;
+}
+
+export interface InvoicePaymentDetails {
+  terms: string;
+  methods: string[];
+}
+
+/**
+ * Payment terms and methods to print for an invoice. Persisted values win;
+ * invoices saved before those fields existed fall back to the quote's terms
+ * and EFT, so an old document renders exactly as it did.
+ */
+export function invoicePaymentDetails(
+  invoice: Pick<Invoice, 'paymentTerms' | 'paymentMethods'> | undefined,
+  quoteTerms?: string
+): InvoicePaymentDetails {
+  return {
+    terms: invoice?.paymentTerms ?? quoteTerms ?? '30 days',
+    methods: invoice?.paymentMethods ?? ['EFT'],
+  };
+}
+
+export interface CreateInvoiceOptions {
+  /** Defaults to today in South Africa; injectable so documents stay testable. */
+  issueDate?: ISODate;
+  id?: string;
+}
+
+/**
+ * The invoice for one month of a quote's fee schedule.
+ *
+ * Lines are that month's fee lines only (annual work lands in the month the
+ * estimate bills it). The quote's payment terms set the due date, and the
+ * invoice starts as a `Draft` for the user to review before sending.
+ */
+export function createInvoiceFromQuote(
+  quote: Quote,
+  month: string,
+  sequence: number,
+  options: CreateInvoiceOptions = {}
+): Invoice {
+  const estimate = computeEstimate(quote.estimateInput);
+  const monthIndex = estimate.months.indexOf(month);
+  // An unknown month is a programming error, never a silent first-month bill.
+  if (monthIndex < 0) {
+    throw new RangeError(
+      `${month} is not a billing month on ${quote.number}'s fee schedule`
+    );
+  }
+  const issueDate = options.issueDate ?? todayInSouthAfrica();
+  const dueDate = addDays(issueDate, paymentTermsDays(quote.paymentTerms));
+
+  const lineItems: InvoiceLine[] = estimate.lines
+    .filter((line: EstimateLine) => line.amounts[monthIndex] > 0)
+    .map((line) => ({
+      id: `line-${line.key}-${estimate.months[monthIndex]}`,
+      description: `${line.label}${line.note ? ` (${line.note})` : ''} — ${formatMonthShort(
+        estimate.months[monthIndex]
+      )}`,
+      quantity: 1,
+      unitAmount: cents(line.amounts[monthIndex]),
+      // The line's own estimate group is its revenue account; that is what
+      // splits the Xero payload and the analytics service-group donut.
+      accountCode: GROUP_ACCOUNT_CODES[line.group],
+      taxType: line.vatable ? 'OUTPUT2' : 'NONE',
+      lineAmount: cents(line.amounts[monthIndex]),
+    }));
+
+  const totals = reconcileInvoice(lineItems, INVOICE_TAX_RATE);
+
+  return {
+    id: options.id ?? `invoice-${quote.id}-${month}-${sequence + 1}`,
+    number: `INV-${sequence + 1}`,
+    quoteId: quote.id,
+    clientCode: quote.clientCode ?? UNREGISTERED_CLIENT_CODE,
+    lineItems,
+    taxRate: INVOICE_TAX_RATE,
+    ...totals,
+    status: 'Draft',
+    billingMonth: month,
+    issueDate,
+    dueDate,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Default month for a new invoice on a quote: the month after the last one
+ * already invoiced, else the first unbilled month from today, else the last
+ * month of the schedule.
+ *
+ * The invoice's `billingMonth` is the record of what has been billed; records
+ * saved before that field existed fall back to their issue month.
+ */
+export function nextUnbilledMonth(
+  quote: Quote,
+  invoices: Pick<Invoice, 'quoteId' | 'issueDate' | 'billingMonth'>[],
+  today: ISODate = todayInSouthAfrica()
+): string {
+  const months = estimateMonths(quote.estimateInput.startMonth);
+  const billed = new Set(
+    invoices
+      .filter((invoice) => invoice.quoteId === quote.id)
+      .map((invoice) => invoice.billingMonth ?? invoice.issueDate.slice(0, 7))
+  );
+
+  const billedMonths = [...billed].filter((month) => months.includes(month)).sort();
+  const lastBilled = billedMonths[billedMonths.length - 1];
+  if (lastBilled) {
+    const afterLast = months[months.indexOf(lastBilled) + 1];
+    if (afterLast) return afterLast;
+  }
+
+  const currentMonth = today.slice(0, 7);
+  return (
+    months.find((month) => month >= currentMonth && !billed.has(month)) ??
+    months.find((month) => !billed.has(month)) ??
+    months[months.length - 1]
+  );
+}
+
+/** The month an existing invoice bills, for the editor's month label. */
+export function invoiceMonth(
+  invoice: Pick<Invoice, 'issueDate' | 'billingMonth'>
+): string {
+  return invoice.billingMonth ?? invoice.issueDate.slice(0, 7);
+}
+
+/**
+ * The invoice already raised for a quote's billing month, if any. Creating a
+ * second one for the same month would double-bill the retainer.
+ */
+export function invoiceForMonth(
+  invoices: Pick<Invoice, 'quoteId' | 'billingMonth' | 'issueDate'>[],
+  quoteId: string,
+  month: string
+): Invoice | undefined {
+  return invoices.find(
+    (invoice) =>
+      invoice.quoteId === quoteId &&
+      (invoice.billingMonth ?? invoice.issueDate.slice(0, 7)) === month
+  ) as Invoice | undefined;
+}

@@ -1,16 +1,21 @@
 import * as React from 'react';
-import type { ViewKey } from '@/types/navigation';
+import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { buildBreadcrumbs, NAV_ITEMS } from './navigation-helpers';
+import { buildBreadcrumbs, visibleNavItems } from './navigation-helpers';
+import { can, scopeToAssigned } from '@/lib/permissions';
 import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog';
+import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
+import { canUseAssistant, scopeAssistantState } from '@/components/ai/assistant-engine';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useTimer } from '@/components/time/timer-context';
 
 export interface LayoutProps {
   currentView: ViewKey;
   clientCode?: string;
   clientName?: string;
-  onViewChange: (view: ViewKey, clientCode?: string) => void;
+  onViewChange: (view: ViewKey, clientCode?: string, options?: NavigateOptions) => void;
   children: React.ReactNode;
 }
 
@@ -23,9 +28,17 @@ export function Layout({
 }: LayoutProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
-  const [isDark, setIsDark] = React.useState(true);
+  const [aiDrawerOpen, setAiDrawerOpen] = React.useState(false);
+  const { isDark, toggle: toggleTheme } = useTheme();
+  const { openEntrySheet } = useTimer();
 
-  const { clients } = usePracticeStore();
+  const practice = usePracticeStore();
+  const { clients, quotes, timeEntries, currentUser, permissions } = practice;
+  const assistantAllowed = canUseAssistant(currentUser.role, permissions.matrix);
+  const assistantState = React.useMemo(
+    () => (assistantAllowed ? scopeAssistantState(practice, currentUser.role, permissions.matrix) : null),
+    [assistantAllowed, practice, currentUser.role, permissions.matrix]
+  );
   // Keyboard shortcut for Cmd+K / Ctrl+K
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -38,33 +51,60 @@ export function Layout({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-  };
-
-  // Build command search items from navigation views + seeded clients
+  // Build command search items from navigation views, clients, quotes and time entries
   const commandItems = React.useMemo<CommandItem[]>(() => {
-    const viewItems: CommandItem[] = NAV_ITEMS.map((item) => ({
+    const role = currentUser.role;
+    const matrix = permissions.matrix;
+    const viewItems: CommandItem[] = visibleNavItems(role, matrix).map((item) => ({
       id: item.id,
       label: item.label,
       section: item.section,
       icon: item.icon,
     }));
 
-    const clientItems: CommandItem[] = clients.map((c) => ({
-      id: `client-${c.code}`,
-      label: c.name,
-      section: 'Clients',
-      clientCode: c.code,
-    }));
+    const canSeeClients = can(role, 'Clients', 'view', matrix, { assigned: true });
+    const visibleClients =
+      can(role, 'Clients', 'view', matrix) || !canSeeClients
+        ? clients
+        : scopeToAssigned(clients, currentUser.id);
+    const clientItems: CommandItem[] = canSeeClients
+      ? visibleClients.map((c) => ({
+          id: `client-${c.code}`,
+          label: c.name,
+          section: 'Clients',
+          clientCode: c.code,
+        }))
+      : [];
 
-    return [...viewItems, ...clientItems];
-  }, [clients]);
+    const clientName = (code?: string) =>
+      code ? clients.find((client) => client.code === code)?.name : undefined;
+
+    const quoteItems: CommandItem[] = can(role, 'Quotes', 'view-create-send', matrix)
+      ? quotes.map((quote) => ({
+          id: `quote-${quote.id}`,
+          label: `${quote.number} · ${clientName(quote.clientCode) ?? quote.prospect?.name ?? 'Unnamed prospect'}`,
+          section: 'Quotes',
+          view: 'sales-pipeline',
+          badge: quote.stage,
+        }))
+      : [];
+
+    const timeItems: CommandItem[] = can(role, 'Time', 'view-all', matrix)
+      ? timeEntries.map((entry) => ({
+          id: `time-${entry.id}`,
+          label: `${clientName(entry.clientCode) ?? entry.clientCode} · ${entry.description}`,
+          section: 'Time entries',
+          view: 'time',
+        }))
+      : [];
+
+    return [...viewItems, ...clientItems, ...quoteItems, ...timeItems];
+  }, [clients, quotes, timeEntries, currentUser.id, currentUser.role, permissions.matrix]);
 
   const handleSelectCommand = (item: CommandItem) => {
-    if (item.clientCode) {
+    if (item.view) {
+      onViewChange(item.view);
+    } else if (item.clientCode) {
       onViewChange('client', item.clientCode);
     } else {
       onViewChange(item.id as ViewKey);
@@ -88,10 +128,12 @@ export function Layout({
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Topbar
           breadcrumbs={breadcrumbs}
-          onNavigate={(view, code) => onViewChange(view, code)}
+          onNavigate={(view, code, options) => onViewChange(view, code, options)}
           onOpenSearch={() => setSearchOpen(true)}
           isDark={isDark}
           onToggleTheme={toggleTheme}
+          onOpenAiAssistant={assistantAllowed ? () => setAiDrawerOpen(true) : undefined}
+          onLogTime={openEntrySheet}
         />
         <main className="flex-1 overflow-y-auto">
           {children}
@@ -104,6 +146,15 @@ export function Layout({
         items={commandItems}
         onSelect={handleSelectCommand}
       />
+
+      {assistantState && (
+        <AiPracticeAssistantDrawer
+          open={aiDrawerOpen}
+          onOpenChange={setAiDrawerOpen}
+          onOpenSettings={() => onViewChange('settings')}
+          stateOverride={assistantState}
+        />
+      )}
     </div>
   );
 }

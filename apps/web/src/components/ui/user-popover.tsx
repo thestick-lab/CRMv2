@@ -3,6 +3,8 @@ import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { ChevronRight, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { can } from '@/lib/permissions';
+import { personInitials } from '@/lib/initials';
 
 export interface UserPopoverProps {
   collapsed?: boolean;
@@ -12,9 +14,9 @@ export interface UserPopoverProps {
 
 export function UserPopover({ collapsed = false, onNavigateSettings, defaultOpen = false }: UserPopoverProps) {
   const [open, setOpen] = React.useState(defaultOpen);
-  const { currentUser, logout } = usePracticeStore();
+  const { currentUser, logout, permissions } = usePracticeStore();
 
-  const initials = currentUser.name.slice(0, 2).toUpperCase();
+  const initials = personInitials(currentUser.name);
 
   const handleOpenProfile = () => {
     setOpen(false);
@@ -79,13 +81,15 @@ export function UserPopover({ collapsed = false, onNavigateSettings, defaultOpen
 
           {/* Menu Items */}
           <div className="space-y-0.5">
-            <button
-              onClick={handleOpenProfile}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-foreground transition-colors cursor-pointer"
-            >
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>Settings</span>
-            </button>
+            {can(currentUser.role, 'Settings', 'view', permissions.matrix) && (
+              <button
+                onClick={handleOpenProfile}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-foreground transition-colors cursor-pointer"
+              >
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Settings</span>
+              </button>
+            )}
           </div>
 
           {/* Logout */}

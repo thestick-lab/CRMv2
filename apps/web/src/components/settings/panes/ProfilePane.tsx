@@ -3,9 +3,10 @@ import { Download, RotateCcw, ShieldCheck, MapPin, AlertTriangle } from 'lucide-
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { personInitials } from '@/lib/initials';
 
 export function ProfilePane() {
-  const { currentUser, clients, staff, leads, exportData, resetData } = usePracticeStore();
+  const { currentUser, clients, staff, quotes, exportData, resetData } = usePracticeStore();
   const [resetConfirm, setResetConfirm] = React.useState(false);
   const [downloadSuccess, setDownloadSuccess] = React.useState(false);
 
@@ -44,7 +45,7 @@ export function ProfilePane() {
       <div className="p-4 rounded-xl border border-border bg-card space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-mono font-bold text-base">
-            {currentUser.name.slice(0, 2).toUpperCase()}
+            {personInitials(currentUser.name)}
           </div>
           <div>
             <div className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -63,7 +64,7 @@ export function ProfilePane() {
             <span>Durbanville, Cape Town Practice</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
+            <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
             <span>SAICA Chartered Accountant Access</span>
           </div>
         </div>
@@ -78,7 +79,7 @@ export function ProfilePane() {
               Export My Practice Data
             </div>
             <p className="text-muted-foreground mt-1 leading-relaxed">
-              Download a complete JSON snapshot of all {clients.length} practice clients, {staff.length} team members, {leads.length} onboarding pipeline leads, and statutory compliance status overrides.
+              Download a complete JSON snapshot of all {clients.length} practice clients, {staff.length} team members, {quotes.length} fee quotes, and statutory compliance status overrides.
             </p>
           </div>
         </div>
@@ -94,7 +95,7 @@ export function ProfilePane() {
           </Button>
 
           {downloadSuccess && (
-            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">
+            <span className="text-primary font-mono text-[11px]">
               Snapshot downloaded successfully!
             </span>
           )}
@@ -108,7 +109,7 @@ export function ProfilePane() {
           Reset Practice State
         </div>
         <p className="text-muted-foreground leading-relaxed">
-          Reset local storage back to pristine seed defaults (13 clients, 9 staff, default pipeline leads). This will clear all local task status overrides and newly added prospects.
+          Reset local storage back to pristine seed defaults (13 clients, 9 staff, the seeded fee quotes). This will clear all local task status overrides and newly added prospects.
         </p>
 
         {resetConfirm ? (

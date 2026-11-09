@@ -13,6 +13,7 @@ import { defaultServices } from 'fdoncall-practice/domain/rules';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
 import { XeroSyncDialog } from '@/components/integrations/XeroSyncDialog';
+import { QuoteBuilderView } from '@/components/quote/QuoteBuilderView';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -92,6 +93,7 @@ export function EstimateTab({
 }) {
   const [startMonth] = React.useState('2026-12');
   const [xeroOpen, setXeroOpen] = React.useState(false);
+  const [builderOpen, setBuilderOpen] = React.useState(false);
   const { rates } = usePracticeStore();
   const estimate = React.useMemo(
     () => buildEstimateForClient(client, startMonth, rates.standardHourlyRate, rates.marchEscalationPct),
@@ -106,7 +108,7 @@ export function EstimateTab({
       {/* Retainer KPI Summary Banner */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Retainer excl. VAT */}
-        <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-1.5">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>Smoothed Monthly Retainer</span>
             <Coins className="h-4 w-4 text-[#c4161c]" />
@@ -120,7 +122,7 @@ export function EstimateTab({
         </div>
 
         {/* 12-Month Total */}
-        <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-1.5">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>12-Month Projected Value</span>
             <CalendarClock className="h-4 w-4 text-[#c4161c]" />
@@ -134,15 +136,15 @@ export function EstimateTab({
         </div>
 
         {/* March Escalation Info */}
-        <div className="border border-border/80 rounded-lg p-4 bg-card/60 space-y-2 flex flex-col justify-between">
+        <div className="flex flex-col justify-between space-y-2 rounded-xl border border-border bg-card p-4">
           <div>
             <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Annual Price Increase</span>
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
+              <TrendingUp className="h-4 w-4 text-[#c4161c]" />
             </div>
             <div className="text-base font-semibold text-foreground mt-1 flex items-center gap-1.5">
               <span>+{rates.marchEscalationPct}% from {estimate.increaseFrom}</span>
-              <Badge variant="success" className="text-[10px] py-0 px-1 font-mono">
+              <Badge variant="secondary" className="text-[10px] py-0 px-1 font-mono">
                 Active
               </Badge>
             </div>
@@ -158,7 +160,7 @@ export function EstimateTab({
               onClick={handleExcel}
               className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
             >
-              <FileSpreadsheet className="h-3 w-3 text-emerald-500" />
+              <FileSpreadsheet className="h-3 w-3 text-muted-foreground" />
               Excel
             </Button>
             <Button
@@ -173,7 +175,7 @@ export function EstimateTab({
               variant="outline"
               size="sm"
               onClick={() => setXeroOpen(true)}
-              className="h-7 text-[11px] gap-1 px-2 font-mono flex-1 text-[#13b5ea] hover:text-[#13b5ea] border-[#13b5ea]/30 hover:bg-[#13b5ea]/10"
+              className="h-7 text-[11px] gap-1 px-2 font-mono flex-1 text-[#c4161c] hover:text-[#c4161c] border-[#c4161c]/30 hover:bg-[#c4161c]/10"
             >
               <RefreshCw className="h-3 w-3" />
               Xero
@@ -183,7 +185,7 @@ export function EstimateTab({
       </div>
 
       {/* 12-Month Matrix Table */}
-      <div className="border border-border/80 rounded-lg bg-card/60 overflow-hidden shadow-xs">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="p-4 border-b border-border/60 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-foreground">
@@ -193,9 +195,20 @@ export function EstimateTab({
               Monthly service breakdown ({estimate.months[0]} to {estimate.months[11]}) with statutory filings and Xero pricing.
             </p>
           </div>
-          <span className="text-[11px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
-            All figures in ZAR (excl. VAT)
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+              All figures in ZAR (excl. VAT)
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBuilderOpen(true)}
+              className="h-7 gap-1 text-[11px] font-mono px-2"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Re-quote
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -292,9 +305,14 @@ export function EstimateTab({
       <XeroSyncDialog
         open={xeroOpen}
         onOpenChange={setXeroOpen}
-        client={client}
-        estimate={estimate}
+        target={{ kind: 'estimate', client, estimate }}
       />
+      {builderOpen && (
+        <QuoteBuilderView
+          initialClientCode={client.code}
+          onClose={() => setBuilderOpen(false)}
+        />
+      )}
     </div>
   );
 }

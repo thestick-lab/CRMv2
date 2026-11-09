@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { bucketKanbanTasks } from './DeadlinesKanban';
+import {
+  bucketAdhocTasks,
+  bucketCardsByDue,
+  bucketWorkflowTasks,
+  buildDeadlineColumns,
+} from './DeadlinesKanban';
 import { aggregatePracticeTasks } from './practice-tasks';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
 
 describe('DeadlinesKanban bucket distribution', () => {
   const asOf = '2026-11-07';
   const summary = aggregatePracticeTasks(CLIENTS, asOf);
-  const buckets = bucketKanbanTasks(summary.tasks, asOf);
+  const cards = buildDeadlineColumns({
+    statutoryBuckets: bucketWorkflowTasks(summary.tasks, {}),
+    adhocBuckets: bucketAdhocTasks([]),
+    overrides: {},
+    staff: [],
+    clients: CLIENTS,
+    asOfDate: asOf,
+  }).flatMap((column) => column.cards);
+  const buckets = bucketCardsByDue(cards, asOf);
 
   it('distributes practice tasks across the 4 Kanban columns', () => {
     expect(buckets).toBeDefined();

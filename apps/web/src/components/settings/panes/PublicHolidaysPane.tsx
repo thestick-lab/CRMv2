@@ -105,7 +105,7 @@ export function PublicHolidaysPane() {
               <span>Update Rates</span>
             </Button>
             {savedSuccess && (
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] flex items-center gap-1">
+              <span className="text-primary font-mono text-[11px] flex items-center gap-1">
                 <Check className="h-3.5 w-3.5" /> Saved!
               </span>
             )}

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { Client } from 'fdoncall-practice/domain/types';
+import { boFilingState } from '../client-record-data';
 import { DocumensoDispatchDialog } from '@/components/integrations/DocumensoDispatchDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ export interface VaultFile {
   name: string;
   size: string;
   date: string;
-  status: 'Signed & Executed' | 'SARS Accepted' | 'Archived' | 'Pending Signature';
+  status: 'Signed & Executed' | 'SARS Accepted' | 'Archived' | 'Pending Signature' | 'Not in scope';
   signer?: string;
   reference?: string;
 }
@@ -29,6 +30,7 @@ export interface VaultFolder {
 }
 
 export function buildVaultFolders(client: Client): VaultFolder[] {
+  const boState = boFilingState(client);
   return [
     {
       name: 'Contracts & SLAs (Documenso)',
@@ -79,7 +81,12 @@ export function buildVaultFolders(client: Client): VaultFolder[] {
           name: `CIPC_Beneficial_Ownership_Register_Filing.pdf`,
           size: '310 KB',
           date: '2026-05-15',
-          status: client.beneficialOwnershipFiled ? 'Signed & Executed' : 'Pending Signature',
+          status:
+            boState === 'filed'
+              ? 'Signed & Executed'
+              : boState === 'required'
+                ? 'Pending Signature'
+                : 'Not in scope',
           reference: 'CIPC Disclosure Key #718402',
         },
       ],
@@ -130,7 +137,7 @@ export function VaultTab({ client }: { client: Client }) {
         {folders.map((folder) => (
           <div
             key={folder.path}
-            className="border border-border/80 rounded-lg bg-card/60 overflow-hidden shadow-xs"
+            className="overflow-hidden rounded-xl border border-border bg-card"
           >
             <div className="px-4 py-2.5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
               <div className="flex items-center gap-2 font-mono text-xs font-semibold text-foreground">
@@ -176,13 +183,22 @@ export function VaultTab({ client }: { client: Client }) {
 
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <Badge
-                      variant={file.status === 'Signed & Executed' ? 'success' : file.status === 'Pending Signature' ? 'warning' : 'outline'}
+                      variant={
+                        file.status === 'Signed & Executed'
+                          ? 'crimsonSubdued'
+                          : file.status === 'Pending Signature'
+                            ? 'warning'
+                            : 'outline'
+                      }
                       className="text-[10px] py-0 px-1.5 gap-1 font-mono"
                     >
                       {file.status === 'Pending Signature' ? (
                         <Clock className="h-3 w-3" />
-                      ) : (
+                      ) : file.status === 'Signed & Executed' ||
+                        file.status === 'SARS Accepted' ? (
                         <CheckCircle2 className="h-3 w-3" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
                       )}
                       {file.status}
                     </Badge>
@@ -196,7 +212,7 @@ export function VaultTab({ client }: { client: Client }) {
       <DocumensoDispatchDialog
         open={documensoOpen}
         onOpenChange={setDocumensoOpen}
-        client={client}
+        target={{ kind: 'sla', client }}
       />
     </div>
   );
