@@ -23,16 +23,30 @@ import { cn } from '@/lib/utils';
 export interface DeadlinesDashboardProps {
   onSelectClient: (code: string) => void;
   clientFilter?: string;
+  /** Pre-applied assignee filter, e.g. Home's "View all" for the current user. */
+  staffFilter?: string;
   onClearClientFilter?: () => void;
 }
 
-export function DeadlinesDashboard({ onSelectClient, clientFilter, onClearClientFilter }: DeadlinesDashboardProps) {
+export function DeadlinesDashboard({
+  onSelectClient,
+  clientFilter,
+  staffFilter,
+  onClearClientFilter,
+}: DeadlinesDashboardProps) {
   const [viewMode, setViewMode] = React.useState<'kanban' | 'table'>('table');
   const [horizon, setHorizon] = React.useState<'30' | '90' | '365'>('30');
-  const [selectedStaff, setSelectedStaff] = React.useState<string>('all');
+  const [selectedStaff, setSelectedStaff] = React.useState<string>(staffFilter ?? 'all');
   const [selectedService, setSelectedService] = React.useState<string>('all');
   const [groupBy, setGroupBy] = React.useState<'workflow' | 'urgency'>('workflow');
   const [activeKpiFilter, setActiveKpiFilter] = React.useState<'all' | 'overdue' | 'due7' | 'due30' | 'missing'>('all');
+
+  // A navigation-supplied assignee filter (Home's "View all") wins on arrival
+  // and resets when the view is reopened without one.
+  React.useEffect(() => {
+    setSelectedStaff(staffFilter ?? 'all');
+  }, [staffFilter]);
+
   const today = todayInSouthAfrica();
   const { clients, staff } = usePracticeStore();
 

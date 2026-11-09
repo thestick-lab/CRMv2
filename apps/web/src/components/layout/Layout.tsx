@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { buildBreadcrumbs, NAV_ITEMS } from './navigation-helpers';
 import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog';
+import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 
 export interface LayoutProps {
@@ -23,6 +24,7 @@ export function Layout({
 }: LayoutProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [aiDrawerOpen, setAiDrawerOpen] = React.useState(false);
   const [isDark, setIsDark] = React.useState(true);
 
   const { clients } = usePracticeStore();
@@ -92,6 +94,7 @@ export function Layout({
           onOpenSearch={() => setSearchOpen(true)}
           isDark={isDark}
           onToggleTheme={toggleTheme}
+          onOpenAiAssistant={() => setAiDrawerOpen(true)}
         />
         <main className="flex-1 overflow-y-auto">
           {children}
@@ -103,6 +106,12 @@ export function Layout({
         onOpenChange={setSearchOpen}
         items={commandItems}
         onSelect={handleSelectCommand}
+      />
+
+      <AiPracticeAssistantDrawer
+        open={aiDrawerOpen}
+        onOpenChange={setAiDrawerOpen}
+        onOpenSettings={() => onViewChange('settings')}
       />
     </div>
   );

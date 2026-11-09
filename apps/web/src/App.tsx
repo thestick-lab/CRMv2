@@ -18,6 +18,7 @@ import { LoginView } from '@/components/auth/LoginView';
 function AppContent() {
   const [view, setView] = React.useState<ViewKey>('dashboard');
   const [clientCode, setClientCode] = React.useState<string | undefined>(undefined);
+  const [deadlineStaffId, setDeadlineStaffId] = React.useState<string | undefined>(undefined);
   const { clients, isAuthenticated } = usePracticeStore();
 
   if (!isAuthenticated) {
@@ -26,10 +27,17 @@ function AppContent() {
 
   const activeClient = clientCode ? clients.find((c) => c.code === clientCode) : undefined;
 
-  const handleNavigate = (newView: ViewKey, newCode?: string) => {
+  const handleNavigate = (
+    newView: ViewKey,
+    newCode?: string,
+    options?: { staffId?: string }
+  ) => {
     setView(newView);
     if (newCode !== undefined) {
       setClientCode(newCode);
+    }
+    if (newView === 'deadlines') {
+      setDeadlineStaffId(options?.staffId);
     }
   };
 
@@ -48,6 +56,7 @@ function AppContent() {
           <DeadlinesView
             onNavigate={handleNavigate}
             clientFilter={clientCode}
+            staffFilter={deadlineStaffId}
             onClearClientFilter={() => setClientCode(undefined)}
           />
         );
