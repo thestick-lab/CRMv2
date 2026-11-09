@@ -876,7 +876,7 @@ export function QuoteBuilderView({
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground">
           Stage rules are enforced: send needs a client and a fee line; accept needs sent; signature
-          needs accepted. Payment terms are set on the quote document.
+          needs accepted. A signed quote converts to an active client from the Sales Pipeline board.
         </p>
       </footer>
 

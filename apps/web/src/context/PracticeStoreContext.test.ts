@@ -1,14 +1,19 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
+import { defaultServices, generateTasks } from 'fdoncall-practice/domain/rules';
+import { servicesFromEstimate } from 'fdoncall-practice/domain/estimate';
 import {
   ACTIVITY_SEEDS,
   INITIAL_LEADS,
+  convertQuoteToClient,
+  generateCodeForName,
   getInitialPracticeState,
   loadPracticeState,
   mergePracticeState,
   practiceReducer,
   type Invoice,
   type LegacyLead,
+  type PracticeState,
   type PracticeStateStorage,
   type Quote,
   type TimeEntry,
@@ -590,3 +595,213 @@ describe('PracticeStore foundation fields and legacy-state load', () => {
     }
   });
 });
+
+describe('quote→client conversion', () => {
+  it('derives a collision-safe three-letter client code from the prospect name', () => {
+    expect(generateCodeForName('Kouga Fynbos Exports (Pty) Ltd', [])).toBe('KFE-100');
+    expect(generateCodeForName('Kouga Fynbos Exports (Pty) Ltd', [{ code: 'KFE-100' }])).toBe(
+      'KFE-101'
+    );
+    // Seeded codes never collide, so the name's initial letters survive intact.
+    expect(generateCodeForName('Kouga Fynbos Exports (Pty) Ltd', CLIENTS)).toBe('KFE-100');
+  });
+
+  it('creates the client from the quote alone, independent of the reducer', () => {
+    const client = convertQuoteToClient(SIGNED_PROSPECT_QUOTE, [], '2026-11-09');
+    expect(client.code).toBe('KFE-100');
+    expect(client.services).toEqual(servicesFromEstimate(SIGNED_PROSPECT_QUOTE.estimateInput));
+    expect(client.notes).toContain('fee quote Q-9');
+  });
+
+  it('converts a signed prospect quote into an active client with the quoted scope', () => {
+    const base: PracticeState = {
+      ...getInitialPracticeState(),
+      clients: [],
+      quotes: [SIGNED_PROSPECT_QUOTE],
+      sequences: { quote: 9, invoice: 0 },
+    };
+
+    const next = practiceReducer(base, {
+      type: 'CONVERT_QUOTE_TO_CLIENT',
+      payload: { quoteId: SIGNED_PROSPECT_QUOTE.id },
+    });
+
+    expect(next.clients).toHaveLength(1);
+    const client = next.clients[0];
+    const scope = servicesFromEstimate(SIGNED_PROSPECT_QUOTE.estimateInput);
+
+    expect(client.name).toBe('Kouga Fynbos Exports (Pty) Ltd');
+    expect(client.code).toBe('KFE-100');
+    expect(client.entityType).toBe('Company');
+    expect(client.vatCategory).toBe('B');
+    expect(client.yearEndMonth).toBe(2);
+    expect(client.yearEndAssumed).toBe(true);
+    expect(client.payroll).toBe(true);
+    expect(client.employeeCount).toBe(6);
+    expect(client.incorporationDate).toBe('2019-07-14');
+    expect(client.turnover).toBe(4200000);
+    expect(client.staffId).toBe('erik');
+    expect(client.status).toBe('Active');
+    expect(client.services).toEqual(scope);
+    expect(scope).toEqual(['AFS', 'ITR14', 'IRP6', 'VAT201', 'EMP201', 'EMP501', 'CIPC_AR']);
+    expect(client.contacts?.[0]?.name).toBe('Lize van der Merwe');
+    expect(client.notes).toContain('Added from a fee quote Q-9');
+
+    // The estimate is saved against the new code and the quote becomes active.
+    expect(next.savedEstimates[client.code]).toEqual(SIGNED_PROSPECT_QUOTE.estimateInput);
+    const quote = next.quotes.find((entry) => entry.id === SIGNED_PROSPECT_QUOTE.id)!;
+    expect(quote.stage).toBe('Active Client');
+    expect(quote.clientCode).toBe(client.code);
+    expect(quote.nextStep).toBe('Onboarding complete');
+
+    // The audit trail reads from this activity event.
+    expect(next.activity[0].type).toBe('client');
+    expect(next.activity[0].text).toBe('Client created from quote: Kouga Fynbos Exports (Pty) Ltd');
+    expect(next.activity[0].subline).toContain(client.code);
+    expect(next.activity[0].subline).toContain('Q-9');
+
+    // Only the quoted scope's deadlines materialise.
+    const tasks = generateTasks(client, defaultServices(client), '2026-11-09');
+    const taskServices = new Set(tasks.map((task) => task.service));
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const service of taskServices) expect(scope).toContain(service);
+    expect(taskServices.has('VAT201')).toBe(true);
+    expect(taskServices.has('EMP201')).toBe(true);
+  });
+
+  it('materialises no VAT or payroll deadlines for a scope that excludes them', () => {
+    const quote: Quote = {
+      ...SIGNED_PROSPECT_QUOTE,
+      id: 'quote-narrow',
+      number: 'Q-10',
+      estimateInput: {
+        ...SIGNED_PROSPECT_QUOTE.estimateInput,
+        vatCategory: undefined,
+        payroll: false,
+        employeeCount: undefined,
+        provisionalTaxpayer: false,
+        selected: { AFS: true, ITR: true, IRP6: false, CIPC_AR: false },
+      },
+    };
+    const base: PracticeState = {
+      ...getInitialPracticeState(),
+      clients: [],
+      quotes: [quote],
+      sequences: { quote: 10, invoice: 0 },
+    };
+
+    const next = practiceReducer(base, {
+      type: 'CONVERT_QUOTE_TO_CLIENT',
+      payload: { quoteId: quote.id },
+    });
+    const client = next.clients[0];
+    expect(client.services).toEqual(['AFS', 'ITR14']);
+
+    const taskServices = new Set(
+      generateTasks(client, defaultServices(client), '2026-11-09').map((task) => task.service)
+    );
+    expect(taskServices.has('VAT201')).toBe(false);
+    expect(taskServices.has('EMP201')).toBe(false);
+    expect(taskServices.has('EMP501')).toBe(false);
+  });
+
+  it('updates an existing client’s scope instead of duplicating the record', () => {
+    const quote: Quote = {
+      ...SIGNED_PROSPECT_QUOTE,
+      id: 'quote-requote',
+      number: 'Q-11',
+      clientCode: 'ALC-610',
+      prospect: undefined,
+      estimateInput: {
+        ...SIGNED_PROSPECT_QUOTE.estimateInput,
+        entityType: 'Company',
+        selected: {
+          AFS: false,
+          ITR: false,
+          IRP6: false,
+          CIPC_AR: false,
+          VAT201: true,
+        },
+      },
+    };
+    const base: PracticeState = {
+      ...getInitialPracticeState(),
+      quotes: [quote],
+    };
+
+    const next = practiceReducer(base, {
+      type: 'CONVERT_QUOTE_TO_CLIENT',
+      payload: { quoteId: quote.id },
+    });
+
+    expect(next.clients).toHaveLength(base.clients.length);
+    const existing = next.clients.find((client) => client.code === 'ALC-610')!;
+    expect(existing.services).toEqual(servicesFromEstimate(quote.estimateInput));
+    expect(next.savedEstimates['ALC-610']).toEqual(quote.estimateInput);
+    expect(next.quotes.find((entry) => entry.id === quote.id)?.stage).toBe('Active Client');
+    expect(next.activity[0].text).toContain('Services updated for A & L Contracting');
+  });
+
+  it('refuses to convert a quote that is not signed', () => {
+    const base = getInitialPracticeState();
+    const draft = base.quotes.find((quote) => quote.stage === 'Draft Quote')!;
+
+    expect(
+      practiceReducer(base, { type: 'CONVERT_QUOTE_TO_CLIENT', payload: { quoteId: draft.id } })
+    ).toBe(base);
+  });
+});
+
+const SIGNED_PROSPECT_QUOTE: Quote = {
+  id: 'quote-signed-prospect',
+  number: 'Q-9',
+  prospect: {
+    name: 'Kouga Fynbos Exports (Pty) Ltd',
+    contactPerson: 'Lize van der Merwe',
+    entityType: 'Company',
+    turnover: 4200000,
+    payroll: true,
+    employeeCount: 6,
+    vatCategory: 'B',
+    yearEndMonth: 2,
+    incorporationDate: '2019-07-14',
+    staffId: 'erik',
+  },
+  estimateInput: {
+    startMonth: '2026-11',
+    entityType: 'Company',
+    yearEndMonth: 2,
+    vatCategory: 'B',
+    turnover: 4200000,
+    payroll: true,
+    employeeCount: 6,
+    provisionalTaxpayer: false,
+    incorporationDate: '2019-07-14',
+    directors: 1,
+    rate: 625,
+    marchIncreasePct: 6,
+    irp6Payable: false,
+    selected: {
+      AFS: true,
+      ITR: true,
+      IRP6: true,
+      VAT201: true,
+      EMP201: true,
+      EMP501: true,
+      CIPC_AR: true,
+      BO: false,
+    },
+    hours: { BOOKKEEPING: 6, PAYROLL: 2, MGMT: 0, AFS: 4, REVIEW: 0 },
+    months: { AFS: 8, REVIEW: 8, ITR: 9, CIPC_AR: 7 },
+    recharges: { XERO: 0, SIMPLEPAY: 0 },
+  },
+  monthlyRetainerHours: 8,
+  adHocHourlyRate: 625,
+  vatInclusive: false,
+  paymentTerms: '30 days',
+  stage: 'Signed',
+  ownerStaffId: 'erik',
+  createdAt: '2026-11-01T08:00:00Z',
+  updatedAt: '2026-11-02T08:00:00Z',
+  stageChangedAt: '2026-11-02T08:00:00Z',
+};

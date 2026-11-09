@@ -27,7 +27,12 @@ function initialsFor(name: string): string {
 }
 
 function actionTone(action: string): 'crimson' | 'amber' | 'muted' {
-  if (action === 'Submitted' || action === 'Invoice activity' || action === 'Quote activity') {
+  if (
+    action === 'Submitted' ||
+    action === 'Client created from quote' ||
+    action.startsWith('Quote ') ||
+    action.startsWith('Invoice ')
+  ) {
     return 'crimson';
   }
   if (action === 'Partner sign-off' || action === 'Changed permission') return 'amber';

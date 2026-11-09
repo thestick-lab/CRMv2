@@ -41,6 +41,11 @@ export interface Client {
   timezone?: string;
   /** Directors and contact people owned by this client record. */
   contacts?: ClientContact[];
+  /**
+   * Explicit statutory scope (quote conversion or the client record's service
+   * checkboxes). Absent means derive the list from the client's attributes.
+   */
+  services?: ServiceCode[];
   /** Withheld in the prototype; held encrypted in the live system. */
   regOrIdNumber?: string;
   taxNumber?: string;

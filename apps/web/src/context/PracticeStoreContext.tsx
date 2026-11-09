@@ -7,8 +7,8 @@ import type {
   StaffMember,
   VatCategory,
 } from 'fdoncall-practice/domain/types';
-import type { EstimateInput } from 'fdoncall-practice/domain/estimate';
-import { todayInSouthAfrica, type ISODate } from 'fdoncall-practice/domain/dates';
+import { servicesFromEstimate, type EstimateInput } from 'fdoncall-practice/domain/estimate';
+import { endOfMonth, todayInSouthAfrica, yearOf, type ISODate } from 'fdoncall-practice/domain/dates';
 import type { WorkflowStatus } from '@/lib/workflow';
 import { signInWithCredentials } from '@/lib/auth-client';
 
@@ -406,6 +406,111 @@ function migrateLeadsIntoState(state: PracticeState, leads: LegacyLead[]): Pract
   };
 }
 
+/* ---------------------------------------------------------------------------
+ * Quote → client conversion
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Three-letter prefix from the prospect's name plus the first free number from
+ * 100, so a converted prospect never collides with a client already on the
+ * books — the scheme the old lead conversion used.
+ */
+export function generateCodeForName(
+  name: string,
+  existingClients: Pick<Client, 'code'>[]
+): string {
+  const words = name.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(/\s+/);
+  let prefix = 'NEW';
+  if (words.length >= 3) {
+    prefix = (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
+  } else if (words.length === 2) {
+    prefix = (words[0].substring(0, 2) + words[1][0]).toUpperCase();
+  } else if (words.length === 1 && words[0].length >= 3) {
+    prefix = words[0].substring(0, 3).toUpperCase();
+  }
+
+  // Ensure the prefix is three characters.
+  if (prefix.length < 3) prefix = (prefix + 'XXX').substring(0, 3);
+
+  const existingCodes = new Set(existingClients.map((client) => client.code));
+  let codeNumber = 100;
+  while (existingCodes.has(`${prefix}-${codeNumber}`)) codeNumber += 1;
+  return `${prefix}-${codeNumber}`;
+}
+
+/** Last financial year whose year end had passed as at `asOf`. */
+function lastClosedFinancialYear(yearEndMonth: number, asOf: ISODate): number {
+  let year = yearOf(asOf);
+  while (endOfMonth(year, yearEndMonth) > asOf) year -= 1;
+  return year;
+}
+
+function initialsFromName(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+/**
+ * Turn a signed quote into the client record it was quoted for. The code is
+ * derived from the prospect name, the entity fields come from the prospect and
+ * the estimate input, and the statutory scope is the quoted scope — the same
+ * conversion the retired lead flow performed.
+ */
+export function convertQuoteToClient(
+  quote: Quote,
+  existingClients: Pick<Client, 'code'>[],
+  asOf: ISODate = todayInSouthAfrica()
+): Client {
+  const prospect = quote.prospect;
+  const input = quote.estimateInput;
+  const name = (prospect?.name ?? '').trim();
+  if (!name) {
+    throw new Error(`Quote ${quote.number} has no prospect name to convert.`);
+  }
+
+  const code = generateCodeForName(name, existingClients);
+  const yearEndMonth = input.yearEndMonth ?? prospect?.yearEndMonth ?? 2;
+  const lastClosedYear = lastClosedFinancialYear(yearEndMonth, asOf);
+  const contactPerson = prospect?.contactPerson?.trim();
+
+  return {
+    code,
+    name,
+    entityType: input.entityType,
+    vatCategory: input.vatCategory,
+    yearEndMonth,
+    // The quote never confirms the year end against CIPC papers; the record
+    // shows it as assumed until it is checked.
+    yearEndAssumed: true,
+    efilingProfile: 'client',
+    staffId: quote.ownerStaffId || prospect?.staffId || 'erik',
+    payroll: input.payroll,
+    employeeCount: input.employeeCount,
+    incorporationDate: input.incorporationDate,
+    turnover: input.turnover,
+    turnoverSource: input.turnover === undefined ? undefined : 'Client',
+    turnoverYear:
+      input.turnover === undefined ? undefined : Number(input.startMonth.slice(0, 4)),
+    provisionalTaxpayer: input.provisionalTaxpayer,
+    lastAfsYear: input.entityType === 'Individual' ? null : lastClosedYear,
+    lastIncomeTaxYear: lastClosedYear,
+    lastAnnualReturnYear: yearOf(asOf) - 1,
+    beneficialOwnershipFiled: false,
+    taxElsewhere: false,
+    status: 'Active',
+    services: servicesFromEstimate(input),
+    contacts: contactPerson
+      ? [{ id: `contact-${code}-1`, name: contactPerson, role: 'Contact person' }]
+      : undefined,
+    notes: `Added from a fee quote ${quote.number}. The statutory scope follows the quoted scope.`,
+  };
+}
+
 export const INITIAL_LEADS: LegacyLead[] = [
   {
     id: 'lead-1',
@@ -609,6 +714,7 @@ export type PracticeAction =
       type: 'UPDATE_QUOTE';
       payload: { id: string; patch: Partial<Omit<Quote, 'id' | 'createdAt'>> };
     }
+  | { type: 'CONVERT_QUOTE_TO_CLIENT'; payload: { quoteId: string } }
   | { type: 'ADD_INVOICE'; payload: Invoice }
   | {
       type: 'UPDATE_INVOICE';
@@ -691,6 +797,70 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
             : quote
         ),
       };
+    }
+
+    case 'CONVERT_QUOTE_TO_CLIENT': {
+      const quote = state.quotes.find((entry) => entry.id === action.payload.quoteId);
+      // Conversion IS the Active Client transition: only a signed quote converts.
+      if (!quote || quote.stage !== 'Signed') return state;
+
+      const existing = quote.clientCode
+        ? state.clients.find((client) => client.code === quote.clientCode)
+        : undefined;
+      // A prospect quote needs its prospect name; anything else cannot convert.
+      if (!existing && !quote.prospect?.name.trim()) return state;
+      const now = new Date().toISOString();
+      const activeStage = {
+        stage: 'Active Client' as const,
+        nextStep: QUOTE_NEXT_STEP['Active Client'],
+        updatedAt: now,
+        stageChangedAt: now,
+      };
+
+      let converted: PracticeState;
+      let code: string;
+      let text: string;
+
+      if (existing) {
+        // A re-quote for a client already on the books refreshes the scope.
+        code = existing.code;
+        const services = servicesFromEstimate(quote.estimateInput);
+        converted = {
+          ...state,
+          clients: state.clients.map((client) =>
+            client.code === code ? { ...client, services } : client
+          ),
+          savedEstimates: { ...state.savedEstimates, [code]: quote.estimateInput },
+          quotes: state.quotes.map((entry) =>
+            entry.id === quote.id ? { ...entry, ...activeStage } : entry
+          ),
+        };
+        text = `Services updated for ${existing.name} from quote ${quote.number}`;
+      } else {
+        const client = convertQuoteToClient(quote, state.clients);
+        code = client.code;
+        converted = {
+          ...state,
+          clients: [...state.clients, client],
+          savedEstimates: { ...state.savedEstimates, [code]: quote.estimateInput },
+          quotes: state.quotes.map((entry) =>
+            entry.id === quote.id ? { ...entry, ...activeStage, clientCode: code } : entry
+          ),
+        };
+        text = `Client created from quote: ${client.name}`;
+      }
+
+      return practiceReducer(converted, {
+        type: 'LOG_ACTIVITY',
+        payload: {
+          type: 'client',
+          actorName: state.currentUser.name,
+          actorInitials: initialsFromName(state.currentUser.name),
+          tint: 'crimson',
+          text,
+          subline: `${code} · ${quote.number}`,
+        },
+      });
     }
 
     case 'ADD_INVOICE': {
@@ -1084,6 +1254,8 @@ export interface PracticeStoreContextValue extends PracticeState {
   setIntegrationConfig: (config: Partial<IntegrationConfig>) => void;
   addQuote: (quote: Quote) => void;
   updateQuote: (id: string, patch: Partial<Omit<Quote, 'id' | 'createdAt'>>) => void;
+  /** Move a signed quote to Active Client, creating or updating the client record. */
+  convertQuoteToClient: (quoteId: string) => void;
   addInvoice: (invoice: Invoice) => void;
   updateInvoice: (id: string, patch: Partial<Omit<Invoice, 'id' | 'createdAt'>>) => void;
   exportData: () => PracticeState;
@@ -1194,6 +1366,10 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     []
   );
 
+  const convertQuoteToClientAction = React.useCallback((quoteId: string) => {
+    dispatch({ type: 'CONVERT_QUOTE_TO_CLIENT', payload: { quoteId } });
+  }, []);
+
   const addInvoice = React.useCallback((invoice: Invoice) => {
     dispatch({ type: 'ADD_INVOICE', payload: invoice });
   }, []);
@@ -1231,6 +1407,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       updateClient,
       addQuote,
       updateQuote,
+      convertQuoteToClient: convertQuoteToClientAction,
       addInvoice,
       updateInvoice,
       updateTaskStatus,
@@ -1258,6 +1435,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       updateClient,
       addQuote,
       updateQuote,
+      convertQuoteToClientAction,
       addInvoice,
       updateInvoice,
       updateTaskStatus,

@@ -1,6 +1,7 @@
 import * as React from 'react';
-import type { Client, ClientContact } from 'fdoncall-practice/domain/types';
+import type { Client, ClientContact, ServiceCode } from 'fdoncall-practice/domain/types';
 import { MONTHS_LONG, todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
+import { defaultServices } from 'fdoncall-practice/domain/rules';
 import { STAFF, GROUPS } from 'fdoncall-practice/data/seed';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,24 @@ import { RelationshipHistoryPanel } from '../panels/RelationshipHistoryPanel';
 import { NextActionPanel } from '../panels/NextActionPanel';
 import { InternalNotesPanel } from '../panels/InternalNotesPanel';
 import { TagsPanel } from '../panels/TagsPanel';
+
+/**
+ * Add or remove services in a recorded scope, keeping its order stable. The
+ * service checkboxes and the VAT/payroll switches all write through this so an
+ * explicit scope can never drift from the switches that feed it.
+ */
+export function setServices(
+  services: ServiceCode[],
+  codes: ServiceCode[],
+  included: boolean
+): ServiceCode[] {
+  if (!included) return services.filter((service) => !codes.includes(service));
+  const next = [...services];
+  for (const code of codes) {
+    if (!next.includes(code)) next.push(code);
+  }
+  return next;
+}
 
 export interface ProfileDetails {
   entityType: string;
@@ -116,6 +135,8 @@ export function StatutoryProfileTab({
   const asOf = todayInSouthAfrica();
 
   const isCompany = client.entityType === 'Company' || client.entityType === 'Close corporation';
+  /** Explicit scope when recorded, otherwise the attribute-derived list. */
+  const services = defaultServices(client);
 
   const [turnoverInput, setTurnoverInput] = React.useState(client.turnover?.toString() || '');
   const [incDate, setIncDate] = React.useState(client.incorporationDate || '');
@@ -169,6 +190,8 @@ export function StatutoryProfileTab({
   const handleVatToggle = (checked: boolean) => {
     updateClient(client.code, {
       vatCategory: checked ? 'B' : undefined,
+      // Keep the recorded scope in step with the registration switch.
+      services: setServices(services, ['VAT201'], checked),
     });
   };
 
@@ -176,7 +199,34 @@ export function StatutoryProfileTab({
     updateClient(client.code, {
       payroll: checked,
       employeeCount: checked ? client.employeeCount || 8 : 0,
+      // Keep the recorded scope in step with the payroll switch.
+      services: setServices(services, ['EMP201', 'EMP501'], checked),
     });
+  };
+
+  /**
+   * The service checkboxes write the client's explicit scope, which replaces
+   * the attribute-derived list for deadline generation. Switching VAT or
+   * payroll on also records what the deadline calendar needs — a VAT category
+   * or a payroll start — so ticking the box immediately creates the returns.
+   */
+  const handleServiceToggle = (code: ServiceCode, checked: boolean) => {
+    if (checked && code === 'VAT201' && !client.vatCategory) {
+      updateClient(client.code, {
+        vatCategory: 'B',
+        services: setServices(services, ['VAT201'], true),
+      });
+      return;
+    }
+    if (checked && code === 'EMP201' && !client.payroll) {
+      updateClient(client.code, {
+        payroll: true,
+        employeeCount: client.employeeCount || 8,
+        services: setServices(services, ['EMP201', 'EMP501'], true),
+      });
+      return;
+    }
+    updateClient(client.code, { services: setServices(services, [code], checked) });
   };
 
   const handleEfilingToggle = (checked: boolean) => {
@@ -221,55 +271,48 @@ export function StatutoryProfileTab({
     firstCheckbox?.focus();
   };
 
-  // Statutory Services Checklist
-  const servicesList = [
+  // Statutory Services Checklist — every tick writes the client's explicit scope.
+  const servicesList: { code: ServiceCode; label: string; fee: string; disabled: boolean }[] = [
     {
       code: 'AFS',
       label: 'Annual financial statements',
       fee: 'Hourly, R625',
-      enabled: !client.taxElsewhere && client.entityType !== 'Individual',
       disabled: client.entityType === 'Individual',
     },
     {
       code: 'ITR14',
       label: 'Company income tax return',
       fee: 'R1,500',
-      enabled: !client.taxElsewhere && isCompany,
       disabled: false,
     },
     {
       code: 'IRP6',
       label: 'Provisional tax (IRP6)',
       fee: 'R575 nil / R650 payable',
-      enabled: client.provisionalTaxpayer ?? true,
       disabled: false,
     },
     {
       code: 'VAT201',
       label: 'VAT return (VAT201)',
       fee: 'R545 each',
-      enabled: Boolean(client.vatCategory),
       disabled: false,
     },
     {
       code: 'EMP201',
       label: 'Monthly employer declaration (EMP201)',
       fee: 'R495 each',
-      enabled: Boolean(client.payroll),
       disabled: false,
     },
     {
       code: 'CIPC_AR',
       label: 'CIPC annual return and FAS',
       fee: 'R525 + CIPC fee',
-      enabled: isCompany,
       disabled: !isCompany,
     },
     {
       code: 'BO',
       label: 'Beneficial ownership (CIPC)',
       fee: 'R2,000',
-      enabled: isCompany && client.beneficialOwnershipFiled !== false,
       disabled: !isCompany,
     },
   ];
@@ -488,42 +531,39 @@ export function StatutoryProfileTab({
           </div>
 
           <div className="space-y-1.5 px-4 py-3">
-            {servicesList.map((svc) => (
-              <div
-                key={svc.code}
-                className={cn(
-                  'flex items-center justify-between gap-2 rounded-lg border p-2.5 transition-colors',
-                  svc.enabled
-                    ? 'border-[#c4161c]/30 bg-[#c4161c]/5'
-                    : 'border-border/60 bg-muted/20 opacity-70'
-                )}
-              >
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    id={`svc-${svc.code}`}
-                    checked={svc.enabled}
-                    disabled={svc.disabled}
-                    onChange={(e) => {
-                      if (svc.code === 'VAT201') handleVatToggle(e.target.checked);
-                      else if (svc.code === 'EMP201') handlePayrollToggle(e.target.checked);
-                      else if (svc.code === 'IRP6') updateClient(client.code, { provisionalTaxpayer: e.target.checked });
-                      else if (svc.code === 'AFS' || svc.code === 'ITR14') updateClient(client.code, { taxElsewhere: !e.target.checked });
-                      else if (svc.code === 'BO') updateClient(client.code, { beneficialOwnershipFiled: e.target.checked });
-                    }}
-                    className="h-4 w-4 shrink-0 cursor-pointer rounded border-border text-primary focus:ring-primary disabled:cursor-not-allowed"
-                  />
-                  <label htmlFor={`svc-${svc.code}`} className="min-w-0 cursor-pointer select-none">
-                    <span className="block truncate font-medium text-foreground">{svc.label}</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{svc.code}</span>
-                  </label>
-                </div>
+            {servicesList.map((svc) => {
+              const enabled = services.includes(svc.code);
+              return (
+                <div
+                  key={svc.code}
+                  className={cn(
+                    'flex items-center justify-between gap-2 rounded-lg border p-2.5 transition-colors',
+                    enabled
+                      ? 'border-[#c4161c]/30 bg-[#c4161c]/5'
+                      : 'border-border/60 bg-muted/20 opacity-70'
+                  )}
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      id={`svc-${svc.code}`}
+                      checked={enabled}
+                      disabled={svc.disabled}
+                      onChange={(e) => handleServiceToggle(svc.code, e.target.checked)}
+                      className="h-4 w-4 shrink-0 cursor-pointer rounded border-border text-primary focus:ring-primary disabled:cursor-not-allowed"
+                    />
+                    <label htmlFor={`svc-${svc.code}`} className="min-w-0 cursor-pointer select-none">
+                      <span className="block truncate font-medium text-foreground">{svc.label}</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{svc.code}</span>
+                    </label>
+                  </div>
 
-                <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
-                  {svc.fee}
-                </Badge>
-              </div>
-            ))}
+                  <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                    {svc.fee}
+                  </Badge>
+                </div>
+              );
+            })}
 
             {/* Historical Governance Records */}
             <div className="space-y-1.5 border-t border-border/70 pt-2.5 font-mono text-[11px] text-muted-foreground">

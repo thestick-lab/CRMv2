@@ -1,7 +1,17 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildProfileDetails } from './StatutoryProfileTab';
+import { buildProfileDetails, setServices } from './StatutoryProfileTab';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
+
+describe('explicit service scope', () => {
+  it('adds and removes services without reordering the recorded scope', () => {
+    expect(setServices(['AFS'], ['VAT201'], true)).toEqual(['AFS', 'VAT201']);
+    expect(setServices(['AFS', 'VAT201'], ['VAT201'], false)).toEqual(['AFS']);
+    expect(setServices(['EMP201'], ['EMP201', 'EMP501'], true)).toEqual(['EMP201', 'EMP501']);
+    expect(setServices(['EMP201', 'EMP501'], ['EMP201', 'EMP501'], false)).toEqual([]);
+    expect(setServices(['AFS', 'VAT201'], ['VAT201'], true)).toEqual(['AFS', 'VAT201']);
+  });
+});
 
 describe('StatutoryProfileTab interactive details and services configuration', () => {
   const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
@@ -34,6 +44,11 @@ describe('StatutoryProfileTab interactive details and services configuration', (
     expect(tabSrc).toContain('VAT return (VAT201)');
     expect(tabSrc).toContain('CIPC annual return and FAS');
     expect(tabSrc).toContain('Beneficial ownership (CIPC)');
+
+    // Checkboxes write the explicit service scope that drives the deadlines board.
+    expect(tabSrc).toContain('defaultServices');
+    expect(tabSrc).toContain('handleServiceToggle');
+    expect(tabSrc).toContain('services: setServices');
   });
 
   it('verifies ClientShowView includes deep-link button to Deadlines board and the seven record tabs', () => {

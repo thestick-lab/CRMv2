@@ -98,6 +98,65 @@ describe('buildAuditEntries', () => {
       buildAuditEntries({ clients: [], staff: [], taskStatusOverrides: {}, activity: [] })
     ).toEqual([]);
   });
+
+  it('records a conversion as Client created from quote with the new client code', () => {
+    const entries = buildAuditEntries({
+      ...source,
+      activity: [
+        {
+          id: 'activity-created',
+          type: 'client',
+          actorName: 'Erik',
+          actorInitials: 'E',
+          tint: 'crimson',
+          text: 'Client created from quote: Kouga Fynbos Exports (Pty) Ltd',
+          subline: 'KFE-100 · Q-9',
+          at: '2026-11-07T09:00:00+02:00',
+        },
+      ],
+    });
+
+    const created = entries.find((entry) => entry.action === 'Client created from quote');
+    expect(created).toBeDefined();
+    expect(created!.clientCode).toBe('KFE-100');
+    expect(created!.subject).toContain('Kouga Fynbos Exports');
+    expect(created!.detail).toBe('Q-9');
+  });
+
+  it('names quote and invoice events instead of the generic activity label', () => {
+    const entries = buildAuditEntries({
+      ...source,
+      activity: [
+        {
+          id: 'activity-quote',
+          type: 'quote',
+          actorName: 'Erik',
+          actorInitials: 'E',
+          tint: 'crimson',
+          text: 'Quote Q-9 moved to Active Client',
+          subline: 'Kouga Fynbos Exports · R96,000 incl. 15% VAT',
+          at: '2026-11-07T09:05:00+02:00',
+        },
+        {
+          id: 'activity-invoice',
+          type: 'invoice',
+          actorName: 'Erik',
+          actorInitials: 'E',
+          tint: 'crimson',
+          text: 'Invoice INV-1 sent to Muse 1399',
+          subline: 'R4,125 incl. 15% VAT',
+          at: '2026-11-07T09:10:00+02:00',
+        },
+      ],
+    });
+
+    expect(entries.find((entry) => entry.id === 'audit-activity-activity-quote')?.action).toBe(
+      'Quote stage changed'
+    );
+    expect(entries.find((entry) => entry.id === 'audit-activity-activity-invoice')?.action).toBe(
+      'Invoice sent'
+    );
+  });
 });
 
 describe('exportAuditCsv', () => {

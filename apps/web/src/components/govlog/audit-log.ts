@@ -51,6 +51,38 @@ const ACTIVITY_ACTIONS: Record<ActivityType, string> = {
 const ROLE_FALLBACK = 'Practice';
 const SIGN_OFF_ROLE_FALLBACK = 'Partner';
 
+/**
+ * Activity whose text carries a more specific event than its type does — a
+ * quote conversion is a client event, a stage move is a quote event. First
+ * match wins, so the most specific pattern sits first.
+ */
+const ACTIVITY_ACTION_PATTERNS: Partial<Record<ActivityType, [RegExp, string][]>> = {
+  client: [
+    [/^Client created from quote/i, 'Client created from quote'],
+    [/^Services updated for/i, 'Client services updated'],
+  ],
+  quote: [
+    [/signed by/i, 'Quote signed'],
+    [/closed lost/i, 'Quote closed lost'],
+    [/ sent to /i, 'Quote sent'],
+    [/ accepted\b/i, 'Quote accepted'],
+    [/moved to /i, 'Quote stage changed'],
+    [/\b(saved|draft)\b/i, 'Quote drafted'],
+  ],
+  invoice: [
+    [/ sent to /i, 'Invoice sent'],
+    [/marked paid/i, 'Invoice paid'],
+    [/pushed to Xero/i, 'Invoice pushed to Xero'],
+  ],
+};
+
+function actionForActivity(event: ActivityEvent): string {
+  for (const [pattern, action] of ACTIVITY_ACTION_PATTERNS[event.type] ?? []) {
+    if (pattern.test(event.text)) return action;
+  }
+  return ACTIVITY_ACTIONS[event.type] ?? 'Activity';
+}
+
 /** Statutory task ids are `<clientCode>|<service>|<period>`; accept bare codes too. */
 export function clientCodeFromTaskId(taskId: string): string | undefined {
   const head = taskId.split('|')[0]?.trim();
@@ -113,7 +145,7 @@ function buildActivityEntries(source: AuditLogSource): AuditEntry[] {
       at: event.at,
       actorName: event.actorName,
       actorRole: roleForName(source.staff, event.actorName, ROLE_FALLBACK),
-      action: ACTIVITY_ACTIONS[event.type] ?? 'Activity',
+      action: actionForActivity(event),
       subject: event.text,
       clientCode,
       detail: detail && detail !== event.text ? detail : undefined,

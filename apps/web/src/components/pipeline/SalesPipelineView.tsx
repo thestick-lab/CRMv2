@@ -101,8 +101,16 @@ function transitionBlockReason(
 }
 
 export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipelineViewProps) {
-  const { quotes, invoices, clients, staff, currentUser, updateQuote, logActivity } =
-    usePracticeStore();
+  const {
+    quotes,
+    invoices,
+    clients,
+    staff,
+    currentUser,
+    updateQuote,
+    convertQuoteToClient,
+    logActivity,
+  } = usePracticeStore();
 
   const [tab, setTab] = React.useState<TabId>('pipeline');
   const [period, setPeriod] = React.useState<Period>('all');
@@ -208,6 +216,18 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
 
     if (!canTransitionQuote(quote.stage, to, ctx)) {
       setFeedback(transitionBlockReason(to, ctx));
+      return;
+    }
+
+    // Active Client is the conversion: it creates (or refreshes) the client
+    // record, saves the estimate and materialises the quoted scope's work.
+    if (to === 'Active Client') {
+      convertQuoteToClient(quote.id);
+      setFeedback(
+        quote.clientCode
+          ? `Updated ${name}'s services from ${quote.number}.`
+          : `${name} is now an active client.`
+      );
       return;
     }
 
