@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { betterAuth } from 'better-auth';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from '../../src/db/auth-schema';
+import { guardAuthRequest } from './auth-guard';
 
 declare global {
   interface D1Database {
@@ -92,10 +93,12 @@ async function ensureSeeded(d1: D1Database) {
 }
 
 app.all('/api/auth/*', async (c) => {
+  const guarded = await guardAuthRequest(c.req.raw);
+  if (guarded instanceof Response) return guarded;
   if (c.env && c.env.DB) {
     await ensureSeeded(c.env.DB);
     const auth = getAuth(c.env.DB);
-    return auth.handler(c.req.raw);
+    return auth.handler(guarded);
   }
   return c.text('Cloudflare D1 DB binding missing', 500);
 });
