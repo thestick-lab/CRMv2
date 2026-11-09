@@ -1,20 +1,23 @@
 import { ReceiptText } from 'lucide-react';
 import type { Client } from 'fdoncall-practice/domain/types';
 import { diffDays, todayInSouthAfrica, type ISODate } from 'fdoncall-practice/domain/dates';
-import type { Invoice, InvoiceStatus } from '@/context/PracticeStoreContext';
+import type { Invoice, InvoiceStatus, Quote } from '@/context/PracticeStoreContext';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { formatZar } from '@/components/quote/estimate-form';
 import { cn } from '@/lib/utils';
+import { computeInvoiceStatus } from '@/components/invoice/invoice-logic';
 
 /* ---------------------------------------------------------------------------
  * Invoice register for the sales pipeline. Rows hand the invoice id to the
  * invoice editor through `onOpenInvoice` — the editor itself is a separate
- * screen, so this list never owns invoice state.
+ * screen, so this list never owns invoice state. `Overdue` is derived here;
+ * the stored status stays whatever the editor saved.
  * ------------------------------------------------------------------------- */
 
-const STATUS_STYLES: Record<InvoiceStatus, string> = {
+const STATUS_STYLES: Record<InvoiceStatus | 'Overdue', string> = {
   Draft: 'border-border bg-card text-muted-foreground',
   Sent: 'border-[#c4161c]/25 bg-[#c4161c]/10 text-[#c4161c] dark:text-[#f87171]',
+  Overdue: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
   // Paid reads as settled with ink, not a green accent (brand rule).
   Paid: 'border-foreground/20 bg-foreground/[0.06] text-foreground',
 };
@@ -22,6 +25,8 @@ const STATUS_STYLES: Record<InvoiceStatus, string> = {
 export interface InvoicesListProps {
   invoices: Invoice[];
   clients: Client[];
+  /** Quotes let a prospect-origin invoice resolve its trading name. */
+  quotes?: Quote[];
   /** Seam for the invoice editor; the row is inert while it is absent. */
   onOpenInvoice?: (invoiceId: string) => void;
   today?: ISODate;
@@ -30,6 +35,7 @@ export interface InvoicesListProps {
 export function InvoicesList({
   invoices,
   clients,
+  quotes = [],
   onOpenInvoice,
   today = todayInSouthAfrica(),
 }: InvoicesListProps) {
@@ -63,7 +69,9 @@ export function InvoicesList({
           {invoices.map((invoice) => {
             const clientName =
               clients.find((client) => client.code === invoice.clientCode)?.name ??
+              quotes.find((quote) => quote.id === invoice.quoteId)?.prospect?.name ??
               invoice.clientCode;
+            const displayStatus = computeInvoiceStatus(invoice, today);
             const age = Math.max(0, diffDays(today, invoice.issueDate));
 
             return (
@@ -106,10 +114,11 @@ export function InvoicesList({
                   <span
                     className={cn(
                       'inline-flex items-center rounded-full border px-1.5 py-0.5 font-mono text-[10px] leading-none',
-                      STATUS_STYLES[invoice.status]
+                      STATUS_STYLES[displayStatus]
                     )}
+                    data-invoice-list-status={displayStatus}
                   >
-                    {invoice.status}
+                    {displayStatus}
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] tabular-nums text-muted-foreground">

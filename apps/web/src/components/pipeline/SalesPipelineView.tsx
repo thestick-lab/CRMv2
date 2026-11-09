@@ -27,6 +27,8 @@ export interface SalesPipelineViewProps {
    * register renders read-only rows.
    */
   onOpenInvoice?: (invoiceId: string) => void;
+  /** Quote builder → invoice editor seam: the next unbilled month of a quote. */
+  onCreateInvoice?: (quote: Quote) => void;
 }
 
 const STAGE_TONE: Record<QuoteStage, KanbanTone> = {
@@ -98,7 +100,7 @@ function transitionBlockReason(
   }
 }
 
-export function SalesPipelineView({ onOpenInvoice }: SalesPipelineViewProps) {
+export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipelineViewProps) {
   const { quotes, invoices, clients, staff, currentUser, updateQuote, logActivity } =
     usePracticeStore();
 
@@ -418,6 +420,7 @@ export function SalesPipelineView({ onOpenInvoice }: SalesPipelineViewProps) {
               <InvoicesList
                 invoices={invoices}
                 clients={clients}
+                quotes={quotes}
                 onOpenInvoice={onOpenInvoice}
                 today={today}
               />
@@ -497,7 +500,11 @@ export function SalesPipelineView({ onOpenInvoice }: SalesPipelineViewProps) {
       )}
 
       {editor && (
-        <QuoteBuilderView initialQuoteId={editor.quoteId} onClose={() => setEditor(null)} />
+        <QuoteBuilderView
+          initialQuoteId={editor.quoteId}
+          onClose={() => setEditor(null)}
+          onCreateInvoice={onCreateInvoice}
+        />
       )}
     </div>
   );

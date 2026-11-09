@@ -15,6 +15,8 @@ import { GovernanceLogView } from '@/components/govlog/GovernanceLogView';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { ClientShowView } from '@/components/client-show/ClientShowView';
 import { LoginView } from '@/components/auth/LoginView';
+import { InvoiceEditor } from '@/components/invoice/InvoiceEditor';
+import type { Quote } from '@/context/PracticeStoreContext';
 
 function AppContent() {
   const [view, setView] = React.useState<ViewKey>('dashboard');
@@ -22,6 +24,9 @@ function AppContent() {
   const [deadlineStaffId, setDeadlineStaffId] = React.useState<string | undefined>(undefined);
   const [deadlineKpiFilter, setDeadlineKpiFilter] = React.useState<NavigateOptions['kpiFilter']>(undefined);
   const [settingsPane, setSettingsPane] = React.useState<NavigateOptions['settingsPane']>(undefined);
+  const [invoiceEditor, setInvoiceEditor] = React.useState<{ invoiceId?: string; quote?: Quote } | null>(
+    null
+  );
   const { clients, isAuthenticated } = usePracticeStore();
 
   if (!isAuthenticated) {
@@ -67,7 +72,12 @@ function AppContent() {
       case 'analytics':
         return <AnalyticsView />;
       case 'sales-pipeline':
-        return <SalesPipelineView />;
+        return (
+          <SalesPipelineView
+            onOpenInvoice={(invoiceId) => setInvoiceEditor({ invoiceId })}
+            onCreateInvoice={(quote) => setInvoiceEditor({ quote })}
+          />
+        );
       case 'time':
         return <TimeView />;
       case 'govlog':
@@ -109,14 +119,23 @@ function AppContent() {
   };
 
   return (
-    <Layout
-      currentView={view}
-      clientCode={clientCode}
-      clientName={activeClient?.name}
-      onViewChange={handleNavigate}
-    >
-      {renderContent()}
-    </Layout>
+    <>
+      <Layout
+        currentView={view}
+        clientCode={clientCode}
+        clientName={activeClient?.name}
+        onViewChange={handleNavigate}
+      >
+        {renderContent()}
+      </Layout>
+      {invoiceEditor && (
+        <InvoiceEditor
+          invoiceId={invoiceEditor.invoiceId}
+          initialQuote={invoiceEditor.quote}
+          onClose={() => setInvoiceEditor(null)}
+        />
+      )}
+    </>
   );
 }
 
