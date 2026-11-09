@@ -7,6 +7,7 @@ import { DEFAULT_THEME_MODE, isThemeMode, resolveTheme } from '@/context/ThemeCo
 import {
   SETTINGS_NAV,
   isAdminPane,
+  isManagePane,
   settingsPaneLabel,
   type SettingsPaneKey,
 } from './settings-nav';
@@ -59,11 +60,12 @@ describe('Settings view panes and AI assistant engine', () => {
 });
 
 describe('Settings navigation groups', () => {
-  it('renders the six groups in order with their child panes', () => {
+  it('renders the settings groups in order with their child panes', () => {
     expect(SETTINGS_NAV.map((item) => item.label)).toEqual([
       'Profile',
       'Appearance',
       'Team & Staff',
+      'Roles & Permissions',
       'Practice Rules',
       'Integrations',
       'Notifications',
@@ -100,6 +102,7 @@ describe('Settings navigation groups', () => {
       'profile',
       'appearance',
       'team',
+      'roles',
       'matrix',
       'holidays',
       'documenso',
@@ -116,6 +119,8 @@ describe('Settings navigation groups', () => {
     expect(isAdminPane('appearance')).toBe(false);
     expect(isAdminPane('notifications')).toBe(false);
     expect(isAdminPane('team')).toBe(true);
+    // The matrix is gated by `Settings — manage permissions`, not by edit alone.
+    expect(isAdminPane('roles')).toBe(false);
     expect(isAdminPane('matrix')).toBe(true);
     expect(isAdminPane('holidays')).toBe(true);
     expect(isAdminPane('documenso')).toBe(true);
@@ -123,10 +128,17 @@ describe('Settings navigation groups', () => {
     expect(isAdminPane('ai')).toBe(true);
   });
 
+  it('guards the permissions matrix with Settings — manage permissions', () => {
+    expect(isManagePane('roles')).toBe(true);
+    expect(isManagePane('team')).toBe(false);
+    expect(isManagePane('profile')).toBe(false);
+  });
+
   it('labels a child pane with its owning group', () => {
     expect(settingsPaneLabel('matrix')).toBe('Practice Rules · Service & Pricing Matrix');
     expect(settingsPaneLabel('xero')).toBe('Integrations · Xero');
     expect(settingsPaneLabel('team')).toBe('Team & Staff');
+    expect(settingsPaneLabel('roles')).toBe('Roles & Permissions');
     expect(settingsPaneLabel('profile')).toBe('Profile');
   });
 });
@@ -139,6 +151,7 @@ describe('Settings view wiring', () => {
       'ProfilePane',
       'AppearancePane',
       'TeamRbacPane',
+      'RolesPermissionsPane',
       'ServicePricingMatrixPane',
       'PublicHolidaysPane',
       'IntegrationsPane',
@@ -192,6 +205,7 @@ describe('Settings view wiring', () => {
     expect(teamSrc).toContain('Contract');
     expect(teamSrc).toContain('Phone');
     expect(teamSrc).toContain('Start date');
+    expect(teamSrc).toContain("'Support Tech'");
   });
 });
 

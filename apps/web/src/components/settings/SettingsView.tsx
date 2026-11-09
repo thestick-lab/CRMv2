@@ -7,11 +7,13 @@ import { AppearancePane } from './panes/AppearancePane';
 import { NotificationsPane } from './panes/NotificationsPane';
 import { IntegrationsPane } from './panes/IntegrationsPane';
 import { TeamRbacPane } from './panes/TeamRbacPane';
+import { RolesPermissionsPane } from './panes/RolesPermissionsPane';
 import { ServicePricingMatrixPane } from './panes/ServicePricingMatrixPane';
 import { PublicHolidaysPane } from './panes/PublicHolidaysPane';
 import {
   SETTINGS_NAV,
   isAdminPane,
+  isManagePane,
   settingsPaneLabel,
   type SettingsPaneKey,
 } from './settings-nav';
@@ -74,6 +76,8 @@ function SettingsPane({ pane }: { pane: SettingsPaneKey }) {
       return <AppearancePane />;
     case 'team':
       return <TeamRbacPane />;
+    case 'roles':
+      return <RolesPermissionsPane />;
     case 'matrix':
       return <ServicePricingMatrixPane />;
     case 'holidays':
@@ -97,14 +101,23 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
   const canViewSettings = can(currentUser.role, 'Settings', 'view', permissions.matrix);
   // Practice rules, pricing, staffing, integrations: `Settings — edit` per §6.9.
   const canEditSettings = can(currentUser.role, 'Settings', 'edit', permissions.matrix);
+  // The matrix itself is guarded by `Settings — manage permissions` (§6.9).
+  const canManagePermissions = can(
+    currentUser.role,
+    'Settings',
+    'manage',
+    permissions.matrix
+  );
 
   // Deep links into an admin pane fall back to Profile for roles that may only
   // read their own settings.
   React.useEffect(() => {
     if (!canEditSettings && isAdminPane(activePane)) {
       setActivePane('profile');
+    } else if (!canManagePermissions && isManagePane(activePane)) {
+      setActivePane('profile');
     }
-  }, [canEditSettings, activePane]);
+  }, [canEditSettings, canManagePermissions, activePane]);
 
   if (!canViewSettings) {
     return (
@@ -145,6 +158,7 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
           <div className="space-y-0.5">
             {SETTINGS_NAV.map((item) => {
               if (item.adminOnly && !canEditSettings) return null;
+              if (item.manageOnly && !canManagePermissions) return null;
 
               if (item.children) {
                 return (

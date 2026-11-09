@@ -1,6 +1,7 @@
 import {
   Bell,
   FileSpreadsheet,
+  KeyRound,
   Palette,
   Plug,
   User,
@@ -18,6 +19,7 @@ export type SettingsPaneKey =
   | 'profile'
   | 'appearance'
   | 'team'
+  | 'roles'
   | 'matrix'
   | 'holidays'
   | 'documenso'
@@ -39,6 +41,8 @@ export interface SettingsNavItem {
   children?: SettingsNavChild[];
   /** Practice administration: only partners and compliance officers. */
   adminOnly?: boolean;
+  /** Matrix administration: only roles with `Settings — manage permissions`. */
+  manageOnly?: boolean;
 }
 
 /**
@@ -49,6 +53,13 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { label: 'Profile', icon: User, pane: 'profile' },
   { label: 'Appearance', icon: Palette, pane: 'appearance' },
   { label: 'Team & Staff', icon: Users, pane: 'team', adminOnly: true },
+  {
+    label: 'Roles & Permissions',
+    icon: KeyRound,
+    pane: 'roles',
+    // Gated by the matrix's own `Settings — manage permissions` row, not by edit.
+    manageOnly: true,
+  },
   {
     label: 'Practice Rules',
     icon: FileSpreadsheet,
@@ -94,4 +105,9 @@ export function isAdminPane(pane: SettingsPaneKey): boolean {
     (item) =>
       item.adminOnly && (item.pane === pane || item.children?.some((child) => child.pane === pane))
   );
+}
+
+/** Panes that additionally require `Settings — manage permissions`. */
+export function isManagePane(pane: SettingsPaneKey): boolean {
+  return SETTINGS_NAV.some((item) => item.manageOnly && item.pane === pane);
 }

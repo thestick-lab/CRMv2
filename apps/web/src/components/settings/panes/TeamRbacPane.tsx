@@ -13,6 +13,7 @@ export const RBAC_ROLES = [
   'Accountant',
   'Team member',
   'Subcontractor',
+  'Support Tech',
 ] as const;
 
 export function TeamRbacPane() {
