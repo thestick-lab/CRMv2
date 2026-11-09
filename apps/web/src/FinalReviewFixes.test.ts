@@ -19,14 +19,15 @@ describe('Final review fixes: cross-view reactivity and user experience', () => 
     expect(deadlinesDashboard).toContain('usePracticeStore');
   });
 
-  it('verifies DeadlinesKanban card navigation does not preempt double-click action modal', () => {
+  it('verifies the shared board opens card detail without preempting client navigation', () => {
     const kanbanSrc = fs.readFileSync('src/components/deadlines/DeadlinesKanban.tsx', 'utf8');
+    const boardSrc = fs.readFileSync('src/components/kanban/KanbanBoard.tsx', 'utf8');
 
     // Card should not bind whole-card onClick to onSelectClient directly
     expect(kanbanSrc).not.toContain('onClick={() => onSelectClient(task.clientCode)}');
-    // Double click must trigger action modal
-    expect(kanbanSrc).toContain('onDoubleClick');
-    // Must pass initialStatus / targetStatus to StatutoryActionModal
+    // Double click must trigger the detail surface
+    expect(boardSrc).toContain('onDoubleClick');
+    // Must pass initialStatus / targetStatus to the statutory form
     expect(kanbanSrc).toContain('initialStatus');
   });
 

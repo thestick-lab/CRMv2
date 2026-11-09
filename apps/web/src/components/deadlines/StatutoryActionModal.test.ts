@@ -4,13 +4,14 @@ import {
   canSignOffPartnerGate,
   validateStatutorySubmission,
   WORKFLOW_STATUSES,
-} from './StatutoryActionModal';
+} from '@/lib/workflow';
 
-describe('StatutoryActionModal validation and 5-lane partner gate rules', () => {
-  it('defines the 5 statutory workflow statuses including Approved (Ready to Lodge)', () => {
+describe('StatutoryActionModal validation and 6-lane partner gate rules', () => {
+  it('defines the 6 statutory workflow statuses including Awaiting Client', () => {
     expect(WORKFLOW_STATUSES).toEqual([
       'Not Started',
       'In Progress',
+      'Awaiting Client',
       'Partner Review Gate',
       'Approved (Ready to Lodge)',
       'Submitted',
@@ -66,6 +67,16 @@ describe('StatutoryActionModal validation and 5-lane partner gate rules', () => 
     expect(valid.error).toBeUndefined();
   });
 
+  it('accepts the Awaiting Client lane everywhere without gate rules', () => {
+    expect(
+      validateStatutorySubmission({
+        status: 'Awaiting Client',
+        partnerSignOff: false,
+        needsPartnerReview: true,
+      }).valid
+    ).toBe(true);
+  });
+
   it('verifies DeadlinesDashboard title is clean Deadlines and KPI cards act as filter triggers', () => {
     const dashboardSrc = fs.readFileSync('src/components/deadlines/DeadlinesDashboard.tsx', 'utf8');
 
@@ -75,11 +86,14 @@ describe('StatutoryActionModal validation and 5-lane partner gate rules', () => 
     expect(dashboardSrc).toContain('activeKpiFilter');
   });
 
-  it('verifies DeadlinesKanban renders 5 lanes and Linear-style assignee avatar reassignment', () => {
+  it('verifies the deadlines board renders 6 lanes through the shared KanbanBoard', () => {
     const kanbanSrc = fs.readFileSync('src/components/deadlines/DeadlinesKanban.tsx', 'utf8');
+    const boardSrc = fs.readFileSync('src/components/kanban/KanbanBoard.tsx', 'utf8');
 
-    expect(kanbanSrc).toContain('Approved (Ready to Lodge)');
-    expect(kanbanSrc).toContain('draggable');
-    expect(kanbanSrc).toContain('onDoubleClick');
+    expect(kanbanSrc).toContain('Awaiting Client');
+    expect(kanbanSrc).toContain('KanbanBoard');
+    expect(kanbanSrc).toContain('initialStatus');
+    expect(boardSrc).toContain('draggable');
+    expect(boardSrc).toContain('onDoubleClick');
   });
 });

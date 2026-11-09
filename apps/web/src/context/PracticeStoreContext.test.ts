@@ -309,6 +309,66 @@ describe('PracticeStore foundation fields and legacy-state load', () => {
     expect(state.permissions).toEqual({ matrix: {} });
   });
 
+  it('round-trips an ad-hoc task through add, update and delete and survives reload', () => {
+    const state = getInitialPracticeState();
+    const task = {
+      id: 'adhoc-test-1',
+      clientCode: 'ALC-610',
+      description: 'Reconcile October bank feed',
+      assigneeId: 'erik',
+      dueDate: '2026-11-14',
+      status: 'Not Started' as const,
+      createdAt: '2026-11-09T08:00:00.000Z',
+    };
+
+    const added = practiceReducer(state, { type: 'ADD_ADHOC_TASK', payload: task });
+    expect(added.adhocTasks).toHaveLength(1);
+    expect(added.adhocTasks[0]).toEqual(task);
+
+    const updated = practiceReducer(added, {
+      type: 'UPDATE_ADHOC_TASK',
+      payload: { id: task.id, patch: { status: 'In Progress', description: 'Bank feed reconciled' } },
+    });
+    expect(updated.adhocTasks[0].status).toBe('In Progress');
+    expect(updated.adhocTasks[0].description).toBe('Bank feed reconciled');
+    expect(updated.adhocTasks[0].createdAt).toBe(task.createdAt);
+
+    // Persisted state reloads the ad-hoc task unchanged.
+    const reloaded = loadPracticeState({
+      getItem: () => JSON.stringify(updated),
+    });
+    expect(reloaded.adhocTasks).toEqual(updated.adhocTasks);
+
+    const deleted = practiceReducer(updated, {
+      type: 'DELETE_ADHOC_TASK',
+      payload: { id: task.id },
+    });
+    expect(deleted.adhocTasks).toEqual([]);
+    // Deleting an unknown task leaves state untouched.
+    expect(
+      practiceReducer(deleted, { type: 'DELETE_ADHOC_TASK', payload: { id: 'missing' } })
+    ).toBe(deleted);
+  });
+
+  it('appends logged activity events with a generated id and timestamp', () => {
+    const state = getInitialPracticeState();
+    const next = practiceReducer(state, {
+      type: 'LOG_ACTIVITY',
+      payload: {
+        type: 'task',
+        actorName: 'Erik',
+        actorInitials: 'E',
+        tint: 'crimson',
+        text: 'Commented on a task',
+        subline: 'ALC-610 · AFS',
+      },
+    });
+    expect(next.activity).toHaveLength(1);
+    expect(next.activity[0].id).toBeTruthy();
+    expect(next.activity[0].at).toBeTruthy();
+    expect(next.activity[0].text).toBe('Commented on a task');
+  });
+
   it('sources every activity seed from seeded clients and staff', () => {
     const clientCodes = CLIENTS.map((c) => c.code);
     const staffNames = [...STAFF.map((s) => s.name), getInitialPracticeState().currentUser.name];

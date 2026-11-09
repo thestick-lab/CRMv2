@@ -1,88 +1,343 @@
 import * as React from 'react';
+import type { Client, StaffMember } from 'fdoncall-practice/domain/types';
+import { diffDays } from 'fdoncall-practice/domain/dates';
 import type { PracticeTaskItem } from './practice-tasks';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, UserCheck, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { usePracticeStore, type AdHocTask } from '@/context/PracticeStoreContext';
 import {
-  StatutoryActionModal,
+  KanbanBoard,
+  type KanbanCardBase,
+  type KanbanColumn,
+  type KanbanTone,
+} from '@/components/kanban/KanbanBoard';
+import {
+  WORKFLOW_LANES,
+  canMoveStatus,
+  normalizeWorkflowStatus,
   type WorkflowStatus,
-} from './StatutoryActionModal';
+} from '@/lib/workflow';
+import { AvatarChip, PriorityPill, type PriorityLevel } from '@/components/ui/list-primitives';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle, Calendar, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { TaskDetailPanel } from './TaskDetailPanel';
+import { AdHocTaskModal } from './AdHocTaskModal';
+
+/* ---------------------------------------------------------------------------
+ * Urgency grouping (existing table/board KPI view, retained).
+ * ------------------------------------------------------------------------- */
 
 export interface KanbanBuckets {
-  overdue: PracticeTaskItem[];
-  due7Days: PracticeTaskItem[];
-  due30Days: PracticeTaskItem[];
-  missingDate: PracticeTaskItem[];
+  overdue: DeadlineCard[];
+  due7Days: DeadlineCard[];
+  due30Days: DeadlineCard[];
+  missingDate: DeadlineCard[];
 }
 
-export function bucketKanbanTasks(tasks: PracticeTaskItem[], asOfDate: string): KanbanBuckets {
-  const overdue: PracticeTaskItem[] = [];
-  const due7Days: PracticeTaskItem[] = [];
-  const due30Days: PracticeTaskItem[] = [];
-  const missingDate: PracticeTaskItem[] = [];
+/** Urgency grouping across statutory and ad-hoc cards alike. */
+export function bucketCardsByDue(cards: DeadlineCard[], asOfDate: string): KanbanBuckets {
+  const overdue: DeadlineCard[] = [];
+  const due7Days: DeadlineCard[] = [];
+  const due30Days: DeadlineCard[] = [];
+  const missingDate: DeadlineCard[] = [];
 
-  for (const t of tasks) {
-    if (!t.due) {
-      missingDate.push(t);
-    } else if (t.due < asOfDate) {
-      overdue.push(t);
-    } else if (t.daysUntilDue !== undefined && t.daysUntilDue <= 7) {
-      due7Days.push(t);
+  for (const card of cards) {
+    if (!card.due) {
+      missingDate.push(card);
+    } else if (card.due < asOfDate) {
+      overdue.push(card);
+    } else if (card.daysUntilDue !== undefined && card.daysUntilDue <= 7) {
+      due7Days.push(card);
     } else {
-      due30Days.push(t);
+      due30Days.push(card);
     }
   }
 
-  return {
-    overdue,
-    due7Days,
-    due30Days,
-    missingDate,
-  };
+  return { overdue, due7Days, due30Days, missingDate };
 }
+
+/* ---------------------------------------------------------------------------
+ * Workflow lanes.
+ * ------------------------------------------------------------------------- */
 
 export interface WorkflowBuckets {
   notStarted: PracticeTaskItem[];
   inProgress: PracticeTaskItem[];
+  awaitingClient: PracticeTaskItem[];
   partnerReviewGate: PracticeTaskItem[];
   approvedReadyToLodge: PracticeTaskItem[];
   submitted: PracticeTaskItem[];
+}
+
+export function effectiveWorkflowStatus(
+  task: { id: string; status: string },
+  overrides: Record<string, { status: string }>
+): WorkflowStatus {
+  return normalizeWorkflowStatus(overrides[task.id]?.status ?? task.status);
 }
 
 export function bucketWorkflowTasks(
   tasks: PracticeTaskItem[],
   overrides: Record<string, { status: string }>
 ): WorkflowBuckets {
-  const notStarted: PracticeTaskItem[] = [];
-  const inProgress: PracticeTaskItem[] = [];
-  const partnerReviewGate: PracticeTaskItem[] = [];
-  const approvedReadyToLodge: PracticeTaskItem[] = [];
-  const submitted: PracticeTaskItem[] = [];
+  const buckets: WorkflowBuckets = {
+    notStarted: [],
+    inProgress: [],
+    awaitingClient: [],
+    partnerReviewGate: [],
+    approvedReadyToLodge: [],
+    submitted: [],
+  };
 
-  for (const t of tasks) {
-    const effectiveStatus = overrides[t.id]?.status || t.status || 'Not Started';
-    if (effectiveStatus === 'Submitted') {
-      submitted.push(t);
-    } else if (effectiveStatus === 'Approved (Ready to Lodge)') {
-      approvedReadyToLodge.push(t);
-    } else if (effectiveStatus === 'Partner Review Gate') {
-      partnerReviewGate.push(t);
-    } else if (effectiveStatus === 'In Progress') {
-      inProgress.push(t);
-    } else {
-      notStarted.push(t);
+  for (const task of tasks) {
+    const status = effectiveWorkflowStatus(task, overrides);
+    switch (status) {
+      case 'In Progress':
+        buckets.inProgress.push(task);
+        break;
+      case 'Awaiting Client':
+        buckets.awaitingClient.push(task);
+        break;
+      case 'Partner Review Gate':
+        buckets.partnerReviewGate.push(task);
+        break;
+      case 'Approved (Ready to Lodge)':
+        buckets.approvedReadyToLodge.push(task);
+        break;
+      case 'Submitted':
+        buckets.submitted.push(task);
+        break;
+      default:
+        buckets.notStarted.push(task);
     }
   }
 
+  return buckets;
+}
+
+export type AdhocBuckets = Record<keyof WorkflowBuckets, AdHocTask[]>;
+
+export function bucketAdhocTasks(tasks: AdHocTask[]): AdhocBuckets {
+  const buckets: AdhocBuckets = {
+    notStarted: [],
+    inProgress: [],
+    awaitingClient: [],
+    partnerReviewGate: [],
+    approvedReadyToLodge: [],
+    submitted: [],
+  };
+
+  for (const task of tasks) {
+    switch (normalizeWorkflowStatus(task.status)) {
+      case 'In Progress':
+        buckets.inProgress.push(task);
+        break;
+      case 'Awaiting Client':
+        buckets.awaitingClient.push(task);
+        break;
+      case 'Partner Review Gate':
+        buckets.partnerReviewGate.push(task);
+        break;
+      case 'Approved (Ready to Lodge)':
+        buckets.approvedReadyToLodge.push(task);
+        break;
+      case 'Submitted':
+        buckets.submitted.push(task);
+        break;
+      default:
+        buckets.notStarted.push(task);
+    }
+  }
+
+  return buckets;
+}
+
+/* ---------------------------------------------------------------------------
+ * Unified card model (statutory + ad-hoc flow through the same lanes).
+ * ------------------------------------------------------------------------- */
+
+export interface DeadlineCard extends KanbanCardBase {
+  id: string;
+  kind: 'statutory' | 'adhoc';
+  status: WorkflowStatus;
+  clientCode: string;
+  clientName: string;
+  /** Service code for statutory tasks, `AD HOC` for manual tasks. */
+  serviceLabel: string;
+  period?: string;
+  part?: string;
+  due?: string;
+  dueNote?: string;
+  daysUntilDue?: number;
+  staffId: string;
+  staffName: string;
+  needsPartnerReview: boolean;
+  priority: PriorityLevel;
+  sarsReference?: string;
+  blockedReason?: string;
+  description?: string;
+  task?: PracticeTaskItem;
+  adhoc?: AdHocTask;
+}
+
+const URGENCY_PRIORITY: Record<string, PriorityLevel> = {
+  overdue: 'High',
+  week: 'High',
+  month: 'Medium',
+  later: 'Low',
+  'no-date': 'Low',
+  done: 'Low',
+};
+
+function adhocPriority(due: string | undefined, asOfDate: string): PriorityLevel {
+  if (!due) return 'Low';
+  const days = diffDays(due, asOfDate);
+  if (days < 0 || days <= 7) return 'High';
+  if (days <= 30) return 'Medium';
+  return 'Low';
+}
+
+export interface DeadlineColumnsParams {
+  statutoryBuckets: WorkflowBuckets;
+  adhocBuckets: AdhocBuckets;
+  overrides: Record<string, { status: string; sarsReference?: string }>;
+  staff: Pick<StaffMember, 'id' | 'name'>[];
+  clients: Pick<Client, 'code' | 'name'>[];
+  asOfDate: string;
+}
+
+/** Master-data gaps leave a statutory task without a due date: it is blocked. */
+function statutoryCardFrom(
+  task: PracticeTaskItem,
+  status: WorkflowStatus,
+  overrides: DeadlineColumnsParams['overrides']
+): DeadlineCard {
   return {
-    notStarted,
-    inProgress,
-    partnerReviewGate,
-    approvedReadyToLodge,
-    submitted,
+    id: task.id,
+    kind: 'statutory',
+    status,
+    clientCode: task.clientCode,
+    clientName: task.clientName,
+    serviceLabel: task.service,
+    period: task.period,
+    part: task.part,
+    due: task.due,
+    dueNote: task.dueNote,
+    daysUntilDue: task.daysUntilDue,
+    staffId: task.staffId,
+    staffName: task.staffName,
+    needsPartnerReview: task.needsPartnerReview,
+    priority: URGENCY_PRIORITY[task.urgency] ?? 'Low',
+    sarsReference: overrides[task.id]?.sarsReference,
+    blockedReason: task.due
+      ? undefined
+      : 'Missing statutory due date — complete the client master data',
+    task,
   };
 }
+
+function adhocCardFrom(
+  task: AdHocTask,
+  params: Pick<DeadlineColumnsParams, 'staff' | 'clients' | 'asOfDate'>
+): DeadlineCard {
+  const client = params.clients.find((entry) => entry.code === task.clientCode);
+  const assignee = params.staff.find((entry) => entry.id === task.assigneeId);
+  return {
+    id: task.id,
+    kind: 'adhoc',
+    status: normalizeWorkflowStatus(task.status),
+    clientCode: task.clientCode,
+    clientName: client?.name ?? task.clientCode,
+    serviceLabel: 'AD HOC',
+    due: task.dueDate,
+    daysUntilDue: task.dueDate ? diffDays(task.dueDate, params.asOfDate) : undefined,
+    staffId: task.assigneeId,
+    staffName: assignee?.name ?? 'Practice Pool',
+    needsPartnerReview: false,
+    priority: adhocPriority(task.dueDate, params.asOfDate),
+    blockedReason: task.blockedReason,
+    description: task.description,
+    adhoc: task,
+  };
+}
+
+const LANE_TONE: Record<WorkflowStatus, KanbanTone> = {
+  'Not Started': 'neutral',
+  'In Progress': 'progress',
+  'Awaiting Client': 'waiting',
+  'Partner Review Gate': 'warning',
+  'Approved (Ready to Lodge)': 'ready',
+  Submitted: 'done',
+};
+
+function sortCards(cards: DeadlineCard[]): DeadlineCard[] {
+  return [...cards].sort((a, b) => {
+    const dueA = a.due ?? '9999-99-99';
+    const dueB = b.due ?? '9999-99-99';
+    if (dueA !== dueB) return dueA.localeCompare(dueB);
+    return a.clientCode.localeCompare(b.clientCode);
+  });
+}
+
+export function buildDeadlineColumns(params: DeadlineColumnsParams): KanbanColumn<DeadlineCard>[] {
+  const { statutoryBuckets, adhocBuckets, overrides } = params;
+
+  const statutory = {
+    notStarted: statutoryBuckets.notStarted.map((task) =>
+      statutoryCardFrom(task, effectiveWorkflowStatus(task, overrides), overrides)
+    ),
+    inProgress: statutoryBuckets.inProgress.map((task) =>
+      statutoryCardFrom(task, 'In Progress', overrides)
+    ),
+    awaitingClient: statutoryBuckets.awaitingClient.map((task) =>
+      statutoryCardFrom(task, 'Awaiting Client', overrides)
+    ),
+    partnerReviewGate: statutoryBuckets.partnerReviewGate.map((task) =>
+      statutoryCardFrom(task, 'Partner Review Gate', overrides)
+    ),
+    approvedReadyToLodge: statutoryBuckets.approvedReadyToLodge.map((task) =>
+      statutoryCardFrom(task, 'Approved (Ready to Lodge)', overrides)
+    ),
+    submitted: statutoryBuckets.submitted.map((task) =>
+      statutoryCardFrom(task, 'Submitted', overrides)
+    ),
+  };
+
+  const adhoc = {
+    notStarted: adhocBuckets.notStarted.map((task) => adhocCardFrom(task, params)),
+    inProgress: adhocBuckets.inProgress.map((task) => adhocCardFrom(task, params)),
+    awaitingClient: adhocBuckets.awaitingClient.map((task) => adhocCardFrom(task, params)),
+    partnerReviewGate: adhocBuckets.partnerReviewGate.map((task) => adhocCardFrom(task, params)),
+    approvedReadyToLodge: adhocBuckets.approvedReadyToLodge.map((task) =>
+      adhocCardFrom(task, params)
+    ),
+    submitted: adhocBuckets.submitted.map((task) => adhocCardFrom(task, params)),
+  };
+
+  const bucketByLane: Record<WorkflowStatus, keyof WorkflowBuckets> = {
+    'Not Started': 'notStarted',
+    'In Progress': 'inProgress',
+    'Awaiting Client': 'awaitingClient',
+    'Partner Review Gate': 'partnerReviewGate',
+    'Approved (Ready to Lodge)': 'approvedReadyToLodge',
+    Submitted: 'submitted',
+  };
+
+  return WORKFLOW_LANES.map((lane) => {
+    const key = bucketByLane[lane.status];
+    const cards = sortCards([...statutory[key], ...adhoc[key]]);
+    return {
+      id: lane.status,
+      title: lane.label,
+      tone: LANE_TONE[lane.status],
+      hint: lane.hint,
+      cards,
+    };
+  });
+}
+
+/* ---------------------------------------------------------------------------
+ * Board component.
+ * ------------------------------------------------------------------------- */
 
 export interface DeadlinesKanbanProps {
   tasks: PracticeTaskItem[];
@@ -99,320 +354,311 @@ export function DeadlinesKanban({
   horizon = '30',
   groupBy = 'workflow',
 }: DeadlinesKanbanProps) {
-  const { taskStatusOverrides, updateTaskStatus } = usePracticeStore();
+  const {
+    taskStatusOverrides,
+    updateTaskStatus,
+    adhocTasks,
+    updateAdhocTask,
+    staff,
+    clients,
+    currentUser,
+    logActivity,
+  } = usePracticeStore();
+
   const [selectedTask, setSelectedTask] = React.useState<PracticeTaskItem | null>(null);
-  const [modalOpen, setModalOpen] = React.useState(false);
-  const [draggedTaskId, setDraggedTaskId] = React.useState<string | null>(null);
-  const [activeDropColumn, setActiveDropColumn] = React.useState<string | null>(null);
-  const [pendingTargetStatus, setPendingTargetStatus] = React.useState<WorkflowStatus | undefined>(undefined);
+  const [panelOpen, setPanelOpen] = React.useState(false);
+  const [pendingTargetStatus, setPendingTargetStatus] = React.useState<
+    WorkflowStatus | undefined
+  >(undefined);
+  const [adhocOpen, setAdhocOpen] = React.useState(false);
+  const [adhocEditing, setAdhocEditing] = React.useState<AdHocTask | null>(null);
+  const [adhocInitialStatus, setAdhocInitialStatus] = React.useState<WorkflowStatus>('Not Started');
+  const [feedback, setFeedback] = React.useState<string | null>(null);
 
-  const urgencyBuckets = React.useMemo(
-    () => bucketKanbanTasks(tasks, asOfDate),
-    [tasks, asOfDate]
+  React.useEffect(() => {
+    if (!feedback) return;
+    const timer = window.setTimeout(() => setFeedback(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
+  const workflowColumns = React.useMemo(
+    () =>
+      buildDeadlineColumns({
+        statutoryBuckets: bucketWorkflowTasks(tasks, taskStatusOverrides),
+        adhocBuckets: bucketAdhocTasks(adhocTasks),
+        overrides: taskStatusOverrides,
+        staff,
+        clients,
+        asOfDate,
+      }),
+    [tasks, taskStatusOverrides, adhocTasks, staff, clients, asOfDate]
   );
-  const workflowBuckets = React.useMemo(
-    () => bucketWorkflowTasks(tasks, taskStatusOverrides),
-    [tasks, taskStatusOverrides]
+
+  const allCards = React.useMemo(
+    () => workflowColumns.flatMap((column) => column.cards),
+    [workflowColumns]
   );
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/plain', taskId);
-    setDraggedTaskId(taskId);
-  };
+  const urgencyColumns = React.useMemo<KanbanColumn<DeadlineCard>[]>(() => {
+    const { overdue, due7Days, due30Days, missingDate } = bucketCardsByDue(allCards, asOfDate);
 
-  const handleDragOver = (e: React.DragEvent, colId: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (activeDropColumn !== colId) {
-      setActiveDropColumn(colId);
+    return [
+      {
+        id: 'overdue',
+        title: 'Overdue Filings',
+        tone: 'danger' as const,
+        hint: 'Past the statutory due date',
+        cards: sortCards(overdue),
+      },
+      {
+        id: 'due7',
+        title: 'Due in 7 Days',
+        tone: 'progress' as const,
+        hint: 'Urgent SARS / CIPC obligations',
+        cards: sortCards(due7Days),
+      },
+      {
+        id: 'due30',
+        title:
+          horizon === '30'
+            ? 'Due in 8–30 Days'
+            : horizon === '90'
+              ? 'Upcoming (≤ 90 Days)'
+              : 'Upcoming (≤ 365 Days)',
+        tone: 'neutral' as const,
+        hint: 'Current operational horizon',
+        cards: sortCards(due30Days),
+      },
+      {
+        id: 'missing',
+        title: 'Missing a Date (Blockers)',
+        tone: 'warning' as const,
+        hint: 'Waiting on CIPC / SARS master data',
+        cards: sortCards(missingDate),
+      },
+    ];
+  }, [allCards, asOfDate, horizon]);
+
+  const openCard = (card: DeadlineCard) => {
+    if (card.kind === 'adhoc' && card.adhoc) {
+      setAdhocEditing(card.adhoc);
+      setAdhocInitialStatus(card.status);
+      setAdhocOpen(true);
+      return;
+    }
+    if (card.task) {
+      setSelectedTask(card.task);
+      setPendingTargetStatus(undefined);
+      setPanelOpen(true);
     }
   };
 
-  const handleDragLeave = () => {
-    setActiveDropColumn(null);
-  };
+  const handleMove = (cardId: string, toColumnId: string) => {
+    if (groupBy !== 'workflow') {
+      setFeedback('Switch to Workflow status grouping to move cards between lanes.');
+      return;
+    }
 
-  const handleDrop = (e: React.DragEvent, targetStatusOrCol: string) => {
-    e.preventDefault();
-    setActiveDropColumn(null);
-    const taskId = draggedTaskId || e.dataTransfer.getData('text/plain');
-    setDraggedTaskId(null);
+    const card = allCards.find((entry) => entry.id === cardId);
+    if (!card) return;
 
-    if (!taskId) return;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
+    const targetStatus = toColumnId as WorkflowStatus;
+    if (card.status === targetStatus) return;
 
-    if (groupBy === 'workflow') {
-      const targetStatus = targetStatusOrCol as WorkflowStatus;
-      if (targetStatus === 'Not Started' || targetStatus === 'In Progress') {
-        updateTaskStatus(taskId, targetStatus);
-      } else if (targetStatus === 'Partner Review Gate') {
-        updateTaskStatus(taskId, 'Partner Review Gate');
-      } else if (targetStatus === 'Approved (Ready to Lodge)' || targetStatus === 'Submitted') {
-        setSelectedTask(task);
-        setPendingTargetStatus(targetStatus);
-        setModalOpen(true);
+    const ctx = { needsPartnerReview: card.needsPartnerReview, actorRole: currentUser.role };
+    if (!canMoveStatus(card.status, targetStatus, ctx)) {
+      if (targetStatus === 'Partner Review Gate') {
+        setFeedback(
+          `${card.serviceLabel} does not require partner review — move it straight to Approved or Submitted.`
+        );
+      } else {
+        setFeedback(
+          `Partner sign-off is required before ${card.serviceLabel} can be approved or submitted.`
+        );
       }
+      return;
     }
+
+    if (card.kind === 'adhoc' && card.adhoc) {
+      updateAdhocTask(card.adhoc.id, { status: targetStatus });
+      logActivity({
+        type: 'task',
+        actorName: currentUser.name,
+        actorInitials: currentUser.name.slice(0, 2).toUpperCase(),
+        tint: 'muted',
+        text: `Moved ad-hoc task “${card.adhoc.description}” to ${targetStatus}`,
+        subline: `${card.clientCode} · ${card.clientName}`,
+      });
+      return;
+    }
+
+    const taskId = card.id;
+    // Approval and submission capture the partner signature and SARS reference
+    // through the statutory form — never straight from a drag.
+    if (targetStatus === 'Approved (Ready to Lodge)' || targetStatus === 'Submitted') {
+      if (card.task) {
+        setSelectedTask(card.task);
+        setPendingTargetStatus(targetStatus);
+        setPanelOpen(true);
+      }
+      return;
+    }
+    updateTaskStatus(taskId, targetStatus);
   };
 
-  const handleDoubleClickCard = (e: React.MouseEvent, task: PracticeTaskItem) => {
-    e.stopPropagation();
-    setSelectedTask(task);
-    setPendingTargetStatus(undefined);
-    setModalOpen(true);
-  };
-
-  const columns =
-    groupBy === 'workflow'
-      ? [
-          {
-            id: 'Not Started',
-            title: 'Not Started',
-            count: workflowBuckets.notStarted.length,
-            items: workflowBuckets.notStarted,
-            badgeVariant: 'outline' as const,
-            borderColor: 'border-border/80',
-          },
-          {
-            id: 'In Progress',
-            title: 'In Progress',
-            count: workflowBuckets.inProgress.length,
-            items: workflowBuckets.inProgress,
-            badgeVariant: 'secondary' as const,
-            borderColor: 'border-blue-500/40',
-          },
-          {
-            id: 'Partner Review Gate',
-            title: 'Partner Review Gate',
-            count: workflowBuckets.partnerReviewGate.length,
-            items: workflowBuckets.partnerReviewGate,
-            badgeVariant: 'warning' as const,
-            borderColor: 'border-amber-500/40',
-          },
-          {
-            id: 'Approved (Ready to Lodge)',
-            title: 'Approved (Ready to Lodge)',
-            count: workflowBuckets.approvedReadyToLodge.length,
-            items: workflowBuckets.approvedReadyToLodge,
-            badgeVariant: 'secondary' as const,
-            borderColor: 'border-emerald-500/30',
-          },
-          {
-            id: 'Submitted',
-            title: 'Submitted to SARS / CIPC',
-            count: workflowBuckets.submitted.length,
-            items: workflowBuckets.submitted,
-            badgeVariant: 'default' as const,
-            borderColor: 'border-emerald-500/40',
-          },
-        ]
-      : [
-          {
-            id: 'overdue',
-            title: 'Overdue Filings',
-            count: urgencyBuckets.overdue.length,
-            items: urgencyBuckets.overdue,
-            badgeVariant: 'destructive' as const,
-            borderColor: 'border-destructive/40',
-          },
-          {
-            id: 'due7',
-            title: 'Due in 7 Days',
-            count: urgencyBuckets.due7Days.length,
-            items: urgencyBuckets.due7Days,
-            badgeVariant: 'crimsonSubdued' as const,
-            borderColor: 'border-[#c4161c]/40',
-          },
-          {
-            id: 'due30',
-            title:
-              horizon === '30'
-                ? 'Due in 8–30 Days'
-                : horizon === '90'
-                ? 'Upcoming (≤ 90 Days)'
-                : 'Upcoming (≤ 365 Days)',
-            count: urgencyBuckets.due30Days.length,
-            items: urgencyBuckets.due30Days,
-            badgeVariant: 'outline' as const,
-            borderColor: 'border-border/80',
-          },
-          {
-            id: 'missing',
-            title: 'Missing a Date (Blockers)',
-            count: urgencyBuckets.missingDate.length,
-            items: urgencyBuckets.missingDate,
-            badgeVariant: 'warning' as const,
-            borderColor: 'border-amber-500/40',
-          },
-        ];
+  const columns = groupBy === 'workflow' ? workflowColumns : urgencyColumns;
 
   return (
     <>
-      <div className={cn(
-        'grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start select-none',
-        groupBy === 'workflow' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'
-      )}>
-        {columns.map((col) => {
-          const isDropActive = activeDropColumn === col.id;
+      <KanbanBoard
+        columns={columns}
+        onMove={handleMove}
+        onOpenCard={openCard}
+        keyboardEnabled={groupBy === 'workflow'}
+        allowAdd={
+          groupBy === 'workflow'
+            ? (columnId) => {
+                if (columnId === 'Partner Review Gate') {
+                  setFeedback(
+                    'Ad-hoc tasks never enter the partner review gate — add the task to another lane.'
+                  );
+                  return;
+                }
+                setAdhocEditing(null);
+                setAdhocInitialStatus(columnId as WorkflowStatus);
+                setAdhocOpen(true);
+              }
+            : undefined
+        }
+        renderCard={(card) => <DeadlineBoardCard card={card} asOfDate={asOfDate} />}
+      />
 
-          return (
-            <div
-              key={col.id}
-              onDragOver={(e) => handleDragOver(e, col.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, col.id)}
-              className={cn(
-                'border rounded-lg bg-card/60 flex flex-col max-h-[calc(100vh-250px)] shadow-xs transition-colors',
-                col.borderColor,
-                isDropActive && 'ring-2 ring-primary bg-primary/5'
-              )}
-            >
-              {/* Column Header */}
-              <div className="p-3 border-b border-border/70 flex items-center justify-between bg-muted/20 shrink-0">
-                <span className="text-xs font-semibold text-foreground tracking-tight">
-                  {col.title}
-                </span>
-                <Badge variant={col.badgeVariant} className="font-mono text-[10px] py-0 px-1.5 h-4">
-                  {col.count}
-                </Badge>
-              </div>
+      {feedback && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded-lg border border-border bg-card px-3.5 py-2 text-xs text-foreground shadow-lg"
+        >
+          {feedback}
+        </div>
+      )}
 
-              {/* Card Stream */}
-              <div className="p-2.5 space-y-2.5 overflow-y-auto">
-                {col.items.length === 0 ? (
-                  <div className="py-8 text-center text-[11px] text-muted-foreground italic font-sans">
-                    No tasks in this lane
-                  </div>
-                ) : (
-                  col.items.map((task) => {
-                    const override = taskStatusOverrides[task.id];
-                    const isSubmitted = override?.status === 'Submitted';
-
-                    return (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        onDoubleClick={(e) => handleDoubleClickCard(e, task)}
-                        onKeyDown={(e) => {
-                          if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                            e.preventDefault();
-                            handleDoubleClickCard(e as unknown as React.MouseEvent, task);
-                          }
-                        }}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Open statutory action modal for ${task.clientName} (${task.clientCode})`}
-                        className={cn(
-                          'p-3 rounded-md border bg-card hover:bg-muted/40 transition-all text-left space-y-2 cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary',
-                          isSubmitted
-                            ? 'border-emerald-500/40 bg-emerald-500/5'
-                            : 'border-border/80 hover:border-primary/50'
-                        )}
-                      >
-                        {/* Header: Service + Client Code */}
-                        <div className="flex items-center justify-between gap-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-xs font-bold text-foreground">
-                              {task.service}
-                            </span>
-                            {task.part && (
-                              <span className="text-[10px] font-mono text-muted-foreground">
-                                ({task.part})
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectClient(task.clientCode);
-                            }}
-                            className="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                            title="Open client record"
-                          >
-                            {task.clientCode}
-                          </button>
-                        </div>
-
-                        {/* Client Name */}
-                        <div className="text-xs font-medium text-foreground truncate">
-                          {task.clientName}
-                        </div>
-
-                        {/* Due Date & Holiday Rollback */}
-                        <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-1 border-t border-border/60">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 shrink-0" />
-                            <span className={cn(task.due && task.due < asOfDate && 'text-destructive font-semibold')}>
-                              {task.due || 'Missing date'}
-                            </span>
-                            {task.dueNote && (
-                              <span
-                                className="text-[#c4161c] text-xs font-bold"
-                                title={task.dueNote}
-                              >
-                                ↩
-                              </span>
-                            )}
-                          </div>
-
-                          {task.daysUntilDue !== undefined && (
-                            <span
-                              className={cn(
-                                'text-[10px]',
-                                task.daysUntilDue < 0
-                                  ? 'text-destructive font-bold'
-                                  : task.daysUntilDue <= 7
-                                  ? 'text-[#c4161c] font-semibold'
-                                  : 'text-muted-foreground'
-                              )}
-                            >
-                              {task.daysUntilDue < 0
-                                ? `${Math.abs(task.daysUntilDue)}d overdue`
-                                : `${task.daysUntilDue}d left`}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Footer: Assignee & Partner Review / SARS Ref */}
-                        <div className="flex items-center justify-between pt-1 text-[10px]">
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <UserCheck className="h-3 w-3" />
-                            {task.staffName}
-                          </span>
-
-                          {override?.sarsReference ? (
-                            <span className="font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              {override.sarsReference}
-                            </span>
-                          ) : task.needsPartnerReview ? (
-                            <span className="text-amber-500 font-semibold flex items-center gap-0.5">
-                              <ShieldCheck className="h-3 w-3" />
-                              Partner Gate
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Statutory Action Modal */}
-      <StatutoryActionModal
+      <TaskDetailPanel
         task={selectedTask}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
+        open={panelOpen}
+        onOpenChange={(open) => {
+          setPanelOpen(open);
+          if (!open) setPendingTargetStatus(undefined);
+        }}
         onSelectClient={onSelectClient}
         initialStatus={pendingTargetStatus}
       />
+
+      <AdHocTaskModal
+        open={adhocOpen}
+        onOpenChange={(open) => {
+          setAdhocOpen(open);
+          if (!open) setAdhocEditing(null);
+        }}
+        task={adhocEditing}
+        initialStatus={adhocInitialStatus}
+      />
+
     </>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Card body.
+ * ------------------------------------------------------------------------- */
+
+const AVATAR_TINTS = ['crimson', 'amber', 'muted'] as const;
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: string }) {
+  const blocked = Boolean(card.blockedReason);
+  const overdue = Boolean(card.due && card.due < asOfDate);
+  const tint = AVATAR_TINTS[card.clientCode.length % AVATAR_TINTS.length];
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-start justify-between gap-2 pr-5">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="font-mono text-[11px] font-semibold text-foreground">
+            {card.serviceLabel}
+          </span>
+          {card.part && (
+            <span className="font-mono text-[9px] text-muted-foreground">({card.part})</span>
+          )}
+        </div>
+        <PriorityPill level={card.priority} />
+      </div>
+
+      <p className="truncate text-xs font-medium text-foreground">{card.clientName}</p>
+
+      <p className="font-mono text-[10px] text-muted-foreground">
+        {card.kind === 'statutory' ? (
+          <>
+            {card.clientCode}
+            {card.period ? ` · ${card.period}` : ''}
+          </>
+        ) : (
+          <>
+            {card.clientCode} · ad-hoc
+          </>
+        )}
+      </p>
+
+      {card.kind === 'adhoc' && card.description && (
+        <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+          {card.description}
+        </p>
+      )}
+
+      {blocked && (
+        <div className="flex items-start gap-1 rounded-md border border-destructive/30 bg-destructive/5 px-1.5 py-1 text-[10px] leading-snug text-destructive">
+          <AlertCircle className="mt-px h-3 w-3 shrink-0" />
+          <span>Blocked: {card.blockedReason}</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-1.5">
+        <span className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+          <Calendar className="h-3 w-3 shrink-0" />
+          <span className={cn(overdue && 'font-semibold text-destructive')}>
+            {card.due || 'No date'}
+          </span>
+          {card.dueNote && (
+            <span className="font-bold text-[#c4161c]" title={`Holiday rollback: ${card.dueNote}`}>
+              ↩
+            </span>
+          )}
+        </span>
+
+        <span className="flex items-center gap-1.5">
+          {card.sarsReference ? (
+            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+          ) : card.needsPartnerReview ? (
+            <ShieldCheck className="h-3 w-3 text-amber-500" />
+          ) : null}
+          <AvatarChip initials={initials(card.staffName)} tint={tint} />
+        </span>
+      </div>
+
+      {card.needsPartnerReview && (
+        <Badge variant="crimsonSubdued" className="gap-1 font-mono text-[9px]">
+          <ShieldCheck className="h-2.5 w-2.5" /> Partner review
+        </Badge>
+      )}
+    </div>
   );
 }

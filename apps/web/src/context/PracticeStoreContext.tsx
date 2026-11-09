@@ -9,7 +9,7 @@ import type {
 } from 'fdoncall-practice/domain/types';
 import type { EstimateInput } from 'fdoncall-practice/domain/estimate';
 import type { ISODate } from 'fdoncall-practice/domain/dates';
-import type { WorkflowStatus } from '@/components/deadlines/StatutoryActionModal';
+import type { WorkflowStatus } from '@/lib/workflow';
 import { signInWithCredentials } from '@/lib/auth-client';
 export interface PipelineLead {
   id: string;
@@ -55,8 +55,7 @@ export interface AiApiKeys {
   gemini?: string;
 }
 
-export interface TaskStatusOverride {
-  status: string;
+export interface TaskStatusMetadata {
   sarsReference?: string;
   partnerSignOff?: boolean;
   submissionDate?: string;
@@ -64,6 +63,12 @@ export interface TaskStatusOverride {
   service?: string;
   clientName?: string;
   period?: string;
+  /** IRP6 only: whether the provisional return carried a payment or was nil. */
+  irp6Outcome?: 'nil' | 'payable';
+}
+
+export interface TaskStatusOverride extends TaskStatusMetadata {
+  status: string;
   updatedAt?: string;
 }
 
@@ -438,17 +443,16 @@ export type PracticeAction =
       payload: {
         taskId: string;
         status: string;
-        metadata?: {
-          sarsReference?: string;
-          partnerSignOff?: boolean;
-          submissionDate?: string;
-          approvedBy?: string;
-          service?: string;
-          clientName?: string;
-          period?: string;
-        };
+        metadata?: TaskStatusMetadata;
       };
     }
+  | { type: 'ADD_ADHOC_TASK'; payload: AdHocTask }
+  | {
+      type: 'UPDATE_ADHOC_TASK';
+      payload: { id: string; patch: Partial<Omit<AdHocTask, 'id' | 'createdAt'>> };
+    }
+  | { type: 'DELETE_ADHOC_TASK'; payload: { id: string } }
+  | { type: 'LOG_ACTIVITY'; payload: Omit<ActivityEvent, 'id' | 'at'> }
   | {
       type: 'INVITE_TEAM_MEMBER';
       payload: {
@@ -581,6 +585,46 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
           ...state.taskStatusOverrides,
           [taskId]: updated,
         },
+      };
+    }
+
+    case 'ADD_ADHOC_TASK': {
+      if (state.adhocTasks.some((t) => t.id === action.payload.id)) {
+        return state;
+      }
+      return {
+        ...state,
+        adhocTasks: [...state.adhocTasks, action.payload],
+      };
+    }
+
+    case 'UPDATE_ADHOC_TASK': {
+      const { id, patch } = action.payload;
+      if (!state.adhocTasks.some((t) => t.id === id)) return state;
+      return {
+        ...state,
+        adhocTasks: state.adhocTasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      };
+    }
+
+    case 'DELETE_ADHOC_TASK': {
+      const { id } = action.payload;
+      if (!state.adhocTasks.some((t) => t.id === id)) return state;
+      return {
+        ...state,
+        adhocTasks: state.adhocTasks.filter((t) => t.id !== id),
+      };
+    }
+
+    case 'LOG_ACTIVITY': {
+      const event: ActivityEvent = {
+        ...action.payload,
+        id: `activity-${Date.now()}-${state.activity.length + 1}`,
+        at: new Date().toISOString(),
+      };
+      return {
+        ...state,
+        activity: [event, ...state.activity],
       };
     }
 
@@ -763,6 +807,8 @@ export function mergePracticeState(persisted: Partial<PracticeState>): PracticeS
     },
     sequences: { ...initial.sequences, ...(persisted.sequences || {}) },
     permissions: { ...initial.permissions, ...(persisted.permissions || {}) },
+    adhocTasks: persisted.adhocTasks ?? initial.adhocTasks,
+    activity: persisted.activity ?? initial.activity,
   };
 }
 
@@ -800,19 +846,14 @@ export interface PracticeStoreContextValue extends PracticeState {
   updateClient: (clientCode: string, patch: Partial<Client>) => void;
   saveEstimate: (clientCode: string, input: EstimateInput) => void;
   convertLead: (leadId: string, clientData?: Partial<Client>) => Client | undefined;
-  updateTaskStatus: (
-    taskId: string,
-    status: string,
-    metadata?: {
-      sarsReference?: string;
-      partnerSignOff?: boolean;
-      submissionDate?: string;
-      approvedBy?: string;
-      service?: string;
-      clientName?: string;
-      period?: string;
-    }
+  updateTaskStatus: (taskId: string, status: string, metadata?: TaskStatusMetadata) => void;
+  addAdhocTask: (task: AdHocTask) => void;
+  updateAdhocTask: (
+    id: string,
+    patch: Partial<Omit<AdHocTask, 'id' | 'createdAt'>>
   ) => void;
+  deleteAdhocTask: (id: string) => void;
+  logActivity: (event: Omit<ActivityEvent, 'id' | 'at'>) => void;
   inviteTeamMember: (member: {
     name: string;
     email: string;
@@ -876,15 +917,30 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
   );
 
   const updateTaskStatus = React.useCallback(
-    (
-      taskId: string,
-      status: string,
-      metadata?: { sarsReference?: string; partnerSignOff?: boolean; submissionDate?: string }
-    ) => {
+    (taskId: string, status: string, metadata?: TaskStatusMetadata) => {
       dispatch({ type: 'UPDATE_TASK_STATUS', payload: { taskId, status, metadata } });
     },
     []
   );
+
+  const addAdhocTask = React.useCallback((task: AdHocTask) => {
+    dispatch({ type: 'ADD_ADHOC_TASK', payload: task });
+  }, []);
+
+  const updateAdhocTask = React.useCallback(
+    (id: string, patch: Partial<Omit<AdHocTask, 'id' | 'createdAt'>>) => {
+      dispatch({ type: 'UPDATE_ADHOC_TASK', payload: { id, patch } });
+    },
+    []
+  );
+
+  const deleteAdhocTask = React.useCallback((id: string) => {
+    dispatch({ type: 'DELETE_ADHOC_TASK', payload: { id } });
+  }, []);
+
+  const logActivity = React.useCallback((event: Omit<ActivityEvent, 'id' | 'at'>) => {
+    dispatch({ type: 'LOG_ACTIVITY', payload: event });
+  }, []);
 
   const inviteTeamMember = React.useCallback(
     (member: {
@@ -969,6 +1025,10 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       updateClient,
       convertLead,
       updateTaskStatus,
+      addAdhocTask,
+      updateAdhocTask,
+      deleteAdhocTask,
+      logActivity,
       saveEstimate,
       inviteTeamMember,
       updateStaffRole,
@@ -990,6 +1050,10 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       updateClient,
       convertLead,
       updateTaskStatus,
+      addAdhocTask,
+      updateAdhocTask,
+      deleteAdhocTask,
+      logActivity,
       inviteTeamMember,
       updateStaffRole,
       updateRates,
