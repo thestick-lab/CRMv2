@@ -345,6 +345,8 @@ export interface DeadlinesKanbanProps {
   onSelectClient: (code: string) => void;
   horizon?: '30' | '90' | '365';
   groupBy?: 'workflow' | 'urgency';
+  /** Ad-hoc tasks already narrowed by the dashboard's filters. */
+  adhocTasks?: AdHocTask[];
 }
 
 export function DeadlinesKanban({
@@ -353,17 +355,20 @@ export function DeadlinesKanban({
   onSelectClient,
   horizon = '30',
   groupBy = 'workflow',
+  adhocTasks,
 }: DeadlinesKanbanProps) {
   const {
     taskStatusOverrides,
     updateTaskStatus,
-    adhocTasks,
+    adhocTasks: storeAdhocTasks,
     updateAdhocTask,
     staff,
     clients,
     currentUser,
     logActivity,
   } = usePracticeStore();
+
+  const visibleAdhocTasks = adhocTasks ?? storeAdhocTasks;
 
   const [selectedTask, setSelectedTask] = React.useState<PracticeTaskItem | null>(null);
   const [panelOpen, setPanelOpen] = React.useState(false);
@@ -385,13 +390,13 @@ export function DeadlinesKanban({
     () =>
       buildDeadlineColumns({
         statutoryBuckets: bucketWorkflowTasks(tasks, taskStatusOverrides),
-        adhocBuckets: bucketAdhocTasks(adhocTasks),
+        adhocBuckets: bucketAdhocTasks(visibleAdhocTasks),
         overrides: taskStatusOverrides,
         staff,
         clients,
         asOfDate,
       }),
-    [tasks, taskStatusOverrides, adhocTasks, staff, clients, asOfDate]
+    [tasks, taskStatusOverrides, visibleAdhocTasks, staff, clients, asOfDate]
   );
 
   const allCards = React.useMemo(
@@ -463,7 +468,12 @@ export function DeadlinesKanban({
     if (!card) return;
 
     const targetStatus = toColumnId as WorkflowStatus;
-    if (card.status === targetStatus) return;
+    if (card.status === targetStatus) {
+      setFeedback(
+        `${card.serviceLabel} for ${card.clientCode} is already in ${targetStatus}.`
+      );
+      return;
+    }
 
     const ctx = { needsPartnerReview: card.needsPartnerReview, actorRole: currentUser.role };
     if (!canMoveStatus(card.status, targetStatus, ctx)) {

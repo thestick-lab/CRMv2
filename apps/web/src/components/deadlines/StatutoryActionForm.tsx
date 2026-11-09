@@ -5,7 +5,7 @@ import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  WORKFLOW_STATUSES,
+  availableStatusOptions,
   canSignOffPartnerGate,
   normalizeWorkflowStatus,
   validateStatutorySubmission,
@@ -45,12 +45,23 @@ export function StatutoryActionForm({
   const [irp6Outcome, setIrp6Outcome] = React.useState<'nil' | 'payable'>('nil');
   const [validationError, setValidationError] = React.useState<string | null>(null);
 
+  const isPartner = canSignOffPartnerGate(currentUser.role);
+  const requiresPartnerGate =
+    task.needsPartnerReview ||
+    task.service === 'AFS' ||
+    task.service === 'ITR14' ||
+    task.service === 'IRP6';
+
   React.useEffect(() => {
     const rawStatus = initialStatus ?? override?.status ?? task.status;
-    setStatus(
+    const normalized =
       !rawStatus || (rawStatus as string) === 'Not started'
         ? 'Not Started'
-        : normalizeWorkflowStatus(rawStatus as string)
+        : normalizeWorkflowStatus(rawStatus as string);
+    // A legacy non-gated task parked in the gate lane is repaired on open:
+    // the gate is only reachable for review-gated work.
+    setStatus(
+      normalized === 'Partner Review Gate' && !requiresPartnerGate ? 'Not Started' : normalized
     );
     setPartnerSignOff(override?.partnerSignOff || false);
     setSarsReference(override?.sarsReference || '');
@@ -58,14 +69,7 @@ export function StatutoryActionForm({
     setIta34Notice(false);
     setIrp6Outcome(override?.irp6Outcome ?? 'nil');
     setValidationError(null);
-  }, [task, override, initialStatus]);
-
-  const isPartner = canSignOffPartnerGate(currentUser.role);
-  const requiresPartnerGate =
-    task.needsPartnerReview ||
-    task.service === 'AFS' ||
-    task.service === 'ITR14' ||
-    task.service === 'IRP6';
+  }, [task, override, initialStatus, requiresPartnerGate]);
 
   const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
@@ -136,7 +140,7 @@ export function StatutoryActionForm({
       <div>
         <p className="mb-1.5 block font-medium text-foreground">Workflow status</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {WORKFLOW_STATUSES.map((option) => (
+          {availableStatusOptions(requiresPartnerGate).map((option) => (
             <button
               key={option}
               type="button"

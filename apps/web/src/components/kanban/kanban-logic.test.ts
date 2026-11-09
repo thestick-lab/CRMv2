@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   WORKFLOW_LANES,
   WORKFLOW_STATUSES,
+  availableStatusOptions,
   canMoveStatus,
   laneIndex,
   normalizeWorkflowStatus,
@@ -52,6 +53,12 @@ describe('workflow lanes and move legality', () => {
 
   it('never treats a lane as a target of itself', () => {
     expect(canMoveStatus('In Progress', 'In Progress', nonGated)).toBe(false);
+  });
+
+  it('offers the partner review gate only to review-gated work', () => {
+    expect(availableStatusOptions(true)).toEqual([...WORKFLOW_STATUSES]);
+    expect(availableStatusOptions(false)).not.toContain('Partner Review Gate');
+    expect(availableStatusOptions(false)).toHaveLength(WORKFLOW_STATUSES.length - 1);
   });
 
   it('normalises legacy task statuses into workflow lanes', () => {

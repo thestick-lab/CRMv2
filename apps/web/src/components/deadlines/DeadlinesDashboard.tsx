@@ -8,6 +8,7 @@ import {
   filterPracticeTasks,
 } from './practice-tasks';
 import { DeadlinesKanban } from './DeadlinesKanban';
+import { filterAdhocTasks } from './ad-hoc';
 import { DeadlinesTable } from './DeadlinesTable';
 import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
@@ -105,7 +106,20 @@ export function DeadlinesDashboard({
     return Array.from(new Set(summary.tasks.map((t) => t.service))).sort();
   }, [summary.tasks]);
 
-  const openAdhocCount = adhocTasks.filter((t) => t.status !== 'Submitted').length;
+  // Ad-hoc cards obey the same client/staff/return/horizon/KPI controls as the
+  // statutory tasks (undated manual work stays visible as a triage blocker).
+  const displayedAdhocTasks = React.useMemo(
+    () =>
+      filterAdhocTasks(adhocTasks, {
+        clientCode: clientFilter,
+        staffId: selectedStaff,
+        serviceCode: selectedService,
+        horizon,
+        kpiFilter: activeKpiFilter,
+        asOfDate: today,
+      }),
+    [adhocTasks, clientFilter, selectedStaff, selectedService, horizon, activeKpiFilter, today]
+  );
 
   const kpiTiles: Array<{
     id: DeadlineKpiFilter;
@@ -166,9 +180,9 @@ export function DeadlinesDashboard({
       <PageHeader
         eyebrow="Deadlines"
         title="Deadlines"
-        subtitle={`${displayedTasks.length} statutory tasks in view · ${openAdhocCount} open ad-hoc task${
-          openAdhocCount === 1 ? '' : 's'
-        }. Six workflow lanes from preparation through partner sign-off to SARS submission.`}
+        subtitle={`${displayedTasks.length} statutory tasks · ${displayedAdhocTasks.length} ad-hoc task${
+          displayedAdhocTasks.length === 1 ? '' : 's'
+        } in view. Six workflow lanes from preparation through partner sign-off to SARS submission.`}
         actions={
           <div className="flex items-center gap-2">
             <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
@@ -384,6 +398,7 @@ export function DeadlinesDashboard({
       {viewMode === 'kanban' ? (
         <DeadlinesKanban
           tasks={displayedTasks}
+          adhocTasks={displayedAdhocTasks}
           groupBy={groupBy}
           onSelectClient={onSelectClient}
           asOfDate={today}

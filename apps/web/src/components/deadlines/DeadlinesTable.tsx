@@ -19,13 +19,19 @@ export interface DeadlinesTableProps {
   onSelectClient: (code: string) => void;
 }
 
-const STATUS_VARIANT: Record<WorkflowStatus, 'outline' | 'secondary' | 'warning' | 'success' | 'default'> = {
-  'Not Started': 'outline',
-  'In Progress': 'secondary',
-  'Awaiting Client': 'warning',
-  'Partner Review Gate': 'warning',
-  'Approved (Ready to Lodge)': 'success',
-  Submitted: 'default',
+const STATUS_VARIANT: Record<
+  WorkflowStatus,
+  { variant: 'outline' | 'secondary' | 'warning' | 'crimsonSubdued' | 'default'; className?: string }
+> = {
+  'Not Started': { variant: 'outline' },
+  'In Progress': { variant: 'secondary' },
+  'Awaiting Client': { variant: 'warning' },
+  'Partner Review Gate': { variant: 'crimsonSubdued' },
+  'Approved (Ready to Lodge)': {
+    variant: 'outline',
+    className: 'border-foreground/25 bg-muted/60 text-foreground',
+  },
+  Submitted: { variant: 'default' },
 };
 
 export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
@@ -171,8 +177,11 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
                     {/* Status — includes Awaiting Client */}
                     <td className="px-3 py-2.5">
                       <Badge
-                        variant={STATUS_VARIANT[status]}
-                        className="whitespace-nowrap px-1.5 py-0 font-mono text-[10px]"
+                        variant={STATUS_VARIANT[status].variant}
+                        className={cn(
+                          'whitespace-nowrap px-1.5 py-0 font-mono text-[10px]',
+                          STATUS_VARIANT[status].className
+                        )}
                       >
                         {status}
                       </Badge>

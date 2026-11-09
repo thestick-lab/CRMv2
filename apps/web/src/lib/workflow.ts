@@ -54,6 +54,16 @@ export function laneIndex(status: WorkflowStatus): number {
   return WORKFLOW_STATUSES.indexOf(status);
 }
 
+/**
+ * Lanes a task may be set to. Only review-gated work can enter the
+ * partner review gate, matching `canMoveStatus` for board moves.
+ */
+export function availableStatusOptions(needsPartnerReview: boolean): WorkflowStatus[] {
+  return WORKFLOW_STATUSES.filter(
+    (status) => status !== 'Partner Review Gate' || needsPartnerReview
+  );
+}
+
 /** The partner review gate is practice rule, not matrix-controlled. */
 export function canSignOffPartnerGate(userRole: string): boolean {
   return userRole === 'Partner';
