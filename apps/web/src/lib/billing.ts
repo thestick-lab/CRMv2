@@ -1,6 +1,6 @@
 import { cents, formatMonthShort } from 'fdoncall-practice/domain/estimate';
 import { endOfMonth, iso, type ISODate } from 'fdoncall-practice/domain/dates';
-import type { InvoiceLine, TimeEntry } from '@/context/PracticeStoreContext';
+import type { Invoice, InvoiceLine, TimeEntry } from '@/context/PracticeStoreContext';
 
 /**
  * Time-entry arithmetic for the practice.
@@ -163,6 +163,11 @@ export function billingMonthRange(month: string): MonthRange {
   return { start: iso(year, monthNumber, 1), end: endOfMonth(year, monthNumber) };
 }
 
+/** The invoice line id one client-month's overage is billed on. */
+export function timeLineId(clientCode: string, month: string): string {
+  return `line-time-${clientCode}-${month}`;
+}
+
 export interface TimeInvoiceFeed {
   /** Unbilled billable entries in the month: what the invoice would bill. */
   entries: TimeEntry[];
@@ -185,9 +190,11 @@ export interface TimeInvoiceFeed {
  * Only billable, not-yet-invoiced entries started inside the range count. The
  * covered portion produces no line — the retainer fee line already on the
  * invoice pays for it — and the overage becomes exactly one `OUTPUT2` line at
- * the quote's ad-hoc rate. The quantity is stated in decimal hours (two
- * decimals, matching the report's labels) and the line amount is derived from
- * it, so quantity × rate and the invoice's line sum always agree.
+ * the quote's ad-hoc rate. The quantity is stated in decimal hours at
+ * hundredth-hour granularity — every allowance quoted to two decimals and every
+ * quarter-hour entry lands exactly there — and the line amount is derived from
+ * it, so quantity × rate, the invoice's line sum and `splitRetainerOverage`'s
+ * own amount agree.
  */
 export function timeInvoiceFeed(
   clientCode: string,
@@ -213,14 +220,14 @@ export function timeInvoiceFeed(
     adHocRate
   );
 
-  const overageHours = Number((split.overageMinutes / 60).toFixed(2));
+  const overageHours = Math.round((split.overageMinutes / 60) * 10_000) / 10_000;
   const unitAmount = cents(adHocRate);
   const monthKey = monthRange.start.slice(0, 7);
   const lines: InvoiceLine[] =
     overageHours > 0
       ? [
           {
-            id: `line-time-${clientCode}-${monthKey}`,
+            id: timeLineId(clientCode, monthKey),
             description: `Time overage — ${formatMonthShort(monthKey)}`,
             quantity: overageHours,
             unitAmount,
@@ -253,4 +260,26 @@ export function buildTimeInvoiceLines(
   adHocRate: number
 ): InvoiceLine[] {
   return timeInvoiceFeed(clientCode, monthRange, entries, allowanceHours, adHocRate).lines;
+}
+
+/**
+ * Entries a saved invoice billed whose overage line it no longer carries.
+ *
+ * Deleting the `Time overage` line from an invoice must release the entries it
+ * billed: an entry whose `invoiceId` points at an invoice that no longer bills
+ * it is excluded from every later feed, so the time would be unbillable for
+ * good. The caller clears the returned entries' `invoiceId`. An entry whose
+ * start is unreadable cannot be attributed to a month and is left untouched.
+ */
+export function releasedTimeEntries(
+  invoice: Pick<Invoice, 'id' | 'lineItems'>,
+  entries: TimeEntry[]
+): TimeEntry[] {
+  const lineIds = new Set(invoice.lineItems.map((line) => line.id));
+  return entries.filter((entry) => {
+    if (entry.invoiceId !== invoice.id) return false;
+    const day = entryDay(entry.startedAt);
+    if (day === '') return false;
+    return !lineIds.has(timeLineId(entry.clientCode, day.slice(0, 7)));
+  });
 }

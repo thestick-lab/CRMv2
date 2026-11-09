@@ -5,11 +5,13 @@ import {
   buildTimeInvoiceLines,
   entryDurationMinutes,
   formatHours,
+  releasedTimeEntries,
   resolveRoundedMinutes,
   resolveWorkedMinutes,
   roundToQuarterMinutes,
   splitRetainerOverage,
   timeInvoiceFeed,
+  timeLineId,
 } from './billing';
 
 describe('roundToQuarterMinutes', () => {
@@ -295,5 +297,132 @@ describe('timeInvoiceFeed / buildTimeInvoiceLines', () => {
   it('spans a month key to inclusive first and last days', () => {
     expect(billingMonthRange('2026-02')).toEqual({ start: '2026-02-01', end: '2026-02-28' });
     expect(billingMonthRange('2028-02')).toEqual({ start: '2028-02-01', end: '2028-02-29' });
+  });
+});
+
+describe('releasedTimeEntries', () => {
+  const NOVEMBER = billingMonthRange('2026-11');
+  const MUS = 'MUS-875';
+
+  function entry(id: string, overrides: Partial<TimeEntry> = {}): TimeEntry {
+    return {
+      id,
+      clientCode: MUS,
+      staffUserId: 'staff-1',
+      startedAt: '2026-11-05T09:00:00+02:00',
+      endedAt: '2026-11-05T15:00:00+02:00',
+      durationMinutes: 360,
+      roundedMinutes: 360,
+      billable: true,
+      description: 'Bookkeeping',
+      createdAt: '2026-11-05T15:00:00+02:00',
+      ...overrides,
+    };
+  }
+
+  const logged = [entry('entry-a'), entry('entry-b'), entry('entry-c')];
+
+  /** A saved invoice carrying the month's overage line and the entries it billed. */
+  function billed() {
+    const feed = timeInvoiceFeed(MUS, NOVEMBER, logged, 15, 625);
+    return {
+      invoice: {
+        id: 'invoice-1',
+        lineItems: [
+          {
+            id: 'line-fee-nov',
+            description: 'Monthly accounting — Nov 26',
+            quantity: 1,
+            unitAmount: 7200,
+            taxType: 'OUTPUT2' as const,
+            lineAmount: 7200,
+          },
+          ...feed.lines,
+        ],
+      },
+      entries: logged.map((item) => ({ ...item, invoiceId: 'invoice-1' })),
+    };
+  }
+
+  it('releases nothing while the invoice still carries the month’s time line', () => {
+    const { invoice, entries } = billed();
+
+    expect(invoice.lineItems.some((line) => line.id === timeLineId(MUS, '2026-11'))).toBe(true);
+    expect(releasedTimeEntries(invoice, entries)).toEqual([]);
+  });
+
+  it('releases the billed entries once the time line is deleted', () => {
+    const { invoice, entries } = billed();
+    const trimmed = { ...invoice, lineItems: invoice.lineItems.slice(0, 1) };
+
+    expect(releasedTimeEntries(trimmed, entries).map((item) => item.id)).toEqual([
+      'entry-a',
+      'entry-b',
+      'entry-c',
+    ]);
+  });
+
+  it('makes released time billable again — no silent loss, no double charge', () => {
+    const { invoice, entries } = billed();
+    const trimmed = { ...invoice, lineItems: invoice.lineItems.slice(0, 1) };
+
+    // While billed, the feed is empty for the month.
+    expect(timeInvoiceFeed(MUS, NOVEMBER, entries, 15, 625).lines).toEqual([]);
+
+    const released = releasedTimeEntries(trimmed, entries).map((item) => ({
+      ...item,
+      invoiceId: undefined,
+    }));
+    const feed = timeInvoiceFeed(MUS, NOVEMBER, released, 15, 625);
+
+    expect(feed.entries.map((item) => item.id)).toEqual(['entry-a', 'entry-b', 'entry-c']);
+    expect(feed.lines).toHaveLength(1);
+    expect(feed.lines[0].lineAmount).toBe(1875);
+  });
+
+  it('leaves entries billed by another invoice alone', () => {
+    const { invoice, entries } = billed();
+    const trimmed = { ...invoice, lineItems: invoice.lineItems.slice(0, 1) };
+
+    expect(releasedTimeEntries(trimmed, entries.map((item) => ({ ...item, invoiceId: 'invoice-2' })))).toEqual([]);
+  });
+
+  it('leaves an entry with an unreadable start untouched', () => {
+    const { invoice, entries } = billed();
+    const trimmed = { ...invoice, lineItems: invoice.lineItems.slice(0, 1) };
+
+    expect(
+      releasedTimeEntries(trimmed, [{ ...entries[0], startedAt: 'not-a-date' }])
+    ).toEqual([]);
+  });
+});
+
+describe('timeInvoiceFeed pricing parity', () => {
+  it('prices the line exactly as splitRetainerOverage prices the minutes', () => {
+    const NOVEMBER = billingMonthRange('2026-11');
+    const entries = [360, 360, 360].map((minutes, index) => ({
+      id: `entry-${index}`,
+      clientCode: 'MUS-875',
+      staffUserId: 'staff-1',
+      startedAt: `2026-11-0${index + 3}T09:00:00+02:00`,
+      durationMinutes: minutes,
+      roundedMinutes: minutes,
+      billable: true,
+      description: 'Bookkeeping',
+      createdAt: '2026-11-05T15:00:00+02:00',
+    }));
+
+    // 15.13h allowance against 18h: 172.2 minutes of overage = 2.87h.
+    const feed = timeInvoiceFeed('MUS-875', NOVEMBER, entries, 15.13, 625);
+    const split = splitRetainerOverage(
+      entries.map((entry) => ({ billableMinutes: entry.roundedMinutes })),
+      15.13,
+      625
+    );
+
+    expect(feed.overageHours).toBe(2.87);
+    expect(feed.lines[0].quantity).toBe(2.87);
+    expect(feed.lines[0].lineAmount).toBe(split.overageAmountZar);
+    expect(feed.lines[0].lineAmount).toBe(1793.75);
   });
 });

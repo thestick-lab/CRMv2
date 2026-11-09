@@ -22,7 +22,13 @@ import {
   type XeroSyncResult,
 } from '@/lib/integrations/xero';
 import { cn } from '@/lib/utils';
-import { billingMonthRange, entryDay, formatHours, timeInvoiceFeed } from '@/lib/billing';
+import {
+  billingMonthRange,
+  entryDay,
+  formatHours,
+  releasedTimeEntries,
+  timeInvoiceFeed,
+} from '@/lib/billing';
 import { Button } from '@/components/ui/button';
 import { formatZar } from '@/components/quote/estimate-form';
 import {
@@ -259,6 +265,23 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
         `${billedEntryIds.length} entries · ${formatZar(record.total)} incl. 15% VAT`
       );
     }
+
+    // The inverse: deleting a time line from a saved invoice must hand its
+    // entries back to the unbilled feed. An entry left pointing at an invoice
+    // that no longer bills it would never be offered again.
+    if (savedInvoice) {
+      const released = releasedTimeEntries(
+        { id: record.id, lineItems: record.lineItems },
+        timeEntries
+      );
+      if (released.length > 0) {
+        released.forEach((entry) => updateTimeEntry(entry.id, { invoiceId: undefined }));
+        log(
+          `Time line removed from ${record.number}`,
+          `${released.length} entries returned to the unbilled feed`
+        );
+      }
+    }
     return record;
   };
 
@@ -304,6 +327,10 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     setMonth(next);
     const regenerated = createInvoiceFromQuote(quote, next, sequences.invoice, { issueDate });
     setLines(regenerated.lineItems);
+    // Regenerating the month's lines drops any staged time line, so release the
+    // staging too — otherwise those still-unbilled entries stay hidden from the
+    // feed the user has just switched away from and back to.
+    setStagedTime({});
     setDueDate(addDays(issueDate, paymentTermsDays(paymentTerms)));
   };
 
