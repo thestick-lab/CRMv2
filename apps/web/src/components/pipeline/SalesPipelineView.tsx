@@ -58,6 +58,30 @@ const NEXT_STEP: Record<QuoteStage, string | undefined> = {
 
 const OWNER_TINTS = ['crimson', 'amber', 'muted'] as const;
 
+export interface InitialClientIntent {
+  /** The request still in flight; `undefined` once the parent clears it. */
+  consumed: string | undefined;
+  /** The client code to open the builder with on this pass, if any. */
+  open: string | undefined;
+}
+
+/**
+ * Fold one pass of the `initialClientCode` prop into the consumed request.
+ *
+ * The parent clears the prop (`onInitialClientConsumed`) the moment the builder
+ * opens, so clearing resets the latch: the *same* client's next `New Quote`
+ * must open the builder again. A repeated request only no-ops while the prop
+ * still carries the code that was already consumed in this pass.
+ */
+export function consumeInitialClientCode(
+  consumed: string | undefined,
+  initialClientCode: string | undefined
+): InitialClientIntent {
+  if (!initialClientCode) return { consumed: undefined, open: undefined };
+  if (consumed === initialClientCode) return { consumed, open: undefined };
+  return { consumed: initialClientCode, open: initialClientCode };
+}
+
 type Period = 'all' | '90d' | '30d';
 
 const PERIODS: { id: Period; label: string; days?: number }[] = [
@@ -147,12 +171,18 @@ export function SalesPipelineView({
     if (tab === 'invoices' && !canReadInvoices) setTab('pipeline');
   }, [tab, canReadInvoices]);
 
-  // A client record's `New Quote` opens the builder once, pre-selected.
+  // A client record's `New Quote` opens the builder once per request. The
+  // parent clears `initialClientCode` after consuming it, which also clears the
+  // latch so the same client can request the builder again.
   const consumedInitialClient = React.useRef<string | undefined>(undefined);
   React.useEffect(() => {
-    if (!initialClientCode || consumedInitialClient.current === initialClientCode) return;
-    consumedInitialClient.current = initialClientCode;
-    setEditor({ clientCode: initialClientCode });
+    const intent = consumeInitialClientCode(
+      consumedInitialClient.current,
+      initialClientCode
+    );
+    consumedInitialClient.current = intent.consumed;
+    if (!intent.open) return;
+    setEditor({ clientCode: intent.open });
     onInitialClientConsumed?.();
   }, [initialClientCode, onInitialClientConsumed]);
 

@@ -26,6 +26,35 @@ export const RBAC_ROLES = [
   'Support Tech',
 ] as const;
 
+/**
+ * Roles at or above Compliance Officer. Minting an account into one of these
+ * is a `Settings — manage` decision — the same grant that guards role changes —
+ * so a Compliance Officer cannot invite themselves a Partner account behind
+ * the pane's `Settings — view`.
+ */
+export const MANAGE_REQUIRED_INVITE_ROLES: readonly string[] = [
+  'Partner',
+  'Compliance Officer',
+];
+
+export function canInviteWithRole(
+  actorRole: Parameters<typeof can>[0],
+  targetRole: string,
+  matrix: Parameters<typeof can>[3]
+): boolean {
+  if (!MANAGE_REQUIRED_INVITE_ROLES.includes(targetRole)) return true;
+  return can(actorRole, 'Settings', 'manage', matrix);
+}
+
+export function inviteRoleBlock(
+  actorRole: Parameters<typeof can>[0],
+  targetRole: string,
+  matrix: Parameters<typeof can>[3]
+): string | null {
+  if (canInviteWithRole(actorRole, targetRole, matrix)) return null;
+  return `Inviting a ${targetRole} needs Settings — manage permissions.`;
+}
+
 export function TeamRbacPane() {
   const {
     staff,
@@ -41,6 +70,13 @@ export function TeamRbacPane() {
   // otherwise a Compliance Officer could promote themselves to Partner.
   const canManageStaff = can(currentUser.role, 'Settings', 'manage', permissions.matrix);
   const canEditStaff = can(currentUser.role, 'People', 'view-invite', permissions.matrix);
+  const invitableRoles = React.useMemo(
+    () =>
+      RBAC_ROLES.filter((candidate) =>
+        canInviteWithRole(currentUser.role, candidate, permissions.matrix)
+      ),
+    [currentUser.role, permissions.matrix]
+  );
   const [feedback, setFeedback] = React.useState<string | null>(null);
   const [pendingRole, setPendingRole] = React.useState<{
     staffId: string;
@@ -75,6 +111,11 @@ export function TeamRbacPane() {
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const block = inviteRoleBlock(currentUser.role, role, permissions.matrix);
+    if (block) {
+      setFeedback(block);
+      return;
+    }
 
     inviteTeamMember({
       name: name.trim(),
@@ -83,10 +124,18 @@ export function TeamRbacPane() {
       kind,
     });
 
+    setFeedback(null);
     setName('');
     setEmail('');
     setModalOpen(false);
   };
+
+  // A role the actor may not hand out never stays selected (e.g. after a user
+  // switch): fall back to the first invitable role.
+  React.useEffect(() => {
+    if (invitableRoles.includes(role)) return;
+    setRole(invitableRoles[0] ?? 'Team member');
+  }, [invitableRoles, role]);
 
   return (
     <div className="space-y-6 max-w-4xl text-xs">
@@ -266,12 +315,17 @@ export function TeamRbacPane() {
                     onChange={(e) => setRole(e.target.value as typeof RBAC_ROLES[number])}
                     className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-foreground"
                   >
-                    {RBAC_ROLES.map((r) => (
+                    {invitableRoles.map((r) => (
                       <option key={r} value={r}>
                         {r}
                       </option>
                     ))}
                   </select>
+                  {!canManageStaff && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Partner and Compliance Officer invites need Settings — manage.
+                    </p>
+                  )}
                 </div>
 
                 <div>

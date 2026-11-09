@@ -288,6 +288,7 @@ export function StatutoryProfileTab({
   };
 
   const handleMissingAdd = (item: MissingInformationItem) => {
+    if (readOnly) return;
     if (item.kind === 'contact') {
       setEditingChannel(item.id as ContactChannel);
       return;
@@ -384,7 +385,7 @@ export function StatutoryProfileTab({
           details={details}
         />
 
-        <MissingInformationPanel items={missing} onAdd={handleMissingAdd} />
+        <MissingInformationPanel items={missing} onAdd={handleMissingAdd} readOnly={readOnly} />
 
         <section className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">

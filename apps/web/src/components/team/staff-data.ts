@@ -55,8 +55,15 @@ export function buildStaffUsers(
 ): PracticeUser[] {
   return staff.map((member) => {
     const isCurrent = currentUser?.id === member.id;
-    const contractType = contractTypeForKind(member.kind);
     const recorded = staffProfiles[member.id];
+    // A saved contract type is the record: only fall back to the employment
+    // kind when nothing has been recorded, so `StaffEditDialog`'s select is
+    // never discarded on the next render. `kind` follows the same truth so the
+    // register and the profile cannot disagree.
+    const contractType =
+      recorded?.contractType ??
+      (isCurrent ? currentUser?.contract?.contractType : undefined) ??
+      contractTypeForKind(member.kind);
 
     return {
       id: member.id,
@@ -64,11 +71,11 @@ export function buildStaffUsers(
       role: roleFor(member),
       email:
         isCurrent && currentUser?.email ? currentUser.email : `${member.id}@fdoncall.co.za`,
-      kind: member.kind,
+      kind: contractType,
       contract: {
+        ...(isCurrent ? currentUser?.contract ?? {} : {}),
         ...recorded,
         contractType,
-        ...(isCurrent ? currentUser?.contract ?? {} : {}),
       },
     };
   });
@@ -81,10 +88,17 @@ export function staffProfileOf(
   profiles: Record<string, StaffProfile>,
   currentUser?: PracticeUser
 ): StaffProfile {
+  const recorded = profiles[staffId];
+  const currentContract = currentUser?.id === staffId ? currentUser.contract : undefined;
   return {
-    ...profiles[staffId],
-    contractType: contractTypeForKind(kind),
-    ...(currentUser?.id === staffId ? currentUser.contract ?? {} : {}),
+    ...currentContract,
+    ...recorded,
+    // The saved type is what the dialog must show and re-save; the employment
+    // kind is only a fallback for someone with no recorded terms yet.
+    contractType:
+      recorded?.contractType ??
+      currentContract?.contractType ??
+      contractTypeForKind(kind),
   };
 }
 
@@ -117,7 +131,10 @@ export function staffRows(staff: StaffMember[], users: PracticeUser[]): StaffRow
       name: member.name,
       initials: personInitials(member.name),
       role: user?.role ?? member.role,
-      kind: member.kind,
+      // The register's employment kind mirrors the contract terms on record,
+      // so a saved switch between employee and subcontractor shows up here
+      // exactly as the profile dialog shows it.
+      kind: user?.contract?.contractType ?? contractTypeForKind(member.kind),
       email: user?.email,
       phone: contract?.phone,
       startDate: contract?.startDate,

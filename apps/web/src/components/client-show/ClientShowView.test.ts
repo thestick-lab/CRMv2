@@ -1,7 +1,13 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CLIENT_SHOW_TABS, clientRecordTabs, formatClientSummary } from './ClientShowView';
+import {
+  CLIENT_SHOW_TABS,
+  canLogTimeOnClient,
+  clientRecordTabs,
+  formatClientSummary,
+} from './ClientShowView';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { DEFAULT_PERMISSION_MATRIX } from '@/lib/permissions';
 
 describe('ClientShowView header and tab definitions', () => {
   const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
@@ -111,5 +117,38 @@ describe('ClientShowView header and tab definitions', () => {
     expect(summary.code).toBe('MUS-875');
     expect(summary.entityType).toBe('Company');
     expect(summary.partnerLabel).toBe('Erik (Partner)');
+  });
+});
+
+describe('Add Action → Log Time permission', () => {
+  const unassigned = CLIENTS.find((c) => c.code === 'MUS-875')!;
+  const assignedToCaroline = CLIENTS.find((c) => c.code === 'LES-841')!;
+
+  it('refuses a Subcontractor on a client they are not assigned to', () => {
+    expect(canLogTimeOnClient('Subcontractor', DEFAULT_PERMISSION_MATRIX, 'hannes', unassigned)).toBe(
+      false
+    );
+  });
+
+  it('allows a Subcontractor on their assigned client', () => {
+    expect(
+      canLogTimeOnClient('Subcontractor', DEFAULT_PERMISSION_MATRIX, 'caroline', assignedToCaroline)
+    ).toBe(true);
+  });
+
+  it('allows roles holding a full Time — log own grant', () => {
+    expect(canLogTimeOnClient('Accountant', DEFAULT_PERMISSION_MATRIX, 'mia', unassigned)).toBe(
+      true
+    );
+    expect(canLogTimeOnClient('Support Tech', DEFAULT_PERMISSION_MATRIX, 'sam', unassigned)).toBe(
+      false
+    );
+  });
+
+  it('wires the check into the Add Action menu', () => {
+    const source = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+    expect(source).toContain('canLogTimeOnClient(');
+    expect(source).toContain('canLogTime={canLogTime}');
+    expect(source).toContain('permitted: canLogTime');
   });
 });

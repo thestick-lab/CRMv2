@@ -5,9 +5,18 @@ import type { MissingInformationItem } from '../client-record-data';
 export interface MissingInformationPanelProps {
   items: MissingInformationItem[];
   onAdd: (item: MissingInformationItem) => void;
+  /**
+   * The role cannot edit this record: the gap is still listed, but no `Add`
+   * affordance is offered — the write would be dropped at save time.
+   */
+  readOnly?: boolean;
 }
 
-export function MissingInformationPanel({ items, onAdd }: MissingInformationPanelProps) {
+export function MissingInformationPanel({
+  items,
+  onAdd,
+  readOnly = false,
+}: MissingInformationPanelProps) {
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <CardHeaderWithLink title="Missing information" />
@@ -28,13 +37,15 @@ export function MissingInformationPanel({ items, onAdd }: MissingInformationPane
                   <p className="truncate text-[11px] text-muted-foreground">{item.hint}</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => onAdd(item)}
-                className="shrink-0 rounded-sm font-mono text-[11px] uppercase tracking-wide text-[#c4161c] outline-none transition-colors hover:text-[#a01217] focus-visible:ring-1 focus-visible:ring-[#c4161c] dark:text-[#f87171]"
-              >
-                Add
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => onAdd(item)}
+                  className="shrink-0 rounded-sm font-mono text-[11px] uppercase tracking-wide text-[#c4161c] outline-none transition-colors hover:text-[#a01217] focus-visible:ring-1 focus-visible:ring-[#c4161c] dark:text-[#f87171]"
+                >
+                  Add
+                </button>
+              )}
             </li>
           ))}
         </ul>

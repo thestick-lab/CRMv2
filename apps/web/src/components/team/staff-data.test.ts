@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { STAFF } from 'fdoncall-practice/data/seed';
-import type { PracticeUser } from '@/context/PracticeStoreContext';
-import { buildStaffUsers, filterStaffRows, staffRows } from './staff-data';
+import {
+  getInitialPracticeState,
+  loadPracticeState,
+  practiceReducer,
+  type PracticeUser,
+} from '@/context/PracticeStoreContext';
+import {
+  buildStaffUsers,
+  filterStaffRows,
+  staffProfileOf,
+  staffRows,
+} from './staff-data';
 
 const PARTNER: PracticeUser = {
   id: 'erik',
@@ -105,5 +115,60 @@ describe('filterStaffRows', () => {
     expect(filterStaffRows(rows, 'partner').map((r) => r.role)).toEqual(['Partner', 'Partner']);
     expect(filterStaffRows(rows, 'mia@fdoncall').map((r) => r.id)).toEqual(['mia']);
     expect(filterStaffRows(rows, '   ')).toHaveLength(rows.length);
+  });
+});
+
+describe('contract type is the record', () => {
+  it('prefers the saved contract type over the derived employment kind', () => {
+    const users = buildStaffUsers(STAFF, PARTNER, { hannes: { contractType: 'employee' } });
+    const hannesUser = users.find((user) => user.id === 'hannes')!;
+    expect(hannesUser.contract?.contractType).toBe('employee');
+    expect(hannesUser.kind).toBe('employee');
+
+    const row = staffRows(STAFF, users).find((entry) => entry.id === 'hannes')!;
+    expect(row.contractType).toBe('employee');
+    expect(row.kind).toBe('employee');
+
+    const profile = staffProfileOf('hannes', 'subcontractor', {
+      hannes: { contractType: 'employee' },
+    });
+    expect(profile.contractType).toBe('employee');
+  });
+
+  it('agrees between the register and the profile dialog', () => {
+    const profiles = { mia: { contractType: 'subcontractor' as const, hourlyRate: 900 } };
+    const users = buildStaffUsers(STAFF, PARTNER, profiles);
+    const row = staffRows(STAFF, users).find((entry) => entry.id === 'mia')!;
+    const dialog = staffProfileOf('mia', 'employee', profiles);
+
+    expect(row.contractType).toBe(dialog.contractType);
+    expect(row.kind).toBe(dialog.contractType);
+    expect(row.hourlyRate).toBe(900);
+  });
+
+  it('survives a save → reload round-trip', () => {
+    const saved = practiceReducer(getInitialPracticeState(), {
+      type: 'UPDATE_STAFF_PROFILE',
+      payload: {
+        staffId: 'mia',
+        patch: { contractType: 'subcontractor', hourlyRate: 900 },
+      },
+    });
+
+    const reloaded = loadPracticeState({ getItem: () => JSON.stringify(saved) });
+    const row = staffRows(
+      reloaded.staff,
+      buildStaffUsers(reloaded.staff, reloaded.currentUser, reloaded.staffProfiles)
+    ).find((entry) => entry.id === 'mia')!;
+    const dialog = staffProfileOf(
+      'mia',
+      reloaded.staff.find((member) => member.id === 'mia')!.kind,
+      reloaded.staffProfiles
+    );
+
+    expect(row.contractType).toBe('subcontractor');
+    expect(row.kind).toBe('subcontractor');
+    expect(row.hourlyRate).toBe(900);
+    expect(dialog.contractType).toBe('subcontractor');
   });
 });

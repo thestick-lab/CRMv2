@@ -32,7 +32,7 @@ import { OrganizationPanel } from './panels/OrganizationPanel';
 import { RelationshipHistoryPanel } from './panels/RelationshipHistoryPanel';
 import { buildClientTimeline, clientTags } from './client-record-data';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
-import { can } from '@/lib/permissions';
+import { can, isAssignedTo } from '@/lib/permissions';
 import { useTimer } from '@/components/time/timer-context';
 
 export interface ClientSummary {
@@ -68,6 +68,25 @@ export function formatClientSummary(client: Client): ClientSummary {
     vatLabel,
     groupName: group?.name,
   };
+}
+
+/**
+ * Whether this role may start a timer against `client`.
+ *
+ * `Time — log own` is `Limited (assigned)` for a Subcontractor, so the row
+ * alone is not enough: the record's own assignment scope supplies the answer.
+ * `+ New → Log time` and the client record's `Add Action → Log Time` both use
+ * this, so the menu can never offer a write the role does not hold.
+ */
+export function canLogTimeOnClient(
+  role: Parameters<typeof can>[0],
+  matrix: Parameters<typeof can>[3],
+  userId: string,
+  client: { staffId: string; subcontractorId?: string }
+): boolean {
+  return can(role, 'Time', 'log-own', matrix, {
+    assigned: isAssignedTo(userId, client),
+  });
 }
 
 export type ClientTabId =
@@ -184,6 +203,12 @@ export function ClientShowView({
   }
 
   const summary = formatClientSummary(client);
+  const canLogTime = canLogTimeOnClient(
+    currentUser.role,
+    permissions.matrix,
+    currentUser.id,
+    client
+  );
   const tags = clientTags(client);
   const firstNoteLine = client.notes?.split('\n').find((line) => line.trim().length > 0)?.trim();
   const timeline = buildClientTimeline(client, activity, taskStatusOverrides, {
@@ -229,6 +254,7 @@ export function ClientShowView({
             }
             onAddNote={() => setActiveTab('notes')}
             canAddNote={canEditClient}
+            canLogTime={canLogTime}
           />
         }
         tabs={clientRecordTabs(canViewBilling)}
@@ -300,11 +326,13 @@ function AddActionMenu({
   onNewQuote,
   onAddNote,
   canAddNote,
+  canLogTime,
 }: {
   onLogTime: () => void;
   onNewQuote: () => void;
   onAddNote: () => void;
   canAddNote: boolean;
+  canLogTime: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -314,9 +342,27 @@ function AddActionMenu({
   };
 
   const items = [
-    { label: 'Log Time', icon: Clock, onSelect: onLogTime, permitted: true },
-    { label: 'New Quote', icon: FilePlus2, onSelect: onNewQuote, permitted: true },
-    { label: 'Add Note', icon: StickyNote, onSelect: onAddNote, permitted: canAddNote },
+    {
+      label: 'Log Time',
+      icon: Clock,
+      onSelect: onLogTime,
+      permitted: canLogTime,
+      reason: 'Your role can only log time against clients assigned to you',
+    },
+    {
+      label: 'New Quote',
+      icon: FilePlus2,
+      onSelect: onNewQuote,
+      permitted: true,
+      reason: undefined,
+    },
+    {
+      label: 'Add Note',
+      icon: StickyNote,
+      onSelect: onAddNote,
+      permitted: canAddNote,
+      reason: 'Your role cannot record client notes',
+    },
   ];
 
   return (
@@ -340,7 +386,7 @@ function AddActionMenu({
                 key={item.label}
                 type="button"
                 disabled={!item.permitted}
-                title={item.permitted ? undefined : 'Your role cannot record client notes'}
+                title={item.permitted ? undefined : item.reason}
                 onClick={() => run(item.onSelect)}
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-1 focus-visible:ring-[#c4161c] disabled:cursor-not-allowed disabled:opacity-50"
               >
