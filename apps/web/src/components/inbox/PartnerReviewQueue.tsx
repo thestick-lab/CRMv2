@@ -5,13 +5,8 @@ import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  ShieldCheck,
-  CheckCircle2,
-  Calendar,
-  UserCheck,
-  RotateCcw,
-} from 'lucide-react';
+import { EmptyStateCard } from '@/components/ui/list-primitives';
+import { CheckCircle2, Lock, RotateCcw, ShieldCheck, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function filterReviewQueueTasks(
@@ -57,109 +52,181 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
     });
   };
 
+  if (queueTasks.length === 0) {
+    return (
+      <div className={cn('text-xs', className)}>
+        <EmptyStateCard
+          icon={CheckCircle2}
+          title="Zero Returns Awaiting Partner Review"
+          subtitle="All statutory filing gates across AFS, ITR14, and payable IRP6 are signed off."
+          dashed
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className={cn('space-y-4 text-xs', className)}>
-      {queueTasks.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-border/80 rounded-xl bg-card/40 space-y-3">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Zero Returns Awaiting Partner Review</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              All statutory filing gates across AFS, ITR14, and payable IRP6 are signed off.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[750px]">
-              <thead className="bg-muted/40 border-b border-border/80 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3">Client Entity</th>
-                  <th className="px-4 py-3">Return Type</th>
-                  <th className="px-4 py-3">Filing Period</th>
-                  <th className="px-4 py-3">Statutory Due Date</th>
-                  <th className="px-4 py-3">Assigned Preparer</th>
-                  <th className="px-4 py-3 text-right">Partner Gate Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {queueTasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground">
-                      <div className="flex items-center gap-2">
+    <div className={cn('text-xs', className)}>
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left">
+            <thead className="border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th scope="col" className="px-4 py-2.5 font-medium">
+                  Client Entity
+                </th>
+                <th scope="col" className="px-4 py-2.5 font-medium">
+                  Return Type
+                </th>
+                <th scope="col" className="px-4 py-2.5 font-medium">
+                  Filing Period
+                </th>
+                <th scope="col" className="px-4 py-2.5 font-medium">
+                  Statutory Due
+                </th>
+                <th scope="col" className="px-4 py-2.5 font-medium">
+                  Preparer
+                </th>
+                <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                  Partner Gate Action
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {queueTasks.map((task) => {
+                const overdue = Boolean(task.due && task.due < today);
+
+                return (
+                  <tr
+                    key={task.id}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open client record for ${task.clientName} (${task.clientCode})`}
+                    onClick={() => onNavigateClient?.(task.clientCode)}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onNavigateClient?.(task.clientCode);
+                      }
+                    }}
+                    className="group cursor-pointer transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#c4161c]"
+                  >
+                    {/* Client */}
+                    <td className="px-4 py-3">
+                      <div className="flex min-w-0 items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => onNavigateClient?.(task.clientCode)}
-                          className="font-mono font-bold text-primary hover:underline"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onNavigateClient?.(task.clientCode);
+                          }}
+                          className="shrink-0 rounded-sm font-mono text-[11px] font-semibold text-[#c4161c] outline-none hover:underline focus-visible:ring-1 focus-visible:ring-[#c4161c] dark:text-[#f87171]"
                         >
                           {task.clientCode}
                         </button>
-                        <span className="truncate max-w-[180px]">{task.clientName}</span>
+                        <span className="max-w-[190px] truncate font-medium text-foreground">
+                          {task.clientName}
+                        </span>
                       </div>
                     </td>
 
+                    {/* Return */}
                     <td className="px-4 py-3">
-                      <Badge variant="outline" className="font-mono text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5">
+                      <Badge
+                        variant="outline"
+                        className="whitespace-nowrap px-1.5 py-0 font-mono text-[10px] font-medium text-foreground"
+                      >
                         {task.service}
                       </Badge>
                     </td>
 
-                    <td className="px-4 py-3 font-mono text-muted-foreground">
-                      {task.period} {task.part && `(${task.part})`}
+                    {/* Period */}
+                    <td className="max-w-[150px] truncate px-4 py-3 font-mono text-[11px] text-muted-foreground">
+                      {task.period}
+                      {task.part ? ` (${task.part})` : ''}
                     </td>
 
-                    <td className="px-4 py-3 font-mono text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{task.due || 'Ad-hoc'}</span>
-                        {task.dueNote && <span className="text-primary font-bold">↩</span>}
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{task.staffName}</span>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 text-right">
-                      {isPartner ? (
-                        <div className="inline-flex items-center gap-1.5">
-                          <Button
-                            size="sm"
-                            onClick={() => handleRequestRevision(task.id)}
-                            variant="outline"
-                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                          >
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            <span>Revise</span>
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(task.id)}
-                            className="h-7 px-2.5 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                          >
-                            <ShieldCheck className="h-3 w-3 mr-1" />
-                            <span>Sign Off as CA(SA)</span>
-                          </Button>
-                        </div>
+                    {/* Due */}
+                    <td className="px-4 py-3">
+                      {task.due ? (
+                        <span className="flex items-center gap-1 font-mono text-[11px]">
+                          <span className={cn('text-foreground', overdue && 'font-semibold text-destructive')}>
+                            {task.due}
+                          </span>
+                          {task.dueNote && (
+                            <span
+                              className="font-sans text-[11px] font-bold text-[#c4161c] dark:text-[#f87171]"
+                              title={`South African holiday rollback: ${task.dueNote}`}
+                            >
+                              ↩
+                            </span>
+                          )}
+                        </span>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500/30">
-                          Partner Signature Required
-                        </Badge>
+                        <span className="font-sans text-[11px] italic text-muted-foreground">
+                          No date
+                        </span>
                       )}
                     </td>
+
+                    {/* Preparer */}
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <UserCheck className="h-3 w-3 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{task.staffName}</span>
+                      </span>
+                    </td>
+
+                    {/* Gate action */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isPartner ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleRequestRevision(task.id);
+                              }}
+                              aria-label={`Request revision on ${task.service} for ${task.clientCode}`}
+                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                            >
+                              <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
+                              Request Revision
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleApprove(task.id);
+                              }}
+                              aria-label={`Sign off ${task.service} for ${task.clientCode} as CA(SA)`}
+                              className="h-7 gap-1 bg-[#c4161c] px-2.5 text-[11px] font-medium text-white shadow-xs hover:bg-[#a01217] dark:hover:bg-[#d91b22]"
+                            >
+                              <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                              Sign Off as CA(SA)
+                            </Button>
+                          </>
+                        ) : (
+                          <Badge
+                            variant="crimsonSubdued"
+                            className="gap-1 px-1.5 py-0 font-mono text-[10px] font-medium"
+                          >
+                            <Lock className="h-3 w-3" aria-hidden="true" />
+                            Partner Signature Required
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 }
