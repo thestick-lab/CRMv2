@@ -16,6 +16,7 @@ import { SettingsView } from '@/components/settings/SettingsView';
 import { ClientShowView } from '@/components/client-show/ClientShowView';
 import { LoginView } from '@/components/auth/LoginView';
 import { InvoiceEditor } from '@/components/invoice/InvoiceEditor';
+import { TimerProvider } from '@/components/time/timer-context';
 import type { Quote } from '@/context/PracticeStoreContext';
 
 function AppContent() {
@@ -119,7 +120,7 @@ function AppContent() {
   };
 
   return (
-    <>
+    <TimerProvider>
       <Layout
         currentView={view}
         clientCode={clientCode}
@@ -135,7 +136,7 @@ function AppContent() {
           onClose={() => setInvoiceEditor(null)}
         />
       )}
-    </>
+    </TimerProvider>
   );
 }
 

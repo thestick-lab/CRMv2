@@ -839,3 +839,105 @@ const SIGNED_PROSPECT_QUOTE: Quote = {
   updatedAt: '2026-11-02T08:00:00Z',
   stageChangedAt: '2026-11-02T08:00:00Z',
 };
+
+const TIMER_ENTRY: TimeEntry = {
+  id: 'time-timer-1',
+  clientCode: 'ALC-610',
+  serviceCode: 'VAT201',
+  staffUserId: 'erik',
+  startedAt: '2026-11-09T09:02:00.000Z',
+  endedAt: '2026-11-09T09:09:00.000Z',
+  durationMinutes: 7,
+  roundedMinutes: 15,
+  billable: true,
+  description: 'VAT201 2026-09',
+  createdAt: '2026-11-09T09:09:00.000Z',
+};
+
+describe('time entry actions', () => {
+  it('adds an entry and records the logged time on the activity feed', () => {
+    const state = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+
+    expect(state.timeEntries).toEqual([TIMER_ENTRY]);
+    expect(state.activity[0]).toMatchObject({
+      type: 'time',
+      actorName: 'Erik',
+      text: 'Logged 0.25h — VAT201 2026-09',
+      subline: 'ALC-610 · VAT201',
+    });
+  });
+
+  it('never adds the same entry twice', () => {
+    const once = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const twice = practiceReducer(once, { type: 'ADD_TIME_ENTRY', payload: TIMER_ENTRY });
+
+    expect(twice).toBe(once);
+    expect(twice.timeEntries).toHaveLength(1);
+  });
+
+  it('updates an entry in place without touching its identity', () => {
+    const added = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const updated = practiceReducer(added, {
+      type: 'UPDATE_TIME_ENTRY',
+      payload: {
+        id: TIMER_ENTRY.id,
+        patch: { roundedMinutes: 30, billable: false, description: 'VAT201 2026-09 review' },
+      },
+    });
+
+    expect(updated.timeEntries[0]).toMatchObject({
+      id: TIMER_ENTRY.id,
+      startedAt: TIMER_ENTRY.startedAt,
+      durationMinutes: 7,
+      roundedMinutes: 30,
+      billable: false,
+      description: 'VAT201 2026-09 review',
+    });
+  });
+
+  it('ignores updates and deletes for an entry that is not in the store', () => {
+    const state = getInitialPracticeState();
+
+    expect(
+      practiceReducer(state, {
+        type: 'UPDATE_TIME_ENTRY',
+        payload: { id: 'missing', patch: { roundedMinutes: 30 } },
+      })
+    ).toBe(state);
+    expect(practiceReducer(state, { type: 'DELETE_TIME_ENTRY', payload: { id: 'missing' } })).toBe(
+      state
+    );
+  });
+
+  it('deletes an entry', () => {
+    const added = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const deleted = practiceReducer(added, {
+      type: 'DELETE_TIME_ENTRY',
+      payload: { id: TIMER_ENTRY.id },
+    });
+
+    expect(deleted.timeEntries).toEqual([]);
+  });
+
+  it('keeps stored entries across a save and reload', () => {
+    const added = practiceReducer(getInitialPracticeState(), {
+      type: 'ADD_TIME_ENTRY',
+      payload: TIMER_ENTRY,
+    });
+    const reloaded = loadPracticeState(storageWith(added));
+
+    expect(reloaded.timeEntries).toEqual([TIMER_ENTRY]);
+  });
+});

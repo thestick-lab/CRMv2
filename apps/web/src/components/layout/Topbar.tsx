@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TimerBar } from '@/components/time/TimerBar';
 
 export interface TopbarProps {
   breadcrumbs: BreadcrumbCrumb[];
@@ -23,6 +24,8 @@ export interface TopbarProps {
   isDark: boolean;
   onToggleTheme: () => void;
   onOpenAiAssistant?: () => void;
+  /** Opens the entry-capture sheet; falls back to the Time view without it. */
+  onLogTime?: () => void;
 }
 
 interface NewAction {
@@ -53,7 +56,13 @@ const NEW_ACTIONS: NewAction[] = [
   },
 ];
 
-function NewMenu({ onNavigate }: { onNavigate: TopbarProps['onNavigate'] }) {
+function NewMenu({
+  onNavigate,
+  onLogTime,
+}: {
+  onNavigate: TopbarProps['onNavigate'];
+  onLogTime?: () => void;
+}) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -77,7 +86,7 @@ function NewMenu({ onNavigate }: { onNavigate: TopbarProps['onNavigate'] }) {
             <PopoverPrimitive.Close asChild key={label}>
               <button
                 type="button"
-                onClick={() => onNavigate(view)}
+                onClick={() => (view === 'time' && onLogTime ? onLogTime() : onNavigate(view))}
                 className="flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-1 focus-visible:ring-[#c4161c]"
               >
                 <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -101,6 +110,7 @@ export function Topbar({
   isDark,
   onToggleTheme,
   onOpenAiAssistant,
+  onLogTime,
 }: TopbarProps) {
   const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
 
@@ -137,7 +147,8 @@ export function Topbar({
 
       {/* Right Controls */}
       <div className="flex items-center gap-2 shrink-0">
-        <NewMenu onNavigate={onNavigate} />
+        <TimerBar />
+        <NewMenu onNavigate={onNavigate} onLogTime={onLogTime} />
 
         {/* Search Cmd+K Trigger */}
         <button

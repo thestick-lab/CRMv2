@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { CalendarDays, MessageSquare, ShieldCheck, UserCheck, X } from 'lucide-react';
+import { CalendarDays, MessageSquare, Pause, Play, ShieldCheck, Square, Timer, UserCheck, X } from 'lucide-react';
 import type { PracticeTaskItem } from './practice-tasks';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { WORKFLOW_LANES, normalizeWorkflowStatus, type WorkflowStatus } from '@/lib/workflow';
 import { cn } from '@/lib/utils';
 import { StatutoryActionForm } from './StatutoryActionForm';
+import { formatElapsed, useTimer } from '@/components/time/timer-context';
 
 export interface TaskDetailPanelProps {
   task: PracticeTaskItem | null;
@@ -46,6 +47,7 @@ export function TaskDetailPanel({
   initialStatus,
 }: TaskDetailPanelProps) {
   const { activity, taskStatusOverrides, currentUser, logActivity } = usePracticeStore();
+  const { session, elapsedMs, startTimer, pauseTimer, resumeTimer, stopTimer } = useTimer();
   const [comment, setComment] = React.useState('');
 
   React.useEffect(() => {
@@ -168,6 +170,82 @@ export function TaskDetailPanel({
                 </span>
               </div>
             </div>
+
+            {/* Timer capture — this panel is modal, so the running clock for
+                this task is actionable here as well as on the topbar chip. */}
+            {session?.taskId === task.id ? (
+              <div
+                data-testid="task-timer"
+                data-state={session.paused ? 'paused' : 'running'}
+                className="flex items-center justify-between gap-2 rounded-lg border border-[#c4161c]/25 bg-[#c4161c]/5 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    {session.paused ? 'Timer paused' : 'Timer running'}
+                  </p>
+                  <p
+                    data-testid="task-timer-elapsed"
+                    className="font-mono text-sm tabular-nums text-foreground"
+                  >
+                    {formatElapsed(elapsedMs)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    data-testid="task-timer-toggle"
+                    onClick={session.paused ? resumeTimer : pauseTimer}
+                    className="gap-1"
+                  >
+                    {session.paused ? (
+                      <Play className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pause className="h-3.5 w-3.5" />
+                    )}
+                    {session.paused ? 'Resume' : 'Pause'}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    data-testid="task-timer-stop"
+                    onClick={stopTimer}
+                    className="gap-1"
+                  >
+                    <Square className="h-3 w-3" />
+                    Stop
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  data-testid="task-start-timer"
+                  disabled={session !== null}
+                  title={
+                    session
+                      ? 'A timer is already running — stop it before starting another.'
+                      : 'Start a timer for this task'
+                  }
+                  onClick={() =>
+                    startTimer({
+                      clientCode: task.clientCode,
+                      serviceCode: task.service,
+                      taskId: task.id,
+                      description: `${task.service} ${task.period}${task.part ? ` · ${task.part}` : ''}`,
+                    })
+                  }
+                  className="w-full gap-1.5"
+                >
+                  <Timer className="h-3.5 w-3.5" />
+                  {session ? 'Timer running' : 'Start timer'}
+                </Button>
+              </div>
+            )}
 
             {/* Description */}
             <section>

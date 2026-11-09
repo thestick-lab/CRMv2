@@ -7,6 +7,7 @@ import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog'
 import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useTimer } from '@/components/time/timer-context';
 
 export interface LayoutProps {
   currentView: ViewKey;
@@ -27,6 +28,7 @@ export function Layout({
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = React.useState(false);
   const { isDark, toggle: toggleTheme } = useTheme();
+  const { openEntrySheet } = useTimer();
 
   const { clients, quotes, timeEntries } = usePracticeStore();
   // Keyboard shortcut for Cmd+K / Ctrl+K
@@ -110,6 +112,7 @@ export function Layout({
           isDark={isDark}
           onToggleTheme={toggleTheme}
           onOpenAiAssistant={() => setAiDrawerOpen(true)}
+          onLogTime={openEntrySheet}
         />
         <main className="flex-1 overflow-y-auto">
           {children}

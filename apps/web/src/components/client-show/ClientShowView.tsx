@@ -32,6 +32,7 @@ import { OrganizationPanel } from './panels/OrganizationPanel';
 import { RelationshipHistoryPanel } from './panels/RelationshipHistoryPanel';
 import { buildClientTimeline, clientTags, withSeededActivity } from './client-record-data';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
+import { useTimer } from '@/components/time/timer-context';
 
 export interface ClientSummary {
   name: string;
@@ -103,6 +104,7 @@ export function ClientShowView({
   const [activeTab, setActiveTab] = React.useState<ClientTabId>(initialTab);
 
   const { clients, rates, activity, taskStatusOverrides, updateClient } = usePracticeStore();
+  const { startTimer } = useTimer();
   const client = clients.find((c) => c.code === clientCode);
   const estimate = React.useMemo(
     () =>
@@ -175,7 +177,7 @@ export function ClientShowView({
         }}
         actions={
           <AddActionMenu
-            onLogTime={() => onNavigate?.('time')}
+            onLogTime={() => startTimer({ clientCode: client.code })}
             onNewQuote={() => onNavigate?.('sales-pipeline')}
             onAddNote={() => setActiveTab('notes')}
           />

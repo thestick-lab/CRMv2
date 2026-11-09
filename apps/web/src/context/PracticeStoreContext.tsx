@@ -10,6 +10,7 @@ import type {
 import { servicesFromEstimate, type EstimateInput } from 'fdoncall-practice/domain/estimate';
 import { endOfMonth, todayInSouthAfrica, yearOf, type ISODate } from 'fdoncall-practice/domain/dates';
 import type { WorkflowStatus } from '@/lib/workflow';
+import { formatHours } from '@/lib/billing';
 import { signInWithCredentials } from '@/lib/auth-client';
 
 /**
@@ -726,6 +727,12 @@ export type PracticeAction =
       type: 'UPDATE_INVOICE';
       payload: { id: string; patch: Partial<Omit<Invoice, 'id' | 'createdAt'>> };
     }
+  | { type: 'ADD_TIME_ENTRY'; payload: TimeEntry }
+  | {
+      type: 'UPDATE_TIME_ENTRY';
+      payload: { id: string; patch: Partial<Omit<TimeEntry, 'id' | 'createdAt'>> };
+    }
+  | { type: 'DELETE_TIME_ENTRY'; payload: { id: string } }
   | { type: 'MIGRATE_LEADS'; payload: { leads?: LegacyLead[] } }
   | { type: 'ADD_CLIENT'; payload: Client }
   | { type: 'UPDATE_CLIENT'; payload: { clientCode: string; patch: Partial<Client> } }
@@ -890,6 +897,50 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
         invoices: state.invoices.map((invoice) =>
           invoice.id === id ? { ...invoice, ...patch } : invoice
         ),
+      };
+    }
+
+    case 'ADD_TIME_ENTRY': {
+      const entry = action.payload;
+      if (state.timeEntries.some((existing) => existing.id === entry.id)) return state;
+
+      const withEntry: PracticeState = {
+        ...state,
+        timeEntries: [...state.timeEntries, entry],
+      };
+
+      return practiceReducer(withEntry, {
+        type: 'LOG_ACTIVITY',
+        payload: {
+          type: 'time',
+          actorName: state.currentUser.name,
+          actorInitials: initialsFromName(state.currentUser.name),
+          tint: 'muted',
+          text: `Logged ${formatHours(entry.roundedMinutes)} — ${entry.description}`,
+          subline: entry.serviceCode
+            ? `${entry.clientCode} · ${entry.serviceCode}`
+            : entry.clientCode,
+        },
+      });
+    }
+
+    case 'UPDATE_TIME_ENTRY': {
+      const { id, patch } = action.payload;
+      if (!state.timeEntries.some((entry) => entry.id === id)) return state;
+      return {
+        ...state,
+        timeEntries: state.timeEntries.map((entry) =>
+          entry.id === id ? { ...entry, ...patch } : entry
+        ),
+      };
+    }
+
+    case 'DELETE_TIME_ENTRY': {
+      const { id } = action.payload;
+      if (!state.timeEntries.some((entry) => entry.id === id)) return state;
+      return {
+        ...state,
+        timeEntries: state.timeEntries.filter((entry) => entry.id !== id),
       };
     }
 
@@ -1264,6 +1315,9 @@ export interface PracticeStoreContextValue extends PracticeState {
   convertQuoteToClient: (quoteId: string) => void;
   addInvoice: (invoice: Invoice) => void;
   updateInvoice: (id: string, patch: Partial<Omit<Invoice, 'id' | 'createdAt'>>) => void;
+  addTimeEntry: (entry: TimeEntry) => void;
+  updateTimeEntry: (id: string, patch: Partial<Omit<TimeEntry, 'id' | 'createdAt'>>) => void;
+  deleteTimeEntry: (id: string) => void;
   exportData: () => PracticeState;
   resetData: () => void;
 }
@@ -1387,6 +1441,21 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     []
   );
 
+  const addTimeEntry = React.useCallback((entry: TimeEntry) => {
+    dispatch({ type: 'ADD_TIME_ENTRY', payload: entry });
+  }, []);
+
+  const updateTimeEntry = React.useCallback(
+    (id: string, patch: Partial<Omit<TimeEntry, 'id' | 'createdAt'>>) => {
+      dispatch({ type: 'UPDATE_TIME_ENTRY', payload: { id, patch } });
+    },
+    []
+  );
+
+  const deleteTimeEntry = React.useCallback((id: string) => {
+    dispatch({ type: 'DELETE_TIME_ENTRY', payload: { id } });
+  }, []);
+
   const exportData = React.useCallback(() => {
     return state;
   }, [state]);
@@ -1416,6 +1485,9 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       convertQuoteToClient: convertQuoteToClientAction,
       addInvoice,
       updateInvoice,
+      addTimeEntry,
+      updateTimeEntry,
+      deleteTimeEntry,
       updateTaskStatus,
       addAdhocTask,
       updateAdhocTask,
@@ -1444,6 +1516,9 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       convertQuoteToClientAction,
       addInvoice,
       updateInvoice,
+      addTimeEntry,
+      updateTimeEntry,
+      deleteTimeEntry,
       updateTaskStatus,
       addAdhocTask,
       updateAdhocTask,
