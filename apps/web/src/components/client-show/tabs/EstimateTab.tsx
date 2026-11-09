@@ -13,6 +13,7 @@ import { defaultServices } from 'fdoncall-practice/domain/rules';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
 import { XeroSyncDialog } from '@/components/integrations/XeroSyncDialog';
+import { QuoteBuilderView } from '@/components/quote/QuoteBuilderView';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -92,6 +93,7 @@ export function EstimateTab({
 }) {
   const [startMonth] = React.useState('2026-12');
   const [xeroOpen, setXeroOpen] = React.useState(false);
+  const [builderOpen, setBuilderOpen] = React.useState(false);
   const { rates } = usePracticeStore();
   const estimate = React.useMemo(
     () => buildEstimateForClient(client, startMonth, rates.standardHourlyRate, rates.marchEscalationPct),
@@ -193,9 +195,20 @@ export function EstimateTab({
               Monthly service breakdown ({estimate.months[0]} to {estimate.months[11]}) with statutory filings and Xero pricing.
             </p>
           </div>
-          <span className="text-[11px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
-            All figures in ZAR (excl. VAT)
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+              All figures in ZAR (excl. VAT)
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBuilderOpen(true)}
+              className="h-7 gap-1 text-[11px] font-mono px-2"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Re-quote
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -294,6 +307,12 @@ export function EstimateTab({
         onOpenChange={setXeroOpen}
         target={{ kind: 'estimate', client, estimate }}
       />
+      {builderOpen && (
+        <QuoteBuilderView
+          initialClientCode={client.code}
+          onClose={() => setBuilderOpen(false)}
+        />
+      )}
     </div>
   );
 }

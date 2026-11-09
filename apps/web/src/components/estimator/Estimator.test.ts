@@ -64,17 +64,18 @@ describe('Unified Fee Estimator and quote lifecycle', () => {
     expect(lifecycleSrc).toContain("'Closed Lost'");
   });
 
-  it('verifies EstimateCalculator includes client selector, services inputs, and PDF/Excel export actions', () => {
-    const calcSrc = fs.readFileSync('src/components/estimator/EstimateCalculator.tsx', 'utf8');
+  it('keeps the estimator controls and PDF/Excel export actions in the quote builder', () => {
+    const formSrc = fs.readFileSync('src/components/quote/estimate-form.tsx', 'utf8');
+    const builderSrc = fs.readFileSync('src/components/quote/QuoteBuilderView.tsx', 'utf8');
 
     // Client selection between existing and new prospect
-    expect(calcSrc).toContain('New Prospect');
-    expect(calcSrc).toContain('Regular work');
-    expect(calcSrc).toContain('Compliance');
-    expect(calcSrc).toContain('Annual work');
-    expect(calcSrc).toContain('Xero subscription');
-    expect(calcSrc).toContain('Download PDF Quote');
-    expect(calcSrc).toContain('Download Excel Workings');
+    expect(formSrc).toContain('Close corporation');
+    expect(formSrc).toContain('Regular work');
+    expect(formSrc).toContain('Compliance');
+    expect(formSrc).toContain('Annual work');
+    expect(formSrc).toContain('Xero subscription');
+    expect(builderSrc).toContain('Download PDF');
+    expect(builderSrc).toContain('Download Excel');
   });
 
   it('tracks quote proposals through the store instead of the sent-quotes pipeline', () => {
