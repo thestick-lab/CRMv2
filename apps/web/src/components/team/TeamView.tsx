@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { ArrowLeft, BadgeCheck, Tags, UserPlus, Users2 } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Pencil, Tags, UserPlus, Users2 } from 'lucide-react';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
-import { cn } from '@/lib/utils';
 import { can } from '@/lib/permissions';
 import { PageHeader } from '@/components/ui/page-header';
 import { CardHeaderWithLink, EmptyStateCard } from '@/components/ui/list-primitives';
@@ -16,10 +15,13 @@ import {
   StaffDirectory,
   type InviteTeamMemberInput,
 } from './StaffDirectory';
+import { StaffEditDialog } from './StaffEditDialog';
+import type { StaffProfile as StaffProfileRecord } from '@/context/PracticeStoreContext';
 import {
   buildStaffUsers,
   formatHourlyRate,
   formatStartDate,
+  staffProfileOf,
   staffRows,
   type StaffRow,
 } from './staff-data';
@@ -27,25 +29,47 @@ import {
 const STAFF_TABS: TabConfig[] = [{ id: 'overview', label: 'Overview', icon: BadgeCheck }];
 
 export function TeamView() {
-  const { staff, currentUser, rates, inviteTeamMember, permissions } = usePracticeStore();
-  const canInvite = can(currentUser.role, 'People', 'view-invite', permissions.matrix);
+  const {
+    staff,
+    staffProfiles,
+    currentUser,
+    inviteTeamMember,
+    updateStaffProfile,
+    permissions,
+  } = usePracticeStore();
+  const canEditStaff = can(currentUser.role, 'People', 'view-invite', permissions.matrix);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = React.useState(false);
 
   const rows = React.useMemo(
-    () => staffRows(staff, buildStaffUsers(staff, currentUser, rates.standardHourlyRate)),
-    [staff, currentUser, rates.standardHourlyRate]
+    () => staffRows(staff, buildStaffUsers(staff, currentUser, staffProfiles)),
+    [staff, currentUser, staffProfiles]
   );
 
   const selected = rows.find((row) => row.id === selectedId) ?? null;
 
   const handleInvite = (member: InviteTeamMemberInput) => {
-    if (!canInvite) return;
+    if (!canEditStaff) return;
     inviteTeamMember(member);
   };
 
   if (selected) {
-    return <StaffProfile row={selected} onBack={() => setSelectedId(null)} />;
+    const selectedKind = staff.find((member) => member.id === selected.id)?.kind ?? 'employee';
+    const profile = staffProfileOf(
+      selected.id,
+      selectedKind,
+      staffProfiles,
+      currentUser.id === selected.id ? currentUser : undefined
+    );
+    return (
+      <StaffProfile
+        row={selected}
+        profile={profile}
+        canEdit={canEditStaff}
+        onBack={() => setSelectedId(null)}
+        onSave={(patch) => updateStaffProfile(selected.id, patch)}
+      />
+    );
   }
 
   return (
@@ -58,8 +82,8 @@ export function TeamView() {
           <Button
             size="sm"
             onClick={() => setInviteOpen(true)}
-            disabled={!canInvite}
-            title={canInvite ? undefined : `${currentUser.role} cannot invite team members`}
+            disabled={!canEditStaff}
+            title={canEditStaff ? undefined : `${currentUser.role} cannot invite team members`}
           >
             <UserPlus className="h-3.5 w-3.5" />
             Invite member
@@ -96,8 +120,21 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function StaffProfile({ row, onBack }: { row: StaffRow; onBack: () => void }) {
+function StaffProfile({
+  row,
+  profile,
+  canEdit,
+  onBack,
+  onSave,
+}: {
+  row: StaffRow;
+  profile: StaffProfileRecord;
+  canEdit: boolean;
+  onBack: () => void;
+  onSave: (patch: Partial<StaffProfileRecord>) => void;
+}) {
   const [activeTab, setActiveTab] = React.useState('overview');
+  const [editOpen, setEditOpen] = React.useState(false);
 
   const kindLabel = row.contractType === 'subcontractor' ? 'Subcontractor' : 'Employee';
   const tags = Array.from(new Set([row.role, kindLabel]));
@@ -114,10 +151,22 @@ function StaffProfile({ row, onBack }: { row: StaffRow; onBack: () => void }) {
         }}
         meta={{ email: row.email, phone: row.phone }}
         actions={
-          <Button variant="outline" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to team
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              data-staff-edit-open
+              onClick={() => setEditOpen(true)}
+              disabled={!canEdit}
+              title={canEdit ? undefined : 'Your role cannot edit the staff record'}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit record
+            </Button>
+            <Button variant="outline" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to team
+            </Button>
+          </div>
         }
         tabs={STAFF_TABS}
         tabsLabel="Staff record sections"
@@ -190,19 +239,28 @@ function StaffProfile({ row, onBack }: { row: StaffRow; onBack: () => void }) {
 
               <section className="overflow-hidden rounded-xl border border-border bg-card">
                 <CardHeaderWithLink title="Internal notes" />
-                <p
-                  className={cn(
-                    'px-4 py-3 text-xs leading-relaxed text-muted-foreground',
-                    'bg-muted/20'
-                  )}
-                >
-                  No internal notes recorded for this staff member.
-                </p>
+                {row.notes ? (
+                  <p className="whitespace-pre-line bg-amber-500/[0.07] px-4 py-3 text-xs leading-relaxed text-foreground">
+                    {row.notes}
+                  </p>
+                ) : (
+                  <p className="bg-muted/20 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+                    — No internal notes recorded.
+                  </p>
+                )}
               </section>
             </div>
           </div>
         )}
       </ContactProfileLayout>
+
+      <StaffEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        staffName={row.name}
+        profile={profile}
+        onSave={onSave}
+      />
     </div>
   );
 }

@@ -112,6 +112,20 @@ export function canMoveStatus(
   return true;
 }
 
+/**
+ * Metadata a lane move must write when it leaves the approval lanes.
+ *
+ * A partner signature authorises one approval only. Dragging a signed-off
+ * return back into preparation invalidates it, so the move explicitly clears
+ * the sign-off (the store enforces the same rule for every other writer).
+ */
+export function clearedApprovalMetadata(
+  status: WorkflowStatus
+): { partnerSignOff?: boolean; approvedBy?: string } {
+  if (status === 'Approved (Ready to Lodge)' || status === 'Submitted') return {};
+  return { partnerSignOff: false, approvedBy: undefined };
+}
+
 export interface StatutoryValidationParams {
   status: string;
   sarsReference?: string;

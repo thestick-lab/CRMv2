@@ -14,6 +14,8 @@ export interface OrganizationPanelProps {
   onContactsChange: (contacts: ClientContact[]) => void;
   /** Organization tab shows the full group list and always-visible contact editor. */
   expanded?: boolean;
+  /** `Clients — create/edit` not granted: no add or remove affordance. */
+  readOnly?: boolean;
 }
 
 export function OrganizationPanel({
@@ -24,12 +26,14 @@ export function OrganizationPanel({
   contacts,
   onContactsChange,
   expanded = false,
+  readOnly = false,
 }: OrganizationPanelProps) {
   const [adding, setAdding] = React.useState(false);
   const [name, setName] = React.useState('');
   const [role, setRole] = React.useState('Director');
 
   const addContact = () => {
+    if (readOnly) return;
     const trimmedName = name.trim();
     if (!trimmedName) return;
     const contact: ClientContact = {
@@ -94,7 +98,7 @@ export function OrganizationPanel({
           <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
             Directors &amp; contacts
           </p>
-          {!adding && (
+          {!adding && !readOnly && (
             <button
               type="button"
               onClick={() => setAdding(true)}
@@ -125,7 +129,7 @@ export function OrganizationPanel({
                   <p className="truncate font-mono text-[11px] text-muted-foreground">{contact.phone}</p>
                 )}
               </div>
-              {expanded && (
+              {expanded && !readOnly && (
                 <button
                   type="button"
                   onClick={() => removeContact(contact.id)}

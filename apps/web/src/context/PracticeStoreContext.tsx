@@ -9,7 +9,7 @@ import type {
 } from 'fdoncall-practice/domain/types';
 import { servicesFromEstimate, type EstimateInput } from 'fdoncall-practice/domain/estimate';
 import { endOfMonth, todayInSouthAfrica, yearOf, type ISODate } from 'fdoncall-practice/domain/dates';
-import type { WorkflowStatus } from '@/lib/workflow';
+import { normalizeWorkflowStatus, type WorkflowStatus } from '@/lib/workflow';
 import { formatHours } from '@/lib/billing';
 import { personInitials } from '@/lib/initials';
 import { signInWithCredentials } from '@/lib/auth-client';
@@ -54,6 +54,16 @@ export interface PracticeUser {
   email: string;
   kind: 'employee' | 'subcontractor';
   contract?: PracticeContract;
+}
+
+/**
+ * HR details recorded for a staff member who is not the signed-in user. Held
+ * apart from the seeded `StaffMember` (which stays a domain record) so contract
+ * terms and internal notes persist without inventing values.
+ */
+export interface StaffProfile extends PracticeContract {
+  /** Internal notes about the person — never shown to clients. */
+  notes?: string;
 }
 
 export interface PracticeRates {
@@ -186,6 +196,12 @@ export interface Invoice {
   total: number;
   /** `Overdue` is derived at render time, never stored. */
   status: InvoiceStatus;
+  /**
+   * The fee-schedule month (`YYYY-MM`) this invoice bills. Independent of the
+   * issue date, so a December invoice raised in January still reads December
+   * and can never be raised twice.
+   */
+  billingMonth?: string;
   issueDate: ISODate;
   dueDate: ISODate;
   /** Terms printed on the document; older invoices fall back to the quote's. */
@@ -265,6 +281,8 @@ export interface PracticeSequences {
 export interface PracticeState {
   clients: Client[];
   staff: StaffMember[];
+  /** Persisted contract terms and notes per staff id. */
+  staffProfiles: Record<string, StaffProfile>;
   currentUser: PracticeUser;
   rates: PracticeRates;
   aiKeys: AiApiKeys;
@@ -508,6 +526,59 @@ export function convertQuoteToClient(
   };
 }
 
+/** The minimum a partner must record to register a new client. */
+export interface NewClientInput {
+  name: string;
+  entityType: EntityType;
+  yearEndMonth: number;
+  vatCategory?: VatCategory;
+  payroll: boolean;
+  employeeCount?: number;
+  staffId: string;
+}
+
+/**
+ * Register a client from the create-client dialog. The code follows the same
+ * three-letter scheme as quote conversion, the statutory scope stays derived
+ * from the recorded attributes (so the deadline calendar materialises the
+ * right returns), and nothing the form did not ask for is invented.
+ */
+export function createClientRecord(
+  input: NewClientInput,
+  existingClients: Pick<Client, 'code'>[],
+  asOf: ISODate = todayInSouthAfrica()
+): Client {
+  const name = input.name.trim();
+  if (!name) throw new Error('A client needs a registered name.');
+  const code = generateCodeForName(name, existingClients);
+  const yearEndMonth = input.yearEndMonth;
+  const lastClosedYear = lastClosedFinancialYear(yearEndMonth, asOf);
+
+  return {
+    code,
+    name,
+    entityType: input.entityType,
+    vatCategory: input.vatCategory,
+    yearEndMonth,
+    yearEndAssumed: false,
+    efilingProfile: 'client',
+    staffId: input.staffId,
+    payroll: input.payroll,
+    employeeCount: input.payroll ? input.employeeCount : undefined,
+    lastAfsYear: input.entityType === 'Individual' ? null : lastClosedYear,
+    lastIncomeTaxYear: lastClosedYear,
+    lastAnnualReturnYear:
+      input.entityType === 'Company' || input.entityType === 'Close corporation'
+        ? yearOf(asOf) - 1
+        : null,
+    beneficialOwnershipFiled:
+      input.entityType === 'Company' || input.entityType === 'Close corporation' ? false : null,
+    taxElsewhere: false,
+    status: 'Active',
+    notes: 'Registered directly from the clients register.',
+  };
+}
+
 export const INITIAL_LEADS: LegacyLead[] = [
   {
     id: 'lead-1',
@@ -690,6 +761,7 @@ export function getInitialPracticeState(): PracticeState {
   return {
     clients: [...CLIENTS],
     staff: [...STAFF],
+    staffProfiles: {},
     currentUser: { ...INITIAL_USER },
     rates: { ...INITIAL_RATES },
     aiKeys: { ...INITIAL_AI_KEYS },
@@ -765,6 +837,10 @@ export type PracticeAction =
       };
     }
   | { type: 'UPDATE_STAFF_ROLE'; payload: { staffId: string; role: string } }
+  | {
+      type: 'UPDATE_STAFF_PROFILE';
+      payload: { staffId: string; patch: Partial<StaffProfile> };
+    }
   | { type: 'UPDATE_RATES'; payload: Partial<PracticeRates> }
   | { type: 'UPDATE_SERVICE_FEE'; payload: { code: string; amount: number } }
   | { type: 'LOGIN'; payload: PracticeUser }
@@ -901,6 +977,17 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
     case 'ADD_INVOICE': {
       const invoice = action.payload;
       if (state.invoices.some((i) => i.id === invoice.id)) return state;
+      // A quote bills one month once: never persist a second invoice for the
+      // same quote and fee-schedule month.
+      const duplicateMonth =
+        invoice.quoteId !== undefined &&
+        invoice.billingMonth !== undefined &&
+        state.invoices.some(
+          (existing) =>
+            existing.quoteId === invoice.quoteId &&
+            existing.billingMonth === invoice.billingMonth
+        );
+      if (duplicateMonth) return state;
       return {
         ...state,
         invoices: [...state.invoices, invoice],
@@ -1002,12 +1089,20 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
     case 'UPDATE_TASK_STATUS': {
       const { taskId, status, metadata } = action.payload;
       const existing = state.taskStatusOverrides[taskId] || {};
+      const normalized = normalizeWorkflowStatus(status);
       const updated: TaskStatusOverride = {
         ...existing,
-        status,
+        status: normalized,
         ...metadata,
         updatedAt: new Date().toISOString(),
       };
+      // A signed-off return that leaves the approval lanes loses its signature.
+      // Otherwise a backward drag would leave `partnerSignOff: true` on a task
+      // anyone could then file on the strength of an invalidated approval.
+      if (normalized !== 'Approved (Ready to Lodge)' && normalized !== 'Submitted') {
+        delete updated.partnerSignOff;
+        delete updated.approvedBy;
+      }
 
       return {
         ...state,
@@ -1127,11 +1222,55 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
     }
 
     case 'UPDATE_STAFF_ROLE': {
+      const member = state.staff.find((s) => s.id === action.payload.staffId);
+      if (!member || member.role === action.payload.role) return state;
+      const at = new Date().toISOString();
       return {
         ...state,
         staff: state.staff.map((s) =>
           s.id === action.payload.staffId ? { ...s, role: action.payload.role } : s
         ),
+        activity: [
+          {
+            id: `activity-role-${Date.parse(at)}-${state.activity.length + 1}`,
+            type: 'permission',
+            actorName: state.currentUser.name,
+            actorInitials: personInitials(state.currentUser.name),
+            tint: 'amber',
+            text: `Changed role — ${member.name}: ${member.role} → ${action.payload.role}`,
+            subline: `Roles & Permissions · ${member.name}`,
+            at,
+          },
+          ...state.activity,
+        ],
+      };
+    }
+
+    case 'UPDATE_STAFF_PROFILE': {
+      const { staffId, patch } = action.payload;
+      const member = state.staff.find((s) => s.id === staffId);
+      if (!member) return state;
+      const previous = state.staffProfiles[staffId] ?? {};
+      const at = new Date().toISOString();
+      return {
+        ...state,
+        staffProfiles: {
+          ...state.staffProfiles,
+          [staffId]: { ...previous, ...patch },
+        },
+        activity: [
+          {
+            id: `activity-staff-${Date.parse(at)}-${state.activity.length + 1}`,
+            type: 'permission',
+            actorName: state.currentUser.name,
+            actorInitials: personInitials(state.currentUser.name),
+            tint: 'muted',
+            text: `Updated staff record — ${member.name}`,
+            subline: 'Team & Staff · contract details',
+            at,
+          },
+          ...state.activity,
+        ],
       };
     }
 
@@ -1324,6 +1463,20 @@ export function mergePracticeState(
     },
     adhocTasks: persisted.adhocTasks ?? initial.adhocTasks,
     activity: persisted.activity ?? initial.activity,
+    staffProfiles: persisted.staffProfiles ?? initial.staffProfiles,
+    // Legacy statuses (`In review`, `Done`, `In progress`, …) are normalised
+    // once here so every reader — inbox badge, home KPIs, governance trail —
+    // compares against the six workflow lanes, not the raw historical string.
+    taskStatusOverrides: Object.fromEntries(
+      Object.entries(persisted.taskStatusOverrides ?? {}).map(([taskId, override]) => [
+        taskId,
+        { ...override, status: normalizeWorkflowStatus(override.status) },
+      ])
+    ),
+    // Invoices that predate `billingMonth` adopt the month they were issued in.
+    invoices: (persisted.invoices ?? initial.invoices).map((invoice) =>
+      invoice.billingMonth ? invoice : { ...invoice, billingMonth: invoice.issueDate.slice(0, 7) }
+    ),
   };
 
   return practiceReducer(merged, { type: 'MIGRATE_LEADS', payload: { leads: legacyLeads } });
@@ -1377,6 +1530,7 @@ export interface PracticeStoreContextValue extends PracticeState {
     kind?: 'employee' | 'subcontractor';
   }) => void;
   updateStaffRole: (staffId: string, role: string) => void;
+  updateStaffProfile: (staffId: string, patch: Partial<StaffProfile>) => void;
   updateRates: (rates: Partial<PracticeRates>) => void;
   updateServiceFee: (code: string, amount: number) => void;
   login: (email: string, pass: string) => Promise<{ ok: boolean; error?: string }>;
@@ -1461,6 +1615,13 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
   const updateStaffRole = React.useCallback((staffId: string, role: string) => {
     dispatch({ type: 'UPDATE_STAFF_ROLE', payload: { staffId, role } });
   }, []);
+
+  const updateStaffProfile = React.useCallback(
+    (staffId: string, patch: Partial<StaffProfile>) => {
+      dispatch({ type: 'UPDATE_STAFF_PROFILE', payload: { staffId, patch } });
+    },
+    []
+  );
 
   const updateRates = React.useCallback((rates: Partial<PracticeRates>) => {
     dispatch({ type: 'UPDATE_RATES', payload: rates });
@@ -1598,6 +1759,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       saveEstimate,
       inviteTeamMember,
       updateStaffRole,
+      updateStaffProfile,
       updateRates,
       updateServiceFee,
       login,
@@ -1630,6 +1792,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       logActivity,
       inviteTeamMember,
       updateStaffRole,
+      updateStaffProfile,
       updateRates,
       updateServiceFee,
       login,

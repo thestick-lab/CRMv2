@@ -1,11 +1,12 @@
 import * as React from 'react';
-import type { ViewKey } from '@/types/navigation';
+import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { buildBreadcrumbs, visibleNavItems } from './navigation-helpers';
 import { can, scopeToAssigned } from '@/lib/permissions';
 import { CommandDialog, type CommandItem } from '@/components/ui/command-dialog';
 import { AiPracticeAssistantDrawer } from '@/components/ai/AiPracticeAssistantDrawer';
+import { canUseAssistant, scopeAssistantState } from '@/components/ai/assistant-engine';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useTimer } from '@/components/time/timer-context';
@@ -14,7 +15,7 @@ export interface LayoutProps {
   currentView: ViewKey;
   clientCode?: string;
   clientName?: string;
-  onViewChange: (view: ViewKey, clientCode?: string) => void;
+  onViewChange: (view: ViewKey, clientCode?: string, options?: NavigateOptions) => void;
   children: React.ReactNode;
 }
 
@@ -31,7 +32,13 @@ export function Layout({
   const { isDark, toggle: toggleTheme } = useTheme();
   const { openEntrySheet } = useTimer();
 
-  const { clients, quotes, timeEntries, currentUser, permissions } = usePracticeStore();
+  const practice = usePracticeStore();
+  const { clients, quotes, timeEntries, currentUser, permissions } = practice;
+  const assistantAllowed = canUseAssistant(currentUser.role, permissions.matrix);
+  const assistantState = React.useMemo(
+    () => (assistantAllowed ? scopeAssistantState(practice, currentUser.role, permissions.matrix) : null),
+    [assistantAllowed, practice, currentUser.role, permissions.matrix]
+  );
   // Keyboard shortcut for Cmd+K / Ctrl+K
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -121,11 +128,11 @@ export function Layout({
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Topbar
           breadcrumbs={breadcrumbs}
-          onNavigate={(view, code) => onViewChange(view, code)}
+          onNavigate={(view, code, options) => onViewChange(view, code, options)}
           onOpenSearch={() => setSearchOpen(true)}
           isDark={isDark}
           onToggleTheme={toggleTheme}
-          onOpenAiAssistant={() => setAiDrawerOpen(true)}
+          onOpenAiAssistant={assistantAllowed ? () => setAiDrawerOpen(true) : undefined}
           onLogTime={openEntrySheet}
         />
         <main className="flex-1 overflow-y-auto">
@@ -140,11 +147,14 @@ export function Layout({
         onSelect={handleSelectCommand}
       />
 
-      <AiPracticeAssistantDrawer
-        open={aiDrawerOpen}
-        onOpenChange={setAiDrawerOpen}
-        onOpenSettings={() => onViewChange('settings')}
-      />
+      {assistantState && (
+        <AiPracticeAssistantDrawer
+          open={aiDrawerOpen}
+          onOpenChange={setAiDrawerOpen}
+          onOpenSettings={() => onViewChange('settings')}
+          stateOverride={assistantState}
+        />
+      )}
     </div>
   );
 }

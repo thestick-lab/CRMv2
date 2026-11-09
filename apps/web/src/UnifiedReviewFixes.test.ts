@@ -57,8 +57,11 @@ describe('Unified operations and governance review fixes', () => {
   it('verifies DeadlinesKanban drops to Not Started and In Progress update status without premature submit', () => {
     const kanbanSrc = fs.readFileSync('src/components/deadlines/DeadlinesKanban.tsx', 'utf8');
 
-    // Should update status for Not Started and In Progress directly
-    expect(kanbanSrc).toContain('updateTaskStatus(taskId, targetStatus)');
+    // Should update status for Not Started and In Progress directly, clearing
+    // any stale partner sign-off the move leaves behind.
+    expect(kanbanSrc).toContain(
+      'updateTaskStatus(taskId, targetStatus, clearedApprovalMetadata(targetStatus))'
+    );
     // Should NOT prematurely call updateTaskStatus on Submitted before modal saves
     expect(kanbanSrc).not.toContain("updateTaskStatus(taskId, 'Submitted');");
   });

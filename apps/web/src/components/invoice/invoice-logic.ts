@@ -6,6 +6,7 @@ import {
   type EstimateLine,
 } from 'fdoncall-practice/domain/estimate';
 import { addDays, todayInSouthAfrica, type ISODate } from 'fdoncall-practice/domain/dates';
+import { GROUP_ACCOUNT_CODES } from '@/lib/integrations/xero';
 import type {
   Invoice,
   InvoiceLine,
@@ -83,6 +84,14 @@ export function computeInvoiceStatus(
   return invoice.dueDate < today ? 'Overdue' : 'Sent';
 }
 
+/**
+ * Whether an invoice's line items may still be edited. Only a draft is
+ * mutable: once `Sent` (or `Paid`) the document is issued and read-only.
+ */
+export function invoiceIsEditable(status: InvoiceStatus): boolean {
+  return status === 'Draft';
+}
+
 /** Days from issue to due for the quote's payment terms (`On presentation` = same day). */
 export function paymentTermsDays(terms: string | undefined): number {
   if (!terms) return 30;
@@ -132,7 +141,13 @@ export function createInvoiceFromQuote(
   options: CreateInvoiceOptions = {}
 ): Invoice {
   const estimate = computeEstimate(quote.estimateInput);
-  const monthIndex = Math.max(0, estimate.months.indexOf(month));
+  const monthIndex = estimate.months.indexOf(month);
+  // An unknown month is a programming error, never a silent first-month bill.
+  if (monthIndex < 0) {
+    throw new RangeError(
+      `${month} is not a billing month on ${quote.number}'s fee schedule`
+    );
+  }
   const issueDate = options.issueDate ?? todayInSouthAfrica();
   const dueDate = addDays(issueDate, paymentTermsDays(quote.paymentTerms));
 
@@ -145,6 +160,9 @@ export function createInvoiceFromQuote(
       )}`,
       quantity: 1,
       unitAmount: cents(line.amounts[monthIndex]),
+      // The line's own estimate group is its revenue account; that is what
+      // splits the Xero payload and the analytics service-group donut.
+      accountCode: GROUP_ACCOUNT_CODES[line.group],
       taxType: line.vatable ? 'OUTPUT2' : 'NONE',
       lineAmount: cents(line.amounts[monthIndex]),
     }));
@@ -160,6 +178,7 @@ export function createInvoiceFromQuote(
     taxRate: INVOICE_TAX_RATE,
     ...totals,
     status: 'Draft',
+    billingMonth: month,
     issueDate,
     dueDate,
     createdAt: new Date().toISOString(),
@@ -171,19 +190,19 @@ export function createInvoiceFromQuote(
  * already invoiced, else the first unbilled month from today, else the last
  * month of the schedule.
  *
- * The invoice record carries no explicit billing month, so the month it was
- * issued in (`issueDate.slice(0, 7)`) is the record of what has been billed.
+ * The invoice's `billingMonth` is the record of what has been billed; records
+ * saved before that field existed fall back to their issue month.
  */
 export function nextUnbilledMonth(
   quote: Quote,
-  invoices: Pick<Invoice, 'quoteId' | 'issueDate'>[],
+  invoices: Pick<Invoice, 'quoteId' | 'issueDate' | 'billingMonth'>[],
   today: ISODate = todayInSouthAfrica()
 ): string {
   const months = estimateMonths(quote.estimateInput.startMonth);
   const billed = new Set(
     invoices
       .filter((invoice) => invoice.quoteId === quote.id)
-      .map((invoice) => invoice.issueDate.slice(0, 7))
+      .map((invoice) => invoice.billingMonth ?? invoice.issueDate.slice(0, 7))
   );
 
   const billedMonths = [...billed].filter((month) => months.includes(month)).sort();
@@ -202,6 +221,24 @@ export function nextUnbilledMonth(
 }
 
 /** The month an existing invoice bills, for the editor's month label. */
-export function invoiceMonth(invoice: Pick<Invoice, 'issueDate'>): string {
-  return invoice.issueDate.slice(0, 7);
+export function invoiceMonth(
+  invoice: Pick<Invoice, 'issueDate' | 'billingMonth'>
+): string {
+  return invoice.billingMonth ?? invoice.issueDate.slice(0, 7);
+}
+
+/**
+ * The invoice already raised for a quote's billing month, if any. Creating a
+ * second one for the same month would double-bill the retainer.
+ */
+export function invoiceForMonth(
+  invoices: Pick<Invoice, 'quoteId' | 'billingMonth' | 'issueDate'>[],
+  quoteId: string,
+  month: string
+): Invoice | undefined {
+  return invoices.find(
+    (invoice) =>
+      invoice.quoteId === quoteId &&
+      (invoice.billingMonth ?? invoice.issueDate.slice(0, 7)) === month
+  ) as Invoice | undefined;
 }

@@ -1,5 +1,41 @@
 import type { PracticeState } from '@/context/PracticeStoreContext';
 import { computeEstimate } from 'fdoncall-practice/domain/estimate';
+import { can, type PermissionState, type Role } from '@/lib/permissions';
+
+/**
+ * The assistant answers from practice-wide data (clients, rates, quotes, the
+ * team register), so it is gated on a data grant: `Clients — view` or
+ * `Deadlines — view`. Support Tech and a Limited Subcontractor hold neither
+ * unconditionally, and the trigger never renders for them.
+ */
+export function canUseAssistant(
+  role: Role,
+  matrix?: PermissionState['matrix']
+): boolean {
+  return can(role, 'Clients', 'view', matrix) || can(role, 'Deadlines', 'view', matrix);
+}
+
+/**
+ * The state slice the engine may read. A role with the full client grant sees
+ * the practice as-is; anything else gets an empty register, pipeline and team
+ * so no scoped-out record can be queried through a prompt.
+ */
+export function scopeAssistantState(
+  state: PracticeState,
+  role: Role,
+  matrix?: PermissionState['matrix']
+): PracticeState {
+  if (can(role, 'Clients', 'view', matrix)) return state;
+  return {
+    ...state,
+    clients: [],
+    quotes: [],
+    invoices: [],
+    timeEntries: [],
+    staff: [],
+    rates: { ...state.rates, standardHourlyRate: 0, serviceFees: {} },
+  };
+}
 
 export function answerPracticeAssistantQuery(query: string, state: PracticeState): string {
   const q = query.trim().toLowerCase();

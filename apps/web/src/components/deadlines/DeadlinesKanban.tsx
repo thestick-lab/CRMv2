@@ -12,6 +12,7 @@ import {
 import {
   WORKFLOW_LANES,
   canMoveStatus,
+  clearedApprovalMetadata,
   normalizeWorkflowStatus,
   type WorkflowStatus,
 } from '@/lib/workflow';
@@ -535,7 +536,9 @@ export function DeadlinesKanban({
       }
       return;
     }
-    updateTaskStatus(taskId, targetStatus);
+    // Leaving the approval lanes invalidates any recorded partner sign-off —
+    // pass the cleared metadata explicitly, not just rely on the store.
+    updateTaskStatus(taskId, targetStatus, clearedApprovalMetadata(targetStatus));
   };
 
   const columns = groupBy === 'workflow' ? workflowColumns : urgencyColumns;

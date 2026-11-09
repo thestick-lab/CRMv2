@@ -20,8 +20,12 @@ export interface NoAccessViewProps {
  */
 export function NoAccessView({ view, onNavigate, label }: NoAccessViewProps) {
   const { currentUser, permissions } = usePracticeStore();
+  // Same scope the sidebar uses: a `Limited (assigned)` cell earns its view on
+  // the views that filter their own data, so the shortcuts match the nav.
   const permitted = NAV_ITEMS.filter((item) =>
-    canAccessView(item.id, currentUser.role, permissions.matrix)
+    canAccessView(item.id, currentUser.role, permissions.matrix, {
+      assigned: item.assignedAccess === true,
+    })
   );
   const denied = label ?? NAV_ITEMS.find((item) => item.id === view)?.label ?? 'This area';
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
-import type { ViewKey } from '@/types/navigation';
+import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import type { Client } from 'fdoncall-practice/domain/types';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { STAFF, GROUPS } from 'fdoncall-practice/data/seed';
@@ -103,7 +103,7 @@ export function clientRecordTabs(
 export interface ClientShowViewProps {
   clientCode: string;
   onBack: () => void;
-  onNavigate?: (view: ViewKey, clientCode?: string) => void;
+  onNavigate?: (view: ViewKey, clientCode?: string, options?: NavigateOptions) => void;
   initialTab?: ClientTabId;
 }
 
@@ -131,6 +131,14 @@ export function ClientShowView({
     currentUser.role,
     'Clients',
     'view-billing',
+    permissions.matrix
+  );
+  // §6.9 `Clients — create/edit`: without it the record is read-only and no
+  // panel may write through `updateClient`.
+  const canEditClient = can(
+    currentUser.role,
+    'Clients',
+    'create-edit',
     permissions.matrix
   );
   // A deep link into the billing tab falls back for roles that cannot read it.
@@ -216,8 +224,11 @@ export function ClientShowView({
         actions={
           <AddActionMenu
             onLogTime={() => startTimer({ clientCode: client.code })}
-            onNewQuote={() => onNavigate?.('sales-pipeline')}
+            onNewQuote={() =>
+              onNavigate?.('sales-pipeline', undefined, { quoteClientCode: client.code })
+            }
             onAddNote={() => setActiveTab('notes')}
+            canAddNote={canEditClient}
           />
         }
         tabs={clientRecordTabs(canViewBilling)}
@@ -227,6 +238,7 @@ export function ClientShowView({
         {activeTab === 'overview' && (
           <StatutoryProfileTab
             client={client}
+            readOnly={!canEditClient}
             onOpenOrganization={() => setActiveTab('organization')}
             onOpenTasks={() => setActiveTab('tasks')}
           />
@@ -236,12 +248,15 @@ export function ClientShowView({
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
             <OrganizationPanel
               expanded
+              readOnly={!canEditClient}
               entityType={client.entityType}
               groupName={summary.groupName}
               groupMembers={groupMembers}
               employeeCount={client.payroll ? client.employeeCount : undefined}
               contacts={client.contacts ?? []}
-              onContactsChange={(contacts) => updateClient(client.code, { contacts })}
+              onContactsChange={(contacts) => {
+                if (canEditClient) updateClient(client.code, { contacts });
+              }}
             />
             <RelationshipHistoryPanel entries={timeline} />
           </div>
@@ -267,8 +282,11 @@ export function ClientShowView({
           <div className="max-w-2xl">
             <InternalNotesPanel
               notes={client.notes}
-              defaultEditing
-              onSave={(notes) => updateClient(client.code, { notes })}
+              defaultEditing={canEditClient}
+              readOnly={!canEditClient}
+              onSave={(notes) => {
+                if (canEditClient) updateClient(client.code, { notes });
+              }}
             />
           </div>
         )}
@@ -281,10 +299,12 @@ function AddActionMenu({
   onLogTime,
   onNewQuote,
   onAddNote,
+  canAddNote,
 }: {
   onLogTime: () => void;
   onNewQuote: () => void;
   onAddNote: () => void;
+  canAddNote: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -294,9 +314,9 @@ function AddActionMenu({
   };
 
   const items = [
-    { label: 'Log Time', icon: Clock, onSelect: onLogTime },
-    { label: 'New Quote', icon: FilePlus2, onSelect: onNewQuote },
-    { label: 'Add Note', icon: StickyNote, onSelect: onAddNote },
+    { label: 'Log Time', icon: Clock, onSelect: onLogTime, permitted: true },
+    { label: 'New Quote', icon: FilePlus2, onSelect: onNewQuote, permitted: true },
+    { label: 'Add Note', icon: StickyNote, onSelect: onAddNote, permitted: canAddNote },
   ];
 
   return (
@@ -319,8 +339,10 @@ function AddActionMenu({
               <button
                 key={item.label}
                 type="button"
+                disabled={!item.permitted}
+                title={item.permitted ? undefined : 'Your role cannot record client notes'}
                 onClick={() => run(item.onSelect)}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-1 focus-visible:ring-[#c4161c]"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-1 focus-visible:ring-[#c4161c] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                 {item.label}

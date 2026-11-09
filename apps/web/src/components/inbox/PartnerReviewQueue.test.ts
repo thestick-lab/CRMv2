@@ -68,7 +68,10 @@ describe('PartnerReviewQueue data filtering and approval actions', () => {
     });
 
     expect(revised.taskStatusOverrides[targetTask.id].status).toBe('In Progress');
-    expect(revised.taskStatusOverrides[targetTask.id].partnerSignOff).toBe(false);
+    // Leaving the approval lanes drops the sign-off entirely (not merely
+    // `false`): a stale `approvedBy` must not survive a revision request.
+    expect(revised.taskStatusOverrides[targetTask.id].partnerSignOff).toBeUndefined();
+    expect(revised.taskStatusOverrides[targetTask.id].approvedBy).toBeUndefined();
     expect(filterReviewQueueTasks(summary.tasks, revised.taskStatusOverrides)).toEqual([]);
   });
 

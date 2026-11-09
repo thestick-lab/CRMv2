@@ -264,7 +264,9 @@ export function KanbanBoard<T extends KanbanCardBase>({
                       data-kanban-card={card.id}
                       draggable
                       tabIndex={0}
-                      role="button"
+                      // A group, not a button: the card contains the move-menu
+                      // button, and interactive elements must never nest.
+                      role="group"
                       onDragStart={(event) => {
                         event.dataTransfer.setData('text/plain', card.id);
                         event.dataTransfer.effectAllowed = 'move';
@@ -276,10 +278,12 @@ export function KanbanBoard<T extends KanbanCardBase>({
                       }}
                       onFocus={() => setFocusedCardId(card.id)}
                       onBlur={(event) => {
+                        // Focus moving to the card's own move-menu button is
+                        // still this card's turn: clearing it here would kill
+                        // the arrow-key moves mid-gesture.
+                        if (event.currentTarget.contains(event.relatedTarget as Node)) return;
                         setFocusedCardId((current) => (current === card.id ? null : current));
-                        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-                          setMenuCardId(null);
-                        }
+                        setMenuCardId(null);
                       }}
                       onClick={() => onOpenCard(card)}
                       onDoubleClick={() => onOpenCard(card)}
@@ -289,7 +293,7 @@ export function KanbanBoard<T extends KanbanCardBase>({
                         'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c]',
                         draggingCardId === card.id && 'opacity-60'
                       )}
-                      aria-label="Open card details"
+                      aria-label="Card. Press Enter to open details."
                     >
                       {renderCard(card, { columnId: column.id })}
 

@@ -30,6 +30,11 @@ export function TimeView() {
     assigned: true,
   });
   const canViewAll = can(currentUser.role, 'Time', 'view-all', permissions.matrix);
+  // The badge counts what this person can actually see: the whole practice for
+  // a `view-all` role, else only their own entries.
+  const visibleEntries = canViewAll
+    ? timeEntries
+    : timeEntries.filter((entry) => entry.staffUserId === currentUser.id);
   const tabs = TABS.filter((entry) => (entry.id === 'log' ? canLogOwn : canViewAll));
   const [tab, setTab] = React.useState<TimeTab>(() => (canLogOwn ? 'log' : 'report'));
 
@@ -79,7 +84,7 @@ export function TimeView() {
                 {entry.label}
                 {entry.id === 'log' && (
                   <span className="ml-0.5 rounded-full bg-muted px-1.5 font-mono text-[10px] tabular-nums text-muted-foreground">
-                    {timeEntries.length}
+                    {visibleEntries.length}
                   </span>
                 )}
               </button>

@@ -299,6 +299,9 @@ export function QuoteBuilderView({
   const transitionContext = {
     hasClient: form.mode === 'client' ? Boolean(form.clientCode) : form.prospect.name.trim().length > 0,
     hasFeeLines: estimate.lines.length > 0,
+    // This builder is the only place that records a signature: its `Sign`
+    // action opens Documenso and persists the envelope id on dispatch.
+    hasSignature: true,
   };
 
   const exportClient: Client =

@@ -18,6 +18,8 @@ export interface ContactDetailsPanelProps {
   editing: ContactChannel | null;
   onEditingChange: (channel: ContactChannel | null) => void;
   onSave: (channel: ContactChannel, value: string) => void;
+  /** The role may not record client details: channels render read-only. */
+  readOnly?: boolean;
   /** Statutory context shown below the channels. */
   details: {
     partnerLabel: string;
@@ -39,6 +41,7 @@ export function ContactDetailsPanel({
   editing,
   onEditingChange,
   onSave,
+  readOnly = false,
   details,
 }: ContactDetailsPanelProps) {
   const [draft, setDraft] = React.useState('');
@@ -97,14 +100,16 @@ export function ContactDetailsPanel({
                     >
                       {value || '—'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => onEditingChange(row.id)}
-                      aria-label={`${value ? 'Edit' : 'Add'} ${row.label}`}
-                      className="shrink-0 rounded p-0.5 text-muted-foreground outline-none transition-colors hover:text-[#c4161c] focus-visible:ring-1 focus-visible:ring-[#c4161c]"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        onClick={() => onEditingChange(row.id)}
+                        aria-label={`${value ? 'Edit' : 'Add'} ${row.label}`}
+                        className="shrink-0 rounded p-0.5 text-muted-foreground outline-none transition-colors hover:text-[#c4161c] focus-visible:ring-1 focus-visible:ring-[#c4161c]"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
                   </dd>
                 )}
               </div>

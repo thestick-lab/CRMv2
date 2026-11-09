@@ -24,7 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { southAfricaDay } from '@/lib/dates';
 import { personInitials } from '@/lib/initials';
-import { can } from '@/lib/permissions';
+import { canPushInvoiceToXero, canViewInvoices, canManageInvoices } from '@/lib/invoice-access';
 import {
   billingMonthRange,
   formatHours,
@@ -48,6 +48,8 @@ import {
   UNREGISTERED_CLIENT_CODE,
   computeInvoiceStatus,
   createInvoiceFromQuote,
+  invoiceForMonth,
+  invoiceIsEditable,
   invoiceMonth,
   invoicePaymentDetails,
   nextUnbilledMonth,
@@ -107,12 +109,8 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     permissions,
   } = usePracticeStore();
 
-  const canManageInvoices = can(
-    currentUser.role,
-    'Invoices',
-    'create-send',
-    permissions.matrix
-  );
+  const canReadInvoices = canViewInvoices(currentUser.role, permissions.matrix);
+  const canEditInvoices = canManageInvoices(currentUser.role, permissions.matrix);
 
   const today = todayInSouthAfrica();
   const [savedId, setSavedId] = React.useState<string | undefined>(invoiceId);
@@ -168,6 +166,11 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     { status, dueDate },
     today
   );
+  /**
+   * Once an invoice leaves Draft its document is issued: the lines and the
+   * add actions are frozen. Send / Mark Paid stay available.
+   */
+  const linesReadOnly = !invoiceIsEditable(status);
 
   const stagedEntryIds = React.useMemo(
     () => new Set(Object.values(stagedTime).flat()),
@@ -199,6 +202,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     taxRate: INVOICE_TAX_RATE,
     ...totals,
     status,
+    billingMonth: month,
     issueDate,
     dueDate,
     paymentTerms,
@@ -223,7 +227,19 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     });
   };
 
-  const persist = (nextStatus: InvoiceStatus = status): Invoice => {
+  const persist = (nextStatus: InvoiceStatus = status): Invoice | null => {
+    // One invoice per quote per fee-schedule month: reopening the quote must
+    // raise the next month, never re-bill one already invoiced.
+    if (!savedInvoice && quote) {
+      const duplicate = invoiceForMonth(invoices, quote.id, month);
+      if (duplicate) {
+        setFeedback({
+          tone: 'error',
+          text: `${duplicate.number} already bills ${formatMonthShort(month)} — a month is invoiced once.`,
+        });
+        return null;
+      }
+    }
     const nextTotals = reconcileInvoice(lines, INVOICE_TAX_RATE);
     const record: Invoice = {
       ...draftInvoice,
@@ -242,6 +258,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
         vat: record.vat,
         total: record.total,
         status: record.status,
+        billingMonth: record.billingMonth,
         issueDate: record.issueDate,
         dueDate: record.dueDate,
         paymentTerms: record.paymentTerms,
@@ -292,11 +309,12 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   };
 
   const handleSave = () => {
-    if (!canManageInvoices) {
+    if (!canEditInvoices) {
       setFeedback({ tone: 'error', text: `${currentUser.role} cannot edit invoices` });
       return;
     }
-    persist();
+    const record = persist();
+    if (!record) return;
     setFeedback({
       tone: 'success',
       text: savedInvoice ? `Changes to ${number} saved` : `Draft ${number} saved`,
@@ -304,35 +322,44 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   };
 
   const handleSend = () => {
-    if (!canManageInvoices) {
+    if (!canEditInvoices) {
       setFeedback({ tone: 'error', text: `${currentUser.role} cannot send invoices` });
       return;
     }
     if (status !== 'Draft') return;
     const record = persist('Sent');
+    if (!record) return;
     setStatus('Sent');
     setFeedback({ tone: 'success', text: `${record.number} sent to ${clientName}` });
     log(`Invoice ${record.number} sent to ${clientName}`, `${formatZar(record.total)} incl. 15% VAT`);
   };
 
   const handleMarkPaid = () => {
-    if (!canManageInvoices) {
+    if (!canEditInvoices) {
       setFeedback({ tone: 'error', text: `${currentUser.role} cannot mark invoices paid` });
       return;
     }
     if (status === 'Paid') return;
     const record = persist('Paid');
+    if (!record) return;
     setStatus('Paid');
     setFeedback({ tone: 'success', text: `${record.number} marked paid` });
     log(`Invoice ${record.number} marked paid`, `${formatZar(record.total)} received`);
   };
 
   const handlePushXero = () => {
-    if (!xeroClient) {
-      setFeedback({ tone: 'error', text: 'A client record is required before the Xero draft' });
+    // Pushing persists the invoice, so it needs the invoice write grant — the
+    // same one Save/Send/Mark Paid use, not merely a resolvable Xero contact.
+    const push = canPushInvoiceToXero(currentUser.role, permissions.matrix, {
+      hasXeroClient: Boolean(xeroClient),
+      alreadySynced: savedInvoice?.xeroSync === 'synced',
+    });
+    if (!push.allowed) {
+      setFeedback({ tone: 'error', text: push.reason ?? 'This invoice cannot be pushed' });
       return;
     }
     const record = persist();
+    if (!record) return;
     const result = simulateXeroSync(record);
     updateInvoice(record.id, { xeroSync: 'synced' });
     setXeroResult(result);
@@ -342,6 +369,14 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
 
   const handleMonthChange = (next: string) => {
     if (!quote || savedInvoice) return;
+    const duplicate = invoiceForMonth(invoices, quote.id, next);
+    if (duplicate) {
+      setFeedback({
+        tone: 'error',
+        text: `${duplicate.number} already bills ${formatMonthShort(next)} — choose the next unbilled month.`,
+      });
+      return;
+    }
     setMonth(next);
     const regenerated = createInvoiceFromQuote(quote, next, sequences.invoice, { issueDate });
     setLines(regenerated.lineItems);
@@ -418,6 +453,28 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
         : [...previous, method]
     );
   };
+
+  if (!canReadInvoices) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-background p-6"
+        data-invoice-editor-denied
+      >
+        <div className="max-w-md space-y-2 rounded-xl border border-border bg-card p-6 text-center">
+          <p className="text-sm font-semibold text-foreground">
+            Invoices are not available to {currentUser.role}
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            The permission matrix does not grant this role the invoice register. A Partner or the
+            support technician can change it in Settings → Roles &amp; Permissions.
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!seeded) {
     return (
@@ -535,11 +592,17 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                     onChange={(event) => handleMonthChange(event.target.value)}
                     className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c]"
                   >
-                    {months.map((option) => (
-                      <option key={option} value={option}>
-                        {formatMonthShort(option)}
-                      </option>
-                    ))}
+                    {months.map((option) => {
+                      const alreadyBilled =
+                        option !== month &&
+                        Boolean(invoiceForMonth(invoices, quote.id, option));
+                      return (
+                        <option key={option} value={option} disabled={alreadyBilled}>
+                          {formatMonthShort(option)}
+                          {alreadyBilled ? ' — invoiced' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 ) : (
                   <input
@@ -592,11 +655,13 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                   size="sm"
                   data-time-feed-open
                   onClick={() => setTimePanelOpen(true)}
-                  disabled={!unbilledTime}
+                  disabled={!unbilledTime || linesReadOnly}
                   title={
-                    unbilledTime
-                      ? 'Bill the overage of this month’s unbilled time'
-                      : 'A quote sets the retainer allowance and ad-hoc rate'
+                    linesReadOnly
+                      ? 'Issued invoices are read-only — lines are fixed once sent'
+                      : unbilledTime
+                        ? 'Bill the overage of this month’s unbilled time'
+                        : 'A quote sets the retainer allowance and ad-hoc rate'
                   }
                   className="h-7 gap-1 px-2 text-[11px]"
                 >
@@ -608,6 +673,8 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                   variant="outline"
                   size="sm"
                   onClick={addLine}
+                  disabled={linesReadOnly}
+                  title={linesReadOnly ? 'Issued invoices are read-only' : undefined}
                   className="h-7 gap-1 px-2 text-[11px]"
                 >
                   <Plus className="h-3 w-3" />
@@ -615,6 +682,15 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 </Button>
               </div>
             </div>
+            {linesReadOnly && (
+              <p
+                data-invoice-read-only
+                className="border-b border-border/60 bg-muted/30 px-4 py-2 text-[10px] leading-relaxed text-muted-foreground"
+              >
+                This invoice has been issued ({status}) — line items are read-only. Send and Mark
+                Paid remain available; raise a correcting invoice for amount changes.
+              </p>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] text-left text-[11px]">
                 <thead>
@@ -643,6 +719,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                           value={line.description}
                           aria-label={`Line ${index + 1} description`}
                           placeholder="Service or fee"
+                          disabled={linesReadOnly}
                           onChange={(event) =>
                             handleLineChange(line.id, { description: event.target.value })
                           }
@@ -655,6 +732,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                           step="0.25"
                           defaultValue={line.quantity}
                           aria-label={`Line ${index + 1} quantity`}
+                          disabled={linesReadOnly}
                           onChange={(event) => {
                             const parsed = parseAmount(event.target.value);
                             if (parsed !== null) handleLineChange(line.id, { quantity: parsed });
@@ -668,6 +746,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                           step="0.01"
                           defaultValue={line.unitAmount}
                           aria-label={`Line ${index + 1} unit price`}
+                          disabled={linesReadOnly}
                           onChange={(event) => {
                             const parsed = parseAmount(event.target.value);
                             if (parsed !== null) handleLineChange(line.id, { unitAmount: parsed });
@@ -679,6 +758,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                         <select
                           value={line.taxType}
                           aria-label={`Line ${index + 1} tax type`}
+                          disabled={linesReadOnly}
                           onChange={(event) =>
                             handleLineChange(line.id, {
                               taxType: event.target.value as InvoiceLine['taxType'],
@@ -700,6 +780,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                           size="icon"
                           aria-label={`Remove line ${index + 1}`}
                           onClick={() => removeLine(line.id)}
+                          disabled={linesReadOnly}
                           className="h-7 w-7 text-muted-foreground hover:text-[#c4161c]"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -843,7 +924,19 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 variant="outline"
                 size="sm"
                 onClick={handlePushXero}
-                disabled={!xeroClient || savedInvoice?.xeroSync === 'synced'}
+                data-xero-push
+                disabled={
+                  !canPushInvoiceToXero(currentUser.role, permissions.matrix, {
+                    hasXeroClient: Boolean(xeroClient),
+                    alreadySynced: savedInvoice?.xeroSync === 'synced',
+                  }).allowed
+                }
+                title={
+                  canPushInvoiceToXero(currentUser.role, permissions.matrix, {
+                    hasXeroClient: Boolean(xeroClient),
+                    alreadySynced: savedInvoice?.xeroSync === 'synced',
+                  }).reason
+                }
                 className="h-7 gap-1 px-2 text-[11px]"
               >
                 <Cloud className="h-3 w-3" />
@@ -1086,8 +1179,8 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             variant="outline"
             size="sm"
             onClick={handleSave}
-            disabled={!canManageInvoices}
-            title={canManageInvoices ? undefined : `${currentUser.role} cannot edit invoices`}
+            disabled={!canEditInvoices}
+            title={canEditInvoices ? undefined : `${currentUser.role} cannot edit invoices`}
             className="gap-1.5 text-xs"
           >
             <Check className="h-3.5 w-3.5" />
@@ -1097,7 +1190,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             type="button"
             size="sm"
             onClick={handleSend}
-            disabled={status !== 'Draft' || !canManageInvoices}
+            disabled={status !== 'Draft' || !canEditInvoices}
             className="gap-1.5 text-xs"
           >
             <Send className="h-3.5 w-3.5" />
@@ -1108,7 +1201,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             variant="outline"
             size="sm"
             onClick={handleMarkPaid}
-            disabled={status === 'Paid' || !canManageInvoices}
+            disabled={status === 'Paid' || !canEditInvoices}
             className="gap-1.5 text-xs"
           >
             <Receipt className="h-3.5 w-3.5" />

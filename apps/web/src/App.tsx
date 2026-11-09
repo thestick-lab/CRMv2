@@ -31,6 +31,8 @@ function AppContent() {
   const [deadlineStaffId, setDeadlineStaffId] = React.useState<string | undefined>(undefined);
   const [deadlineKpiFilter, setDeadlineKpiFilter] = React.useState<NavigateOptions['kpiFilter']>(undefined);
   const [settingsPane, setSettingsPane] = React.useState<NavigateOptions['settingsPane']>(undefined);
+  const [quoteClientCode, setQuoteClientCode] = React.useState<string | undefined>(undefined);
+  const [newClientIntent, setNewClientIntent] = React.useState(false);
   const [invoiceEditor, setInvoiceEditor] = React.useState<{ invoiceId?: string; quote?: Quote } | null>(
     null
   );
@@ -53,6 +55,12 @@ function AppContent() {
     if (newView === 'settings') {
       setSettingsPane(options?.settingsPane);
     }
+    if (options?.quoteClientCode !== undefined) {
+      setQuoteClientCode(options.quoteClientCode);
+    }
+    if (newView === 'clients' && options?.newClient) {
+      setNewClientIntent(true);
+    }
   };
 
   const renderContent = () => {
@@ -71,7 +79,13 @@ function AppContent() {
       case 'inbox':
         return <InboxView onNavigate={handleNavigate} />;
       case 'clients':
-        return <ClientsView onNavigate={handleNavigate} />;
+        return (
+          <ClientsView
+            onNavigate={handleNavigate}
+            initialCreateOpen={newClientIntent}
+            onCreateIntentHandled={() => setNewClientIntent(false)}
+          />
+        );
       case 'team':
         return <TeamView />;
       case 'deadlines':
@@ -91,6 +105,8 @@ function AppContent() {
           <SalesPipelineView
             onOpenInvoice={(invoiceId) => setInvoiceEditor({ invoiceId })}
             onCreateInvoice={(quote) => setInvoiceEditor({ quote })}
+            initialClientCode={quoteClientCode}
+            onInitialClientConsumed={() => setQuoteClientCode(undefined)}
           />
         );
       case 'time':

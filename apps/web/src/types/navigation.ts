@@ -24,4 +24,8 @@ export interface NavigateOptions {
   kpiFilter?: DeadlineKpiFilter;
   /** Pane Settings should open on. */
   settingsPane?: 'profile' | 'team' | 'matrix';
+  /** Client record → New Quote: pre-selects the client in the quote builder. */
+  quoteClientCode?: string;
+  /** `+ New → New client`: open the clients register with the create dialog. */
+  newClient?: boolean;
 }

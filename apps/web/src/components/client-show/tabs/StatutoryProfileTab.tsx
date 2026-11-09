@@ -167,12 +167,18 @@ export interface StatutoryProfileTabProps {
   onOpenOrganization?: () => void;
   /** Jump to the Tasks tab from the Next Action panel. */
   onOpenTasks?: () => void;
+  /**
+   * `Clients — create/edit` is not granted: every field renders as recorded
+   * and no handler may write through `updateClient`.
+   */
+  readOnly?: boolean;
 }
 
 export function StatutoryProfileTab({
   client,
   onOpenOrganization,
   onOpenTasks,
+  readOnly = false,
 }: StatutoryProfileTabProps) {
   const { clients, staff, updateClient, taskStatusOverrides, activity, quotes, invoices } =
     usePracticeStore();
@@ -225,6 +231,7 @@ export function StatutoryProfileTab({
   }, [clients, client]);
 
   const handleYearEndChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (readOnly) return;
     updateClient(client.code, {
       yearEndMonth: Number(e.target.value),
       yearEndAssumed: false,
@@ -232,12 +239,14 @@ export function StatutoryProfileTab({
   };
 
   const handleIncDateBlur = () => {
+    if (readOnly) return;
     updateClient(client.code, {
       incorporationDate: incDate.trim() || undefined,
     });
   };
 
   const handleTurnoverBlur = () => {
+    if (readOnly) return;
     const val = Number(turnoverInput);
     updateClient(client.code, {
       turnover: isNaN(val) || val <= 0 ? undefined : val,
@@ -245,10 +254,12 @@ export function StatutoryProfileTab({
   };
 
   const handleVatToggle = (checked: boolean) => {
+    if (readOnly) return;
     updateClient(client.code, serviceTogglePatch(scopeState, 'VAT201', checked));
   };
 
   const handlePayrollToggle = (checked: boolean) => {
+    if (readOnly) return;
     updateClient(client.code, serviceTogglePatch(scopeState, 'EMP201', checked));
   };
 
@@ -259,10 +270,12 @@ export function StatutoryProfileTab({
    * box clears them again (see `serviceTogglePatch`).
    */
   const handleServiceToggle = (code: ServiceCode, checked: boolean) => {
+    if (readOnly) return;
     updateClient(client.code, serviceTogglePatch(scopeState, code, checked));
   };
 
   const handleEfilingToggle = (checked: boolean) => {
+    if (readOnly) return;
     updateClient(client.code, {
       efilingProfile: checked ? 'firm' : 'client',
       efilingTransferredOn: checked ? new Date().toISOString().split('T')[0] : undefined,
@@ -270,6 +283,7 @@ export function StatutoryProfileTab({
   };
 
   const handleChannelSave = (channel: ContactChannel, value: string) => {
+    if (readOnly) return;
     updateClient(client.code, { [channel]: value || undefined });
   };
 
@@ -290,10 +304,12 @@ export function StatutoryProfileTab({
   };
 
   const handleContactsChange = (contacts: ClientContact[]) => {
+    if (readOnly) return;
     updateClient(client.code, { contacts });
   };
 
   const handleNotesSave = (notes: string | undefined) => {
+    if (readOnly) return;
     updateClient(client.code, { notes });
   };
 
@@ -355,6 +371,7 @@ export function StatutoryProfileTab({
       {/* Left column — contact channels and what is still missing */}
       <div className="space-y-4">
         <ContactDetailsPanel
+          readOnly={readOnly}
           channels={{
             email: client.email,
             phone: client.phone,
@@ -389,6 +406,7 @@ export function StatutoryProfileTab({
               <select
                 id="yearEndMonth"
                 value={client.yearEndMonth}
+                disabled={readOnly}
                 onChange={handleYearEndChange}
                 className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-foreground"
               >
@@ -415,6 +433,7 @@ export function StatutoryProfileTab({
                   id="incorporationDate"
                   type="date"
                   value={incDate}
+                  disabled={readOnly}
                   onChange={(e) => setIncDate(e.target.value)}
                   onBlur={handleIncDateBlur}
                   className="w-full rounded-lg border border-border bg-background px-3 py-1.5 font-mono text-foreground"
@@ -440,6 +459,7 @@ export function StatutoryProfileTab({
                   id="turnover"
                   type="number"
                   placeholder="e.g. 4000000"
+                  disabled={readOnly}
                   value={turnoverInput}
                   onChange={(e) => setTurnoverInput(e.target.value)}
                   onBlur={handleTurnoverBlur}
@@ -463,6 +483,7 @@ export function StatutoryProfileTab({
                 type="button"
                 role="switch"
                 aria-checked={Boolean(client.vatCategory)}
+                disabled={readOnly}
                 onClick={() => handleVatToggle(!client.vatCategory)}
                 className={cn(
                   'flex h-5 w-10 items-center rounded-full p-0.5 transition-colors',
@@ -490,6 +511,7 @@ export function StatutoryProfileTab({
                 type="button"
                 role="switch"
                 aria-checked={Boolean(client.payroll)}
+                disabled={readOnly}
                 onClick={() => handlePayrollToggle(!client.payroll)}
                 className={cn(
                   'flex h-5 w-10 items-center rounded-full p-0.5 transition-colors',
@@ -517,6 +539,7 @@ export function StatutoryProfileTab({
                 type="button"
                 role="switch"
                 aria-checked={client.efilingProfile === 'firm'}
+                disabled={readOnly}
                 onClick={() => handleEfilingToggle(client.efilingProfile !== 'firm')}
                 className={cn(
                   'flex h-5 w-10 items-center rounded-full p-0.5 transition-colors',
@@ -538,6 +561,7 @@ export function StatutoryProfileTab({
       {/* Middle column — who the client is and what has happened */}
       <div className="space-y-4">
         <OrganizationPanel
+          readOnly={readOnly}
           entityType={client.entityType}
           groupName={details.groupLabel}
           groupMembers={groupMembers}
@@ -581,7 +605,7 @@ export function StatutoryProfileTab({
                       type="checkbox"
                       id={`svc-${svc.code}`}
                       checked={enabled}
-                      disabled={svc.disabled}
+                      disabled={svc.disabled || readOnly}
                       onChange={(e) => handleServiceToggle(svc.code, e.target.checked)}
                       className="h-4 w-4 shrink-0 cursor-pointer rounded border-border text-primary focus:ring-primary disabled:cursor-not-allowed"
                     />
@@ -624,7 +648,7 @@ export function StatutoryProfileTab({
           onComplete={setActiveTask}
           onViewAll={onOpenTasks}
         />
-        <InternalNotesPanel notes={client.notes} onSave={handleNotesSave} />
+        <InternalNotesPanel notes={client.notes} onSave={handleNotesSave} readOnly={readOnly} />
         <TagsPanel tags={tags} onManage={handleManageTags} />
       </div>
 

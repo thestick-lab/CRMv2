@@ -1,7 +1,9 @@
 import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
-import type { ViewKey } from '@/types/navigation';
+import type { NavigateOptions, ViewKey } from '@/types/navigation';
 import type { BreadcrumbCrumb } from './navigation-helpers';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { can, type PermissionGroupInput } from '@/lib/permissions';
 import {
   Building2,
   ChevronRight,
@@ -19,7 +21,7 @@ import { TimerBar } from '@/components/time/TimerBar';
 
 export interface TopbarProps {
   breadcrumbs: BreadcrumbCrumb[];
-  onNavigate: (view: ViewKey, clientCode?: string) => void;
+  onNavigate: (view: ViewKey, clientCode?: string, options?: NavigateOptions) => void;
   onOpenSearch: () => void;
   isDark: boolean;
   onToggleTheme: () => void;
@@ -33,6 +35,8 @@ interface NewAction {
   hint: string;
   icon: LucideIcon;
   view: ViewKey;
+  permission: { group: PermissionGroupInput; action: string; assigned?: boolean };
+  options?: NavigateOptions;
 }
 
 const NEW_ACTIONS: NewAction[] = [
@@ -41,20 +45,36 @@ const NEW_ACTIONS: NewAction[] = [
     hint: 'Draft a fee proposal on the sales board',
     icon: FilePlus2,
     view: 'sales-pipeline',
+    permission: { group: 'Quotes', action: 'view-create-send' },
   },
   {
     label: 'New client',
     hint: 'Register a company or individual',
     icon: Building2,
     view: 'clients',
+    permission: { group: 'Clients', action: 'create-edit' },
+    options: { newClient: true },
   },
   {
     label: 'Log time',
     hint: 'Record billable work against a client',
     icon: Timer,
     view: 'time',
+    permission: { group: 'Time', action: 'log-own', assigned: true },
   },
 ];
+
+/** Actions `role` may take from `+ New`; everything else never renders. */
+export function permittedNewActions(
+  role: Parameters<typeof can>[0],
+  matrix: Parameters<typeof can>[3]
+): NewAction[] {
+  return NEW_ACTIONS.filter((action) =>
+    can(role, action.permission.group, action.permission.action, matrix, {
+      assigned: action.permission.assigned === true,
+    })
+  );
+}
 
 function NewMenu({
   onNavigate,
@@ -64,6 +84,11 @@ function NewMenu({
   onLogTime?: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const { currentUser, permissions } = usePracticeStore();
+  const actions = permittedNewActions(currentUser.role, permissions.matrix);
+  const canLogTime = can(currentUser.role, 'Time', 'log-own', permissions.matrix, {
+    assigned: true,
+  });
 
   return (
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
@@ -82,11 +107,13 @@ function NewMenu({
           sideOffset={6}
           className="z-50 w-60 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md outline-none"
         >
-          {NEW_ACTIONS.map(({ label, hint, icon: Icon, view }) => (
+          {actions.map(({ label, hint, icon: Icon, view, options }) => (
             <PopoverPrimitive.Close asChild key={label}>
               <button
                 type="button"
-                onClick={() => (view === 'time' && onLogTime ? onLogTime() : onNavigate(view))}
+                onClick={() =>
+                  view === 'time' && onLogTime ? onLogTime() : onNavigate(view, undefined, options)
+                }
                 className="flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-1 focus-visible:ring-[#c4161c]"
               >
                 <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -97,6 +124,27 @@ function NewMenu({
               </button>
             </PopoverPrimitive.Close>
           ))}
+          {!canLogTime && (
+            <div
+              data-new-menu-blocked="log-time"
+              className="flex items-start gap-2.5 rounded-md px-2 py-2 opacity-60"
+            >
+              <Timer className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="min-w-0">
+                <span className="block text-xs font-medium text-foreground">Log time</span>
+                <span className="block text-[11px] leading-snug text-muted-foreground">
+                  {currentUser.role} cannot log time — the permission matrix keeps this to
+                  assigned work.
+                </span>
+              </span>
+            </div>
+          )}
+          {actions.length === 0 && (
+            <p className="px-2 py-2 text-[11px] leading-snug text-muted-foreground">
+              {currentUser.role} has no quick-create actions. Open Settings → Roles &amp;
+              Permissions to review.
+            </p>
+          )}
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>
     </PopoverPrimitive.Root>

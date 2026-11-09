@@ -48,15 +48,21 @@ export const XERO_ACCOUNT_CODES = {
   compliance: '210',
   annual: '220',
   recharges: '230',
+  onceOff: '240',
   disbursement: '310',
 } as const;
 
-const GROUP_ACCOUNT_CODES: Record<EstimateGroup, string> = {
+/**
+ * Estimate group → chart-of-accounts code. Invoices carry the code on every
+ * line so the Xero payload and the analytics service-group split classify the
+ * work by what it is, not by a single default revenue account.
+ */
+export const GROUP_ACCOUNT_CODES: Record<EstimateGroup, string> = {
   'Regular work': XERO_ACCOUNT_CODES.revenue,
   Compliance: XERO_ACCOUNT_CODES.compliance,
   'Annual work': XERO_ACCOUNT_CODES.annual,
   Recharges: XERO_ACCOUNT_CODES.recharges,
-  'Once-off': XERO_ACCOUNT_CODES.revenue,
+  'Once-off': XERO_ACCOUNT_CODES.onceOff,
 };
 
 function syntheticToken(): string {

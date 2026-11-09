@@ -9,6 +9,7 @@ import {
   type TimeEntry,
 } from '@/context/PracticeStoreContext';
 import { southAfricaDay } from '@/lib/dates';
+import { UNREGISTERED_CLIENT_CODE } from '@/components/invoice/invoice-logic';
 
 /* ---------------------------------------------------------------------------
  * Analytics (analytics-overview) derivation.
@@ -113,9 +114,15 @@ function revenueOf(invoices: Invoice[]): number | null {
 
 function activeClientsIn(input: AnalyticsInput, range: DateRange): number | null {
   const codes = new Set<string>();
-  for (const invoice of issuedInvoices(input, range)) codes.add(invoice.clientCode);
+  // A migrated prospect's placeholder code is not a client record; counting it
+  // would inflate the register with a name the practice does not manage.
+  const addClient = (code: string | undefined) => {
+    if (!code || code === UNREGISTERED_CLIENT_CODE) return;
+    codes.add(code);
+  };
+  for (const invoice of issuedInvoices(input, range)) addClient(invoice.clientCode);
   for (const entry of input.timeEntries) {
-    if (inRange(entry.startedAt, range)) codes.add(entry.clientCode);
+    if (inRange(entry.startedAt, range)) addClient(entry.clientCode);
   }
   for (const quote of input.quotes) {
     if (!quote.clientCode || KEPT_QUOTE_STAGES[quote.stage] !== true) continue;

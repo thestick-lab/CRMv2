@@ -1,6 +1,6 @@
 import type { StaffMember } from 'fdoncall-practice/domain/types';
 import type { ISODate } from 'fdoncall-practice/domain/dates';
-import type { PracticeUser } from '@/context/PracticeStoreContext';
+import type { PracticeUser, StaffProfile } from '@/context/PracticeStoreContext';
 import { personInitials } from '@/lib/initials';
 
 /* ---------------------------------------------------------------------------
@@ -38,23 +38,25 @@ export interface StaffRow {
   startDate?: ISODate;
   contractType: 'employee' | 'subcontractor';
   hourlyRate?: number;
+  /** Internal notes recorded on the staff profile. */
+  notes?: string;
 }
 
 /* ---------------------------------------------------------------------------
  * Build the staff-side user records the register reads: contact details plus
- * contract terms. Only facts already on record are filled in — subcontracted
- * hours bill at the practice's standard hourly rate (the seeded rate), and no
- * start date is invented where the seed has none.
+ * the contract terms actually on record. Nothing is invented — a subcontractor
+ * with no rate on file reads `—`, and no start date appears where none exists.
  * ------------------------------------------------------------------------- */
 
 export function buildStaffUsers(
   staff: StaffMember[],
   currentUser: PracticeUser | undefined,
-  standardHourlyRate: number
+  staffProfiles: Record<string, StaffProfile> = {}
 ): PracticeUser[] {
   return staff.map((member) => {
     const isCurrent = currentUser?.id === member.id;
     const contractType = contractTypeForKind(member.kind);
+    const recorded = staffProfiles[member.id];
 
     return {
       id: member.id,
@@ -64,12 +66,41 @@ export function buildStaffUsers(
         isCurrent && currentUser?.email ? currentUser.email : `${member.id}@fdoncall.co.za`,
       kind: member.kind,
       contract: {
+        ...recorded,
         contractType,
-        ...(contractType === 'subcontractor' ? { hourlyRate: standardHourlyRate } : {}),
         ...(isCurrent ? currentUser?.contract ?? {} : {}),
       },
     };
   });
+}
+
+/** The persisted profile for one staff member, for the edit dialog. */
+export function staffProfileOf(
+  staffId: string,
+  kind: StaffMember['kind'],
+  profiles: Record<string, StaffProfile>,
+  currentUser?: PracticeUser
+): StaffProfile {
+  return {
+    ...profiles[staffId],
+    contractType: contractTypeForKind(kind),
+    ...(currentUser?.id === staffId ? currentUser.contract ?? {} : {}),
+  };
+}
+
+/**
+ * Whether a role change may run. Role changes are a `Settings — manage`
+ * decision, and nobody may change their own role (no self-elevation into the
+ * Partner sign-off).
+ */
+export function staffRoleChangeBlock(
+  actorId: string,
+  targetId: string,
+  canManage: boolean
+): string | null {
+  if (targetId === actorId) return 'You cannot change your own role.';
+  if (!canManage) return 'Role changes need Settings — manage permissions.';
+  return null;
 }
 
 /** Join the staff register with its user records (contact + contract terms). */
@@ -91,8 +122,10 @@ export function staffRows(staff: StaffMember[], users: PracticeUser[]): StaffRow
       phone: contract?.phone,
       startDate: contract?.startDate,
       contractType,
-      // Only subcontracted hours carry a rate; employees show `—`.
+      // Only subcontracted hours carry a rate; employees show `—`, and a
+      // subcontractor with no recorded rate shows `—` rather than a guess.
       hourlyRate: contractType === 'subcontractor' ? contract?.hourlyRate : undefined,
+      notes: (contract as StaffProfile | undefined)?.notes,
     };
   });
 }

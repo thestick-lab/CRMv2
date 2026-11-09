@@ -11,7 +11,7 @@ const PARTNER: PracticeUser = {
   kind: 'employee',
 };
 
-const USERS = buildStaffUsers(STAFF, PARTNER, 625);
+const USERS = buildStaffUsers(STAFF, PARTNER);
 
 describe('staffRows', () => {
   it('lists only practice staff — never client directors', () => {
@@ -29,15 +29,31 @@ describe('staffRows', () => {
     }
   });
 
-  it('shows a subcontractor hourly rate and leaves employees rate-less', () => {
-    const rows = staffRows(STAFF, USERS);
+  it('never invents a subcontractor rate — it shows only when recorded', () => {
+    const rows = staffRows(STAFF, buildStaffUsers(STAFF, PARTNER));
     const hannes = rows.find((r) => r.id === 'hannes');
     const mia = rows.find((r) => r.id === 'mia');
 
     expect(hannes?.contractType).toBe('subcontractor');
-    expect(hannes?.hourlyRate).toBe(625);
+    expect(hannes?.hourlyRate).toBeUndefined();
     expect(mia?.contractType).toBe('employee');
     expect(mia?.hourlyRate).toBeUndefined();
+
+    const withRate = staffRows(
+      STAFF,
+      buildStaffUsers(STAFF, PARTNER, { hannes: { contractType: 'subcontractor', hourlyRate: 780 } })
+    ).find((r) => r.id === 'hannes');
+    expect(withRate?.hourlyRate).toBe(780);
+  });
+
+  it('carries recorded internal notes onto the row', () => {
+    const rows = staffRows(
+      STAFF,
+      buildStaffUsers(STAFF, PARTNER, {
+        mia: { contractType: 'employee', notes: 'Handles the Durbanville portfolio.' },
+      })
+    );
+    expect(rows.find((r) => r.id === 'mia')?.notes).toBe('Handles the Durbanville portfolio.');
   });
 
   it('joins contact details and contract terms from the staff user records', () => {

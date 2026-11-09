@@ -1,6 +1,7 @@
 import { cents, formatMonthShort } from 'fdoncall-practice/domain/estimate';
 import { endOfMonth, iso, type ISODate } from 'fdoncall-practice/domain/dates';
 import type { Invoice, InvoiceLine, TimeEntry } from '@/context/PracticeStoreContext';
+import { XERO_ACCOUNT_CODES } from '@/lib/integrations/xero';
 import { southAfricaDay } from './dates';
 
 /**
@@ -222,6 +223,8 @@ export function timeInvoiceFeed(
             description: `Time overage — ${formatMonthShort(monthKey)}`,
             quantity: overageHours,
             unitAmount,
+            // Ad-hoc time bills under the regular-work revenue account.
+            accountCode: XERO_ACCOUNT_CODES.revenue,
             taxType: 'OUTPUT2',
             lineAmount: cents(overageHours * unitAmount),
           },

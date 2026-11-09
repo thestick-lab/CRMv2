@@ -7,7 +7,7 @@ import {
 } from './quote-lifecycle';
 import type { QuoteStage } from '@/context/PracticeStoreContext';
 
-const FULL_CONTEXT = { hasClient: true, hasFeeLines: true };
+const FULL_CONTEXT = { hasClient: true, hasFeeLines: true, hasSignature: true };
 
 /** Every forward step plus the three legal loss paths — nothing else may be reachable. */
 const LEGAL_TRANSITIONS: Record<string, true> = {
@@ -71,8 +71,26 @@ describe('canTransitionQuote stage matrix', () => {
   it('does not gate acceptance, signature or activation on the send prerequisites', () => {
     const withoutContext = { hasClient: false, hasFeeLines: false };
     expect(canTransitionQuote('Quote Sent', 'Accepted', withoutContext)).toBe(true);
-    expect(canTransitionQuote('Accepted', 'Signed', withoutContext)).toBe(true);
+    // Signature additionally needs the recorded envelope, never a send fact.
+    expect(
+      canTransitionQuote('Accepted', 'Signed', { ...withoutContext, hasSignature: true })
+    ).toBe(true);
     expect(canTransitionQuote('Signed', 'Active Client', withoutContext)).toBe(true);
+  });
+
+  it('refuses to sign a quote with no recorded signature envelope', () => {
+    // A board/menu/keyboard stage move cannot record a Documenso signature, so
+    // it can never push a quote into `Signed` on its own.
+    expect(
+      canTransitionQuote('Accepted', 'Signed', { hasClient: true, hasFeeLines: true })
+    ).toBe(false);
+    expect(
+      canTransitionQuote('Accepted', 'Signed', {
+        hasClient: true,
+        hasFeeLines: true,
+        hasSignature: false,
+      })
+    ).toBe(false);
   });
 
   it('refuses to lose a quote once it is signed or active', () => {

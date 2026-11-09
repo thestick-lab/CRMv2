@@ -13,10 +13,16 @@ export const QUOTE_STAGE_ORDER: QuoteStage[] = [
   'Closed Lost',
 ];
 
-/** What the quote needs on record before it may be sent to the client. */
+/** What the quote needs on record before the requested transition. */
 export interface QuoteTransitionContext {
   hasClient: boolean;
   hasFeeLines: boolean;
+  /**
+   * Whether a Documenso envelope is recorded on the quote. Only the builder's
+   * dispatch flow records one, so a board/menu/keyboard move can never mark a
+   * quote `Signed` without the signature on file.
+   */
+  hasSignature?: boolean;
 }
 
 /**
@@ -40,7 +46,7 @@ export function canTransitionQuote(
     case 'Accepted':
       return from === 'Quote Sent';
     case 'Signed':
-      return from === 'Accepted';
+      return from === 'Accepted' && ctx.hasSignature === true;
     case 'Active Client':
       return from === 'Signed';
     case 'Closed Lost':

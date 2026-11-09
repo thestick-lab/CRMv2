@@ -8,9 +8,16 @@ export interface InternalNotesPanelProps {
   onSave: (notes: string | undefined) => void;
   /** The Notes tab opens straight into the editor. */
   defaultEditing?: boolean;
+  /** `Clients — create/edit` not granted: notes render without an editor. */
+  readOnly?: boolean;
 }
 
-export function InternalNotesPanel({ notes, onSave, defaultEditing = false }: InternalNotesPanelProps) {
+export function InternalNotesPanel({
+  notes,
+  onSave,
+  defaultEditing = false,
+  readOnly = false,
+}: InternalNotesPanelProps) {
   const [editing, setEditing] = React.useState(defaultEditing);
   const [draft, setDraft] = React.useState(notes ?? '');
 
@@ -19,6 +26,7 @@ export function InternalNotesPanel({ notes, onSave, defaultEditing = false }: In
   }, [notes]);
 
   const commit = () => {
+    if (readOnly) return;
     const value = draft.trim();
     onSave(value ? value : undefined);
     setEditing(false);
@@ -28,12 +36,12 @@ export function InternalNotesPanel({ notes, onSave, defaultEditing = false }: In
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <CardHeaderWithLink
         title="Internal notes"
-        linkLabel={!editing ? (notes ? 'Edit' : 'Add note') : undefined}
+        linkLabel={!readOnly && !editing ? (notes ? 'Edit' : 'Add note') : undefined}
         onLink={() => setEditing(true)}
       />
 
       <div className="px-4 py-3">
-        {editing ? (
+        {editing && !readOnly ? (
           <div className="space-y-2">
             <textarea
               autoFocus

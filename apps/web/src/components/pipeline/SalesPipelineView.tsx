@@ -17,6 +17,7 @@ import { QuoteBuilderView } from '@/components/quote/QuoteBuilderView';
 import { personInitials } from '@/lib/initials';
 import { formatZar } from '@/components/quote/estimate-form';
 import { can } from '@/lib/permissions';
+import { canViewInvoices, invoicesForRole } from '@/lib/invoice-access';
 import { cn } from '@/lib/utils';
 import { QuoteCard, type PipelineCard } from './QuoteCard';
 import { QuotesList } from './QuotesList';
@@ -31,6 +32,10 @@ export interface SalesPipelineViewProps {
   onOpenInvoice?: (invoiceId: string) => void;
   /** Quote builder → invoice editor seam: the next unbilled month of a quote. */
   onCreateInvoice?: (quote: Quote) => void;
+  /** Client record → New Quote: pre-selects the client in the builder. */
+  initialClientCode?: string;
+  /** Called once the initial client has opened the builder, so it opens once. */
+  onInitialClientConsumed?: () => void;
 }
 
 const STAGE_TONE: Record<QuoteStage, KanbanTone> = {
@@ -79,7 +84,7 @@ function compactZar(value: number): string {
 /** Why a stage move was refused, in the words the user needs on the card. */
 function transitionBlockReason(
   to: QuoteStage,
-  ctx: { hasClient: boolean; hasFeeLines: boolean }
+  ctx: { hasClient: boolean; hasFeeLines: boolean; hasSignature?: boolean }
 ): string {
   if (to === 'Quote Sent') {
     if (!ctx.hasClient) return 'Add a client or prospect before sending this quote.';
@@ -90,6 +95,9 @@ function transitionBlockReason(
     case 'Accepted':
       return 'Only a sent quote can be accepted.';
     case 'Signed':
+      if (!ctx.hasSignature) {
+        return 'Open the quote builder and send it for signature — the board cannot sign a quote without a recorded Documenso envelope.';
+      }
       return 'Only an accepted quote can go for signature.';
     case 'Active Client':
       return 'Only a signed quote can become an active client.';
@@ -102,7 +110,12 @@ function transitionBlockReason(
   }
 }
 
-export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipelineViewProps) {
+export function SalesPipelineView({
+  onOpenInvoice,
+  onCreateInvoice,
+  initialClientCode,
+  onInitialClientConsumed,
+}: SalesPipelineViewProps) {
   const {
     quotes,
     invoices,
@@ -115,10 +128,33 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
     permissions,
   } = usePracticeStore();
 
+  // `Quotes — view/create/send` opens this board; the invoice register behind
+  // it is a separate §6.9 grant, so both the tab and its rows are gated.
+  const canReadInvoices = canViewInvoices(currentUser.role, permissions.matrix);
+  const tabs = React.useMemo(
+    () => TABS.filter((entry) => entry.id !== 'invoices' || canReadInvoices),
+    [canReadInvoices]
+  );
   const [tab, setTab] = React.useState<TabId>('pipeline');
   const [period, setPeriod] = React.useState<Period>('all');
-  const [editor, setEditor] = React.useState<{ quoteId?: string } | null>(null);
+  const [editor, setEditor] = React.useState<{
+    quoteId?: string;
+    clientCode?: string;
+  } | null>(null);
   const [feedback, setFeedback] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (tab === 'invoices' && !canReadInvoices) setTab('pipeline');
+  }, [tab, canReadInvoices]);
+
+  // A client record's `New Quote` opens the builder once, pre-selected.
+  const consumedInitialClient = React.useRef<string | undefined>(undefined);
+  React.useEffect(() => {
+    if (!initialClientCode || consumedInitialClient.current === initialClientCode) return;
+    consumedInitialClient.current = initialClientCode;
+    setEditor({ clientCode: initialClientCode });
+    onInitialClientConsumed?.();
+  }, [initialClientCode, onInitialClientConsumed]);
 
   const today = todayInSouthAfrica();
 
@@ -222,6 +258,7 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
     const ctx = {
       hasClient: Boolean(quote.clientCode) || Boolean(quote.prospect?.name.trim()),
       hasFeeLines: estimate.lines.length > 0,
+      hasSignature: Boolean(quote.documensoEnvelopeId),
     };
 
     if (!canTransitionQuote(quote.stage, to, ctx)) {
@@ -383,7 +420,7 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-3">
           <div role="tablist" aria-label="Sales pipeline tabs" className="flex items-center gap-1 border-b border-border">
-            {TABS.map((entry) => (
+            {tabs.map((entry) => (
               <button
                 key={entry.id}
                 type="button"
@@ -449,9 +486,9 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
                 <QuotesList rows={cards} onOpenQuote={openQuote} />
               ))}
 
-            {tab === 'invoices' && (
+            {tab === 'invoices' && canReadInvoices && (
               <InvoicesList
-                invoices={invoices}
+                invoices={invoicesForRole(currentUser.role, permissions.matrix, invoices)}
                 clients={clients}
                 quotes={quotes}
                 onOpenInvoice={onOpenInvoice}
@@ -535,6 +572,7 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
       {editor && (
         <QuoteBuilderView
           initialQuoteId={editor.quoteId}
+          initialClientCode={editor.clientCode}
           onClose={() => setEditor(null)}
           onCreateInvoice={onCreateInvoice}
         />
