@@ -64,6 +64,34 @@ describe('PracticeStore state initialization and persistence', () => {
     ).toBe(added);
   });
 
+  it('keeps the stage clock when a quote is edited without a stage change', () => {
+    const state = getInitialPracticeState();
+    const quote = state.quotes[0];
+    expect(quote.stageChangedAt).toBeTruthy();
+
+    const edited = practiceReducer(state, {
+      type: 'UPDATE_QUOTE',
+      payload: { id: quote.id, patch: { paymentTerms: '14 days', stage: quote.stage } },
+    }).quotes.find((entry) => entry.id === quote.id)!;
+
+    expect(edited.updatedAt).not.toBe(quote.updatedAt);
+    expect(edited.stageChangedAt).toBe(quote.stageChangedAt);
+  });
+
+  it('advances the stage clock only when the stage actually changes', () => {
+    const state = getInitialPracticeState();
+    const quote = state.quotes[0];
+
+    const sent = practiceReducer(state, {
+      type: 'UPDATE_QUOTE',
+      payload: { id: quote.id, patch: { stage: 'Quote Sent' } },
+    }).quotes.find((entry) => entry.id === quote.id)!;
+
+    expect(sent.stage).toBe('Quote Sent');
+    expect(sent.stageChangedAt).toBeTruthy();
+    expect(Date.parse(sent.stageChangedAt!)).toBeGreaterThan(Date.parse(quote.stageChangedAt!));
+  });
+
   it('adds an invoice and updates its status through UPDATE_INVOICE', () => {
     const state = getInitialPracticeState();
     const invoice: Invoice = {
@@ -333,11 +361,33 @@ describe('PracticeStore foundation fields and legacy-state load', () => {
       })
     );
 
-    expect(state.quotes).toEqual([PERSISTED_QUOTE]);
+    expect(state.quotes[0]).toMatchObject(PERSISTED_QUOTE);
+    expect(state.quotes[0].stageChangedAt).toBe(PERSISTED_QUOTE.updatedAt);
     expect(state.timeEntries).toEqual([PERSISTED_TIME_ENTRY]);
     expect(state.sequences).toEqual({ quote: 3, invoice: 2 });
     expect(state.permissions.matrix.Partner?.['Clients.view']).toBe('Allowed');
     expect(state.permissions.lastEditedBy).toBe('Erik');
+  });
+
+  it('defaults the stage clock for quotes persisted before stage ageing existed', () => {
+    const legacyQuote: Record<string, unknown> = { ...PERSISTED_QUOTE };
+    delete legacyQuote.stageChangedAt;
+
+    const state = loadPracticeState(storageWith({ ...LEGACY_STATE, leads: [], quotes: [legacyQuote] }));
+
+    expect(state.quotes[0].stageChangedAt).toBe(PERSISTED_QUOTE.updatedAt);
+  });
+
+  it('keeps an explicit stage clock already persisted on a quote', () => {
+    const state = loadPracticeState(
+      storageWith({
+        ...LEGACY_STATE,
+        leads: [],
+        quotes: [{ ...PERSISTED_QUOTE, stageChangedAt: '2026-10-02T08:00:00Z' }],
+      })
+    );
+
+    expect(state.quotes[0].stageChangedAt).toBe('2026-10-02T08:00:00Z');
   });
 
   it('migrates seeded director contacts onto persisted clients that predate contacts', () => {

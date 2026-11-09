@@ -35,12 +35,15 @@ export type AgingBucket = (typeof AGING_BUCKETS)[number];
 export const AGING_AMBER_FROM_DAYS = 15;
 
 /**
- * Days the quote has sat in its current stage. A stage move stamps
- * `updatedAt`, so that is the age basis; a future timestamp clamps to zero
- * rather than showing a negative age.
+ * Days the quote has sat in its current stage. The stage clock is stamped only
+ * when the stage moves, so an ordinary edit (which advances `updatedAt`) does
+ * not restart the ageing warning; quotes persisted before the clock existed
+ * fall back to their activity stamp, then creation. A future stamp clamps to
+ * zero rather than showing a negative age.
  */
 export function ageDays(quote: Quote, asOf: ISODate = todayInSouthAfrica()): number {
-  return Math.max(0, diffDays(asOf, quote.updatedAt.slice(0, 10)));
+  const stageSince = quote.stageChangedAt ?? quote.updatedAt ?? quote.createdAt;
+  return Math.max(0, diffDays(asOf, stageSince.slice(0, 10)));
 }
 
 export function agingBucket(days: number): AgingBucket {
@@ -77,6 +80,9 @@ export function pipelineStats(
   asOf: ISODate = todayInSouthAfrica()
 ): PipelineStats {
   const live = quotes.filter((quote) => quote.stage !== 'Closed Lost');
+  // Ageing only warns about quotes that still need a nudge: a won client is
+  // healthy however long it has been active.
+  const ageing = live.filter((quote) => quote.stage !== 'Active Client');
 
   // Per-stage values first, so booked + open always reconcile to the donut.
   const byStage: PipelineStageStat[] = LIVE_STAGES.map((stage) => ({
@@ -101,7 +107,7 @@ export function pipelineStats(
     byStage,
     aging: AGING_BUCKETS.map((bucket) => ({
       bucket,
-      count: live.filter((quote) => agingBucket(ageDays(quote, asOf)) === bucket).length,
+      count: ageing.filter((quote) => agingBucket(ageDays(quote, asOf)) === bucket).length,
     })),
   };
 }

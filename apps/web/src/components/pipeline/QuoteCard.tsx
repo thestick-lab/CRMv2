@@ -94,7 +94,7 @@ export function QuoteCard({ card }: { card: PipelineCard }) {
             {card.nextStep}
           </span>
         )}
-        <AgingChip days={card.ageDays} />
+        {!won && <AgingChip days={card.ageDays} />}
         {lost && (
           <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide leading-none text-muted-foreground">
             Lost

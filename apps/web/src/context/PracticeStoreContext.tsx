@@ -141,7 +141,14 @@ export interface Quote {
   signedBy?: string;
   signedAt?: string;
   createdAt: string;
+  /** General activity stamp; every edit moves it. */
   updatedAt: string;
+  /**
+   * When the quote last entered its current stage. Ageing reads this so an
+   * ordinary edit never resets the "days in stage" clock. Persisted quotes
+   * from before this field default to their `updatedAt` on load.
+   */
+  stageChangedAt?: ISODate;
 }
 
 export type InvoiceStatus = 'Draft' | 'Sent' | 'Paid';
@@ -356,6 +363,7 @@ function quoteFromLead(lead: LegacyLead, sequence: number, defaults: QuoteSeedDe
     nextStep: QUOTE_NEXT_STEP[stage] || undefined,
     createdAt: MIGRATED_QUOTE_TIMESTAMP,
     updatedAt: MIGRATED_QUOTE_TIMESTAMP,
+    stageChangedAt: MIGRATED_QUOTE_TIMESTAMP,
   };
 }
 
@@ -659,11 +667,24 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
 
     case 'UPDATE_QUOTE': {
       const { id, patch } = action.payload;
-      if (!state.quotes.some((q) => q.id === id)) return state;
+      const current = state.quotes.find((q) => q.id === id);
+      if (!current) return state;
+      const now = new Date().toISOString();
+      const stageChanged = patch.stage !== undefined && patch.stage !== current.stage;
       return {
         ...state,
         quotes: state.quotes.map((quote) =>
-          quote.id === id ? { ...quote, ...patch, updatedAt: new Date().toISOString() } : quote
+          quote.id === id
+            ? {
+                ...quote,
+                ...patch,
+                updatedAt: now,
+                // Ageing follows the stage clock: ordinary edits keep it.
+                stageChangedAt: stageChanged
+                  ? now
+                  : (quote.stageChangedAt ?? quote.updatedAt ?? quote.createdAt),
+              }
+            : quote
         ),
       };
     }
@@ -949,8 +970,15 @@ export function mergePracticeState(
 
   // A state persisted before quotes existed starts empty so its leads are the
   // only source of quote cards; pristine states keep the seeded quote prospects.
-  const quotes =
-    persisted.quotes ?? (legacyLeads && legacyLeads.length > 0 ? [] : initial.quotes);
+  // Quotes persisted before stage ageing existed adopt their activity stamp as
+  // the stage clock so nothing renders `undefined`.
+  const quotes = (
+    persisted.quotes ?? (legacyLeads && legacyLeads.length > 0 ? [] : initial.quotes)
+  ).map((quote) =>
+    quote.stageChangedAt
+      ? quote
+      : { ...quote, stageChangedAt: quote.updatedAt ?? quote.createdAt }
+  );
 
   // Number migrated quotes after whatever the persisted store already issued.
   const baseQuoteSequence =

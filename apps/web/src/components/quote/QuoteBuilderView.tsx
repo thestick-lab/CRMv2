@@ -169,6 +169,7 @@ function quotePatch(quote: Quote): Partial<Omit<Quote, 'id' | 'createdAt'>> {
     signedBy: quote.signedBy,
     signedAt: quote.signedAt,
     updatedAt: quote.updatedAt,
+    stageChangedAt: quote.stageChangedAt,
   };
 }
 
@@ -339,6 +340,9 @@ export function QuoteBuilderView({
       signedAt: signature.signedAt,
       createdAt: savedQuote?.createdAt ?? now,
       updatedAt: now,
+      // Editing a quote never restarts its stage clock; the reducer stamps a new
+      // one only when the stage itself changes.
+      stageChangedAt: savedQuote?.stageChangedAt ?? now,
       ...overrides,
     };
   };

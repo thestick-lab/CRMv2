@@ -66,11 +66,13 @@ describe('Sales pipeline stats (design §6.7)', () => {
       ...quotes[1],
       stage: 'Quote Sent' as const,
       updatedAt: `${addDays(AS_OF, -20)}T08:00:00.000Z`,
+      stageChangedAt: `${addDays(AS_OF, -20)}T08:00:00.000Z`,
     };
     const fresh = {
       ...quotes[2],
       stage: 'Quote Sent' as const,
       updatedAt: `${addDays(AS_OF, -3)}T08:00:00.000Z`,
+      stageChangedAt: `${addDays(AS_OF, -3)}T08:00:00.000Z`,
     };
 
     const stats = pipelineStats([aged, fresh], [], AS_OF);
@@ -80,6 +82,33 @@ describe('Sales pipeline stats (design §6.7)', () => {
     expect(bucket('15–30 days')).toBe(1);
     expect(bucket('0–7 days')).toBe(1);
     expect(stats.aging.map((entry) => entry.bucket)).toEqual([...AGING_BUCKETS]);
+  });
+
+  it('ages from the stage clock, not from ordinary quote edits', () => {
+    const quotes = seededQuotes();
+    const edited = {
+      ...quotes[1],
+      stage: 'Draft Quote' as const,
+      stageChangedAt: `${addDays(AS_OF, -20)}T08:00:00.000Z`,
+      // A re-save today moves the general activity stamp but must not reset the age.
+      updatedAt: `${addDays(AS_OF, -1)}T08:00:00.000Z`,
+    };
+
+    expect(ageDays(edited, AS_OF)).toBe(20);
+    expect(pipelineStats([edited], [], AS_OF).aging.find((e) => e.bucket === '15–30 days')?.count).toBe(1);
+  });
+
+  it('does not accumulate ageing warnings for won or lost clients', () => {
+    const quotes = seededQuotes();
+    const stale = `${addDays(AS_OF, -40)}T08:00:00.000Z`;
+    const won = { ...quotes[0], stage: 'Active Client' as const, stageChangedAt: stale, updatedAt: stale };
+    const lost = { ...quotes[1], stage: 'Closed Lost' as const, stageChangedAt: stale, updatedAt: stale };
+    const live = { ...quotes[2], stage: 'Quote Sent' as const, stageChangedAt: stale, updatedAt: stale };
+
+    const stats = pipelineStats([won, lost, live], [], AS_OF);
+
+    expect(stats.aging.reduce((sum, entry) => sum + entry.count, 0)).toBe(1);
+    expect(stats.aging.find((entry) => entry.bucket === '31+ days')?.count).toBe(1);
   });
 
   it('reports zeroes and no NaN shares for an empty pipeline', () => {
@@ -123,5 +152,10 @@ describe('Sales pipeline view wiring (design §6.7)', () => {
     const invoices = fs.readFileSync('src/components/pipeline/InvoicesList.tsx', 'utf8');
     expect(invoices).toContain('onOpenInvoice');
     expect(invoices).toContain('onOpenInvoice(invoice.id)');
+  });
+
+  it('shows no ageing nudge on a won card', () => {
+    const card = fs.readFileSync('src/components/pipeline/QuoteCard.tsx', 'utf8');
+    expect(card).toContain('{!won && <AgingChip');
   });
 });
