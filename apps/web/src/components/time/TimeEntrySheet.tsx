@@ -13,6 +13,7 @@ import {
 } from '@/lib/billing';
 import { Button } from '@/components/ui/button';
 import { can, scopeToAssigned } from '@/lib/permissions';
+import { entryClientInScope, entryPickerClients } from './time-entry-scope';
 import { Clock, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -82,11 +83,9 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
 
   const linkedToTask = Boolean(entry.taskId);
   const client = clients.find((candidate) => candidate.code === clientCode);
-  // An entry captured before scope changed keeps its own client selectable so
-  // the record is still editable; new entries only offer the assigned set.
-  const pickerClients = selectableClients.some((candidate) => candidate.code === entry.clientCode)
-    ? selectableClients
-    : [...selectableClients, ...clients.filter((candidate) => candidate.code === entry.clientCode)];
+  // The entry's own client stays selectable so a historical record remains
+  // editable even after the client leaves the user's assigned scope.
+  const pickerClients = entryPickerClients(clients, selectableClients, entry.clientCode);
   const startedIso = localInputToIso(startedAt);
   const endedIso = localInputToIso(endedAt);
   // The stopped timer's pause-excluded duration stays authoritative until a
@@ -135,7 +134,7 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
   if (!clientCode) problems.push('Select the client this work was for.');
   if (
     clientCode &&
-    !selectableClients.some((candidate) => candidate.code === clientCode)
+    !entryClientInScope(clientCode, selectableClients, entry.clientCode)
   ) {
     problems.push('Your role can only log time against your assigned clients.');
   }

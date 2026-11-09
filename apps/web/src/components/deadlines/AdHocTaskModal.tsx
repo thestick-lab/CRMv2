@@ -4,6 +4,7 @@ import { ListPlus, X } from 'lucide-react';
 import { usePracticeStore, type AdHocTask } from '@/context/PracticeStoreContext';
 import { WORKFLOW_STATUSES, type WorkflowStatus } from '@/lib/workflow';
 import { Button } from '@/components/ui/button';
+import { can, scopeToAssigned } from '@/lib/permissions';
 import { adHocTaskIsValid, createAdHocTask, type AdHocTaskDraft } from './ad-hoc';
 
 export interface AdHocTaskModalProps {
@@ -16,15 +17,26 @@ export interface AdHocTaskModalProps {
 }
 
 export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHocTaskModalProps) {
-  const {
-    clients,
-    staff,
-    currentUser,
-    addAdhocTask,
-    updateAdhocTask,
-    deleteAdhocTask,
-    logActivity,
-  } = usePracticeStore();
+  const { clients, staff, currentUser, permissions, addAdhocTask, updateAdhocTask, deleteAdhocTask, logActivity } =
+    usePracticeStore();
+
+  // A Limited (assigned) role that somehow opens the modal sees only its own
+  // clients and itself as assignee — never the practice registers.
+  const canManageAllWork = can(
+    currentUser.role,
+    'Deadlines',
+    'update-status',
+    permissions.matrix
+  );
+  const clientOptions = React.useMemo(
+    () => (canManageAllWork ? clients : scopeToAssigned(clients, currentUser.id)),
+    [clients, canManageAllWork, currentUser.id]
+  );
+  const assigneeOptions = React.useMemo(
+    () =>
+      canManageAllWork ? staff : staff.filter((member) => member.id === currentUser.id),
+    [staff, canManageAllWork, currentUser.id]
+  );
 
   const [draft, setDraft] = React.useState<AdHocTaskDraft & { status: WorkflowStatus }>({
     clientCode: '',
@@ -50,7 +62,7 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
       setDraft({
         clientCode: '',
         description: '',
-        assigneeId: staff[0]?.id ?? currentUser.id,
+        assigneeId: assigneeOptions[0]?.id ?? currentUser.id,
         dueDate: '',
         // Ad-hoc work never enters the statutory partner gate.
         status:
@@ -59,13 +71,16 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
             : 'Not Started',
       });
     }
-  }, [open, task, initialStatus, staff, currentUser.id]);
+  }, [open, task, initialStatus, assigneeOptions, currentUser.id]);
 
   const valid = adHocTaskIsValid(draft);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!valid) return;
+    // Defensive: the picker is scoped, so an out-of-scope code can only arrive
+    // through tampering — refuse it instead of writing the task.
+    if (!clientOptions.some((candidate) => candidate.code === draft.clientCode)) return;
 
     const client = clients.find((c) => c.code === draft.clientCode);
     const subline = client ? `${client.code} · ${client.name}` : draft.clientCode;
@@ -162,7 +177,7 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
                 className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-foreground"
               >
                 <option value="">Select a client…</option>
-                {clients.map((client) => (
+                {clientOptions.map((client) => (
                   <option key={client.code} value={client.code}>
                     {client.code} — {client.name}
                   </option>
@@ -195,7 +210,7 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
                   onChange={(event) => setDraft({ ...draft, assigneeId: event.target.value })}
                   className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-foreground"
                 >
-                  {staff.map((member) => (
+                  {assigneeOptions.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name}
                     </option>

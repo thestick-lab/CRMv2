@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   bucketAdhocTasks,
@@ -7,6 +8,7 @@ import {
 } from './DeadlinesKanban';
 import { aggregatePracticeTasks } from './practice-tasks';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
+import { can } from '@/lib/permissions';
 import type { AdHocTask } from '@/context/PracticeStoreContext';
 
 const asOf = '2026-11-07';
@@ -113,5 +115,40 @@ describe('ad-hoc task lanes', () => {
       expect(card.task?.due).toBeUndefined();
       expect(card.blockedReason).toContain('Missing statutory due date');
     }
+  });
+});
+
+describe('ad-hoc creation stays with unconditional grants', () => {
+  it('gates + Add on the unconditional update-status cell, not the assigned scope', () => {
+    const kanbanSrc = fs.readFileSync('src/components/deadlines/DeadlinesKanban.tsx', 'utf8');
+
+    // The affordance checks the plain cell so a Limited role gets no `+ Add`.
+    expect(kanbanSrc).toContain(
+      "const canAddTasks = can(currentUser.role, 'Deadlines', 'update-status', permissions.matrix);"
+    );
+    expect(kanbanSrc).toContain('allowAdd={');
+    expect(kanbanSrc).toContain("groupBy === 'workflow' && canAddTasks");
+    expect(kanbanSrc).not.toContain("canAddTasks = can(currentUser.role, 'Deadlines', 'update-status', permissions.matrix, {");
+
+    // A Subcontractor's cell is Limited, so the unconditional check refuses.
+    expect(can('Subcontractor', 'Deadlines', 'update-status')).toBe(false);
+    expect(can('Subcontractor', 'Deadlines', 'update-status', undefined, { assigned: true })).toBe(
+      true
+    );
+  });
+
+  it('scopes the ad-hoc modal registers for a Limited role', () => {
+    const modalSrc = fs.readFileSync(
+      'src/components/deadlines/AdHocTaskModal.tsx',
+      'utf8'
+    );
+
+    expect(modalSrc).toContain('scopeToAssigned');
+    expect(modalSrc).toContain('clientOptions');
+    expect(modalSrc).toContain('assigneeOptions');
+    expect(modalSrc).not.toContain('{clients.map(');
+    expect(modalSrc).not.toContain('{staff.map(');
+    // Writes are guarded, not just the picker.
+    expect(modalSrc).toContain('clientOptions.some((candidate) => candidate.code === draft.clientCode)');
   });
 });

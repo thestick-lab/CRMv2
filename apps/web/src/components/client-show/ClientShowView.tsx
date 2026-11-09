@@ -32,6 +32,7 @@ import { OrganizationPanel } from './panels/OrganizationPanel';
 import { RelationshipHistoryPanel } from './panels/RelationshipHistoryPanel';
 import { buildClientTimeline, clientTags, withSeededActivity } from './client-record-data';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
+import { can } from '@/lib/permissions';
 import { useTimer } from '@/components/time/timer-context';
 
 export interface ClientSummary {
@@ -88,6 +89,17 @@ export const CLIENT_SHOW_TABS: Array<TabConfig & { id: ClientTabId }> = [
   { id: 'notes', label: 'Notes', icon: StickyNote },
 ];
 
+/**
+ * The record tabs a role may see. `Estimate` is the billing surface (fee
+ * schedule + quote exports), so it follows `Clients — view billing`; the
+ * statutory, deadlines, vault and notes tabs stay available.
+ */
+export function clientRecordTabs(
+  canViewBilling: boolean
+): Array<TabConfig & { id: ClientTabId }> {
+  return CLIENT_SHOW_TABS.filter((tab) => tab.id !== 'estimate' || canViewBilling);
+}
+
 export interface ClientShowViewProps {
   clientCode: string;
   onBack: () => void;
@@ -103,7 +115,18 @@ export function ClientShowView({
 }: ClientShowViewProps) {
   const [activeTab, setActiveTab] = React.useState<ClientTabId>(initialTab);
 
-  const { clients, rates, activity, taskStatusOverrides, updateClient } = usePracticeStore();
+  const { clients, rates, activity, taskStatusOverrides, updateClient, currentUser, permissions } =
+    usePracticeStore();
+  const canViewBilling = can(
+    currentUser.role,
+    'Clients',
+    'view-billing',
+    permissions.matrix
+  );
+  // A deep link into the billing tab falls back for roles that cannot read it.
+  React.useEffect(() => {
+    if (!canViewBilling && activeTab === 'estimate') setActiveTab('overview');
+  }, [canViewBilling, activeTab]);
   const { startTimer } = useTimer();
   const client = clients.find((c) => c.code === clientCode);
   const estimate = React.useMemo(
@@ -156,8 +179,8 @@ export function ClientShowView({
     <div className="mx-auto max-w-7xl space-y-5 p-6">
       <ClientSummaryBar
         onBack={onBack}
-        onDownloadPdf={handlePdf}
-        onDownloadExcel={handleExcel}
+        onDownloadPdf={canViewBilling ? handlePdf : undefined}
+        onDownloadExcel={canViewBilling ? handleExcel : undefined}
         onViewDeadlines={() => onNavigate?.('deadlines', client.code)}
       />
 
@@ -182,7 +205,7 @@ export function ClientShowView({
             onAddNote={() => setActiveTab('notes')}
           />
         }
-        tabs={CLIENT_SHOW_TABS}
+        tabs={clientRecordTabs(canViewBilling)}
         activeTab={activeTab}
         onTab={(id) => setActiveTab(id as ClientTabId)}
       >
@@ -215,7 +238,7 @@ export function ClientShowView({
           <DeadlinesTab client={client} asOfDate={todayInSouthAfrica()} />
         )}
 
-        {activeTab === 'estimate' && (
+        {canViewBilling && activeTab === 'estimate' && (
           <EstimateTab
             client={client}
             onDownloadPdf={handlePdf}

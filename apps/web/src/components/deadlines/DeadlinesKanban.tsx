@@ -460,13 +460,9 @@ export function DeadlinesKanban({
     }
   };
 
-  const canUpdateStatus = can(
-    currentUser.role,
-    'Deadlines',
-    'update-status',
-    permissions.matrix,
-    { assigned: true }
-  );
+  // `+ Add` is an unconditional-grant affordance: a Limited role works the
+  // lanes but never creates work on clients it does not own.
+  const canAddTasks = can(currentUser.role, 'Deadlines', 'update-status', permissions.matrix);
 
   const cardAssignedTo = (card: DeadlineCard): boolean => {
     if (card.kind === 'adhoc') return card.adhoc?.assigneeId === currentUser.id;
@@ -551,7 +547,7 @@ export function DeadlinesKanban({
         onOpenCard={openCard}
         keyboardEnabled={groupBy === 'workflow'}
         allowAdd={
-          groupBy === 'workflow' && canUpdateStatus
+          groupBy === 'workflow' && canAddTasks
             ? (columnId) => {
                 if (columnId === 'Partner Review Gate') {
                   setFeedback(

@@ -130,8 +130,9 @@ const LIMITED: PermissionCell = 'Limited';
  * - `Deadlines — submit returns` for Compliance Officer / Accountant reads
  *   "A (non-gated)": the cell is Allowed and the partner gate on gated returns
  *   stays with `validateStatutorySubmission`, unchanged.
- * - `Time — log own` for Subcontractor reads "A (assigned)": Allowed, scoped by
- *   the call site to that subcontractor's assigned work.
+ * - `Time — log own` for Subcontractor reads "A (assigned)": a Limited cell in
+ *   this matrix, allowed only for the subcontractor's assigned clients (see
+ *   `isAssignedTo`). Support Tech's identical-looking cell is Not allowed.
  */
 const ROW_DEFINITIONS: readonly RowDefinition[] = [
   {

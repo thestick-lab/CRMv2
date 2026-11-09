@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CLIENT_SHOW_TABS, formatClientSummary } from './ClientShowView';
+import { CLIENT_SHOW_TABS, clientRecordTabs, formatClientSummary } from './ClientShowView';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
 
 describe('ClientShowView header and tab definitions', () => {
@@ -25,6 +25,36 @@ describe('ClientShowView header and tab definitions', () => {
       'Vault',
       'Notes',
     ]);
+  });
+
+  it('hides the Estimate tab and quote exports without `Clients — view billing`', () => {
+    expect(clientRecordTabs(true).map((tab) => tab.id)).toEqual([
+      'overview',
+      'organization',
+      'history',
+      'tasks',
+      'estimate',
+      'vault',
+      'notes',
+    ]);
+    expect(clientRecordTabs(false).map((tab) => tab.id)).toEqual([
+      'overview',
+      'organization',
+      'history',
+      'tasks',
+      'vault',
+      'notes',
+    ]);
+
+    const showSrc = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+    expect(showSrc).toContain("'Clients',");
+    expect(showSrc).toContain("'view-billing'");
+    expect(showSrc).toContain('clientRecordTabs(canViewBilling)');
+    expect(showSrc).toContain('canViewBilling ? handlePdf : undefined');
+    expect(showSrc).toContain('canViewBilling ? handleExcel : undefined');
+    // The statutory / deadlines tabs remain available.
+    expect(showSrc).toContain("activeTab === 'tasks'");
+    expect(showSrc).toContain("activeTab === 'vault'");
   });
 
   it('wires the previously unwired estimate, vault and deadlines tabs into the record', () => {

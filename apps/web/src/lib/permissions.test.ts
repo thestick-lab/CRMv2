@@ -43,6 +43,7 @@ describe('permission matrix defaults (§6.9 verbatim)', () => {
 
     expect(can('Accountant', 'Quotes & Invoices', 'send')).toBe(true);
     expect(can('Accountant', 'Clients', 'view')).toBe(true);
+    expect(can('Accountant', 'Clients', 'view-billing')).toBe(true);
     expect(can('Accountant', 'Invoices', 'view')).toBe(true);
     expect(can('Accountant', 'Invoices', 'create-send')).toBe(false);
     expect(can('Accountant', 'Quotes', 'accept-sign')).toBe(false);
@@ -59,6 +60,10 @@ describe('permission matrix defaults (§6.9 verbatim)', () => {
     expect(can('Subcontractor', 'Time', 'log-own')).toBe(false);
     expect(can('Subcontractor', 'Time', 'log-own', undefined, { assigned: true })).toBe(true);
     expect(can('Subcontractor', 'Time', 'view-all')).toBe(false);
+    // Billing is a separate §6.9 row: assignment to a client never grants it.
+    expect(can('Subcontractor', 'Clients', 'view-billing')).toBe(false);
+    expect(can('Team member', 'Clients', 'view-billing')).toBe(false);
+    expect(can('Partner', 'Clients', 'view-billing')).toBe(true);
   });
 
   it('publishes every role column and row with a complete default matrix', () => {
