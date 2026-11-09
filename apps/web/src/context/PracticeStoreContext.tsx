@@ -477,20 +477,26 @@ export function convertQuoteToClient(
   const yearEndMonth = input.yearEndMonth ?? prospect?.yearEndMonth ?? 2;
   const lastClosedYear = lastClosedFinancialYear(yearEndMonth, asOf);
   const contactPerson = prospect?.contactPerson?.trim();
+  // The quoted scope is authoritative: a VAT registration or a payroll run only
+  // belongs on the client when the scope carries that work, so conversion can
+  // never plant a registration fact the services do not back.
+  const services = servicesFromEstimate(input);
+  const vatInScope = services.includes('VAT201');
+  const payrollInScope = services.includes('EMP201') || services.includes('EMP501');
 
   return {
     code,
     name,
     entityType: input.entityType,
-    vatCategory: input.vatCategory,
+    vatCategory: vatInScope ? input.vatCategory : undefined,
     yearEndMonth,
     // The quote never confirms the year end against CIPC papers; the record
     // shows it as assumed until it is checked.
     yearEndAssumed: true,
     efilingProfile: 'client',
     staffId: quote.ownerStaffId || prospect?.staffId || 'erik',
-    payroll: input.payroll,
-    employeeCount: input.employeeCount,
+    payroll: payrollInScope ? input.payroll : false,
+    employeeCount: payrollInScope ? input.employeeCount : undefined,
     incorporationDate: input.incorporationDate,
     turnover: input.turnover,
     turnoverSource: input.turnover === undefined ? undefined : 'Client',
@@ -503,7 +509,7 @@ export function convertQuoteToClient(
     beneficialOwnershipFiled: false,
     taxElsewhere: false,
     status: 'Active',
-    services: servicesFromEstimate(input),
+    services,
     contacts: contactPerson
       ? [{ id: `contact-${code}-1`, name: contactPerson, role: 'Contact person' }]
       : undefined,

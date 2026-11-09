@@ -742,6 +742,40 @@ describe('quote→client conversion', () => {
     expect(next.activity[0].text).toContain('Services updated for A & L Contracting');
   });
 
+  it('records no VAT or payroll facts outside the quoted scope', () => {
+    const quote: Quote = {
+      ...SIGNED_PROSPECT_QUOTE,
+      id: 'quote-registration',
+      number: 'Q-12',
+      estimateInput: {
+        ...SIGNED_PROSPECT_QUOTE.estimateInput,
+        vatCategory: 'B',
+        payroll: true,
+        employeeCount: 9,
+        selected: {
+          AFS: false,
+          ITR: false,
+          IRP6: false,
+          VAT201: false,
+          EMP201: false,
+          EMP501: false,
+          CIPC_AR: false,
+          BO: false,
+        },
+      },
+    };
+
+    const client = convertQuoteToClient(quote, [], '2026-11-09');
+    expect(client.services).toEqual([]);
+    expect(client.vatCategory).toBeUndefined();
+    expect(client.payroll).toBe(false);
+    expect(client.employeeCount).toBeUndefined();
+    // The prospect's other entity fields still carry across.
+    expect(client.entityType).toBe('Company');
+    expect(client.yearEndMonth).toBe(2);
+    expect(client.turnover).toBe(4200000);
+  });
+
   it('refuses to convert a quote that is not signed', () => {
     const base = getInitialPracticeState();
     const draft = base.quotes.find((quote) => quote.stage === 'Draft Quote')!;

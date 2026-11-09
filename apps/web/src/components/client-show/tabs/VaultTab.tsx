@@ -188,7 +188,8 @@ export function VaultTab({ client }: { client: Client }) {
                     >
                       {file.status === 'Pending Signature' ? (
                         <Clock className="h-3 w-3" />
-                      ) : file.status === 'Signed & Executed' ? (
+                      ) : file.status === 'Signed & Executed' ||
+                        file.status === 'SARS Accepted' ? (
                         <CheckCircle2 className="h-3 w-3" />
                       ) : (
                         <FileText className="h-3 w-3" />
