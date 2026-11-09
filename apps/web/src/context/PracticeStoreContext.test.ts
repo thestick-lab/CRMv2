@@ -252,6 +252,47 @@ describe('PracticeStore foundation fields and legacy-state load', () => {
     expect(state.clients[1].contacts).toEqual([]);
   });
 
+  it('defaults PracticeUser.contract for legacy persisted users', () => {
+    const state = loadPracticeState(
+      storageWith({
+        ...LEGACY_STATE,
+        currentUser: {
+          id: 'erik',
+          name: 'Erik',
+          role: 'Partner',
+          email: 'erik@fdoncall.co.za',
+          kind: 'employee',
+        },
+      })
+    );
+
+    expect(state.currentUser.contract).toEqual({ contractType: 'employee' });
+  });
+
+  it('preserves persisted contract terms over the default', () => {
+    const contract = {
+      contractType: 'subcontractor' as const,
+      startDate: '2025-02-01',
+      hourlyRate: 850,
+      phone: '+27 21 975 1099',
+    };
+    const state = loadPracticeState(
+      storageWith({
+        ...LEGACY_STATE,
+        currentUser: {
+          id: 'hannes',
+          name: 'Hannes',
+          role: 'Subcontractor',
+          email: 'hannes@fdoncall.co.za',
+          kind: 'subcontractor',
+          contract,
+        },
+      })
+    );
+
+    expect(state.currentUser.contract).toEqual(contract);
+  });
+
   it('is idempotent across repeated loads of the same persisted state', () => {
     const storage = storageWith(LEGACY_STATE);
     expect(loadPracticeState(storage)).toEqual(loadPracticeState(storage));

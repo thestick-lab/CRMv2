@@ -36,6 +36,8 @@ export interface ContactProfileLayoutProps {
   tabs: TabConfig[];
   activeTab: string;
   onTab: (id: string) => void;
+  /** Accessible label for the tab rail; defaults to the client record wording. */
+  tabsLabel?: string;
   children: React.ReactNode;
 }
 
@@ -53,6 +55,7 @@ export function ContactProfileLayout({
   tabs,
   activeTab,
   onTab,
+  tabsLabel = 'Client record sections',
   children,
 }: ContactProfileLayoutProps) {
   return (
@@ -131,7 +134,7 @@ export function ContactProfileLayout({
 
         <div
           role="tablist"
-          aria-label="Client record sections"
+          aria-label={tabsLabel}
           className="flex items-center gap-1 overflow-x-auto border-t border-border px-3 pt-1"
         >
           {tabs.map((tab) => {

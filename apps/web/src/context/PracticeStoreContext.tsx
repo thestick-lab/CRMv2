@@ -24,12 +24,21 @@ export interface PipelineLead {
   notes?: string;
 }
 
+/** HR terms for a practice team member (Team register). Never fabricate a rate. */
+export interface PracticeContract {
+  startDate?: ISODate;
+  contractType: 'employee' | 'subcontractor';
+  hourlyRate?: number;
+  phone?: string;
+}
+
 export interface PracticeUser {
   id: string;
   name: string;
   role: 'Partner' | 'Compliance Officer' | 'Accountant' | 'Team member' | 'Subcontractor';
   email: string;
   kind: 'employee' | 'subcontractor';
+  contract?: PracticeContract;
 }
 
 export interface PracticeRates {
@@ -294,6 +303,7 @@ export const INITIAL_USER: PracticeUser = {
   role: 'Partner',
   email: 'erik@fdoncall.co.za',
   kind: 'employee',
+  contract: { contractType: 'employee' },
 };
 
 export const INITIAL_RATES: PracticeRates = {
@@ -647,6 +657,9 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
               role: (found.role as PracticeUser['role']) || 'Team member',
               email: `${found.id}@fdoncall.co.za`,
               kind: found.kind,
+              contract: {
+                contractType: found.kind === 'subcontractor' ? 'subcontractor' : 'employee',
+              },
             },
           };
         }
@@ -723,10 +736,23 @@ export function mergePracticeState(persisted: Partial<PracticeState>): PracticeS
     return contacts ? { ...client, contacts } : client;
   });
 
+  // Legacy persisted users predate `contract`; default the employment terms
+  // without overwriting any terms already on record.
+  const currentUser: PracticeUser = persisted.currentUser
+    ? {
+        ...persisted.currentUser,
+        contract: {
+          contractType: persisted.currentUser.kind === 'subcontractor' ? 'subcontractor' : 'employee',
+          ...persisted.currentUser.contract,
+        },
+      }
+    : initial.currentUser;
+
   return {
     ...initial,
     ...persisted,
     clients,
+    currentUser,
     rates: {
       ...initial.rates,
       ...(persisted.rates || {}),
