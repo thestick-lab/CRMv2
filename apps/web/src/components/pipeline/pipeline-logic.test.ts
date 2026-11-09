@@ -158,4 +158,9 @@ describe('Sales pipeline view wiring (design §6.7)', () => {
     const card = fs.readFileSync('src/components/pipeline/QuoteCard.tsx', 'utf8');
     expect(card).toContain('{!won && <AgingChip');
   });
+
+  it('hides the ageing nudge on won rows in the quote register', () => {
+    const register = fs.readFileSync('src/components/pipeline/QuotesList.tsx', 'utf8');
+    expect(register).toContain("row.stage !== 'Active Client' && <AgingChip days={row.ageDays} />");
+  });
 });

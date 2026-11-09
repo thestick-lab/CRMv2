@@ -90,7 +90,8 @@ export function QuotesList({ rows, onOpenQuote }: QuotesListProps) {
                 {row.nextStep || '—'}
               </td>
               <td className="whitespace-nowrap px-3 py-2.5">
-                <AgingChip days={row.ageDays} />
+                {/* Same precedence as the card: a won client never needs a nudge. */}
+                {row.stage !== 'Active Client' && <AgingChip days={row.ageDays} />}
               </td>
               <td className="whitespace-nowrap px-3 py-2.5 text-right">
                 <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
