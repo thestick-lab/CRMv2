@@ -37,5 +37,5 @@ export interface NavigateOptions {
   /** Pre-applied KPI filter for the Deadlines board. */
   kpiFilter?: DeadlineKpiFilter;
   /** Pane Settings should open on. */
-  settingsPane?: 'profile' | 'team' | 'matrix' | 'saica';
+  settingsPane?: 'profile' | 'team' | 'matrix';
 }

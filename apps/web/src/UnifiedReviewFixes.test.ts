@@ -74,11 +74,11 @@ describe('Unified operations and governance review fixes', () => {
     expect(tabSrc).not.toContain('disabled: !client.payroll');
   });
 
-  it('verifies TaskStatusOverride stores approvedBy partner and SaicaGovernanceLogPane displays signing partner', () => {
-    const saicaSrc = fs.readFileSync('src/components/settings/panes/SaicaGovernanceLogPane.tsx', 'utf8');
+  it('verifies TaskStatusOverride stores approvedBy partner and the audit trail displays the signing partner', () => {
+    const auditSrc = fs.readFileSync('src/components/govlog/audit-log.ts', 'utf8');
     const queueSrc = fs.readFileSync('src/components/inbox/PartnerReviewQueue.tsx', 'utf8');
 
     expect(queueSrc).toContain('approvedBy: currentUser.name');
-    expect(saicaSrc).toContain('approvedBy');
+    expect(auditSrc).toContain('approvedBy');
   });
 });

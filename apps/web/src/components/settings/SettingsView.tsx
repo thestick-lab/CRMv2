@@ -9,9 +9,7 @@ import { IntegrationsPane } from './panes/IntegrationsPane';
 import { TeamRbacPane } from './panes/TeamRbacPane';
 import { ServicePricingMatrixPane } from './panes/ServicePricingMatrixPane';
 import { PublicHolidaysPane } from './panes/PublicHolidaysPane';
-import { SaicaGovernanceLogPane } from './panes/SaicaGovernanceLogPane';
 import {
-  SETTINGS_AUDIT_NAV,
   SETTINGS_NAV,
   isAdminPane,
   settingsPaneLabel,
@@ -87,8 +85,6 @@ function SettingsPane({ pane }: { pane: SettingsPaneKey }) {
       return <IntegrationsPane section="ai" />;
     case 'notifications':
       return <NotificationsPane />;
-    case 'saica':
-      return <SaicaGovernanceLogPane />;
     default:
       return <ProfilePane />;
   }
@@ -162,21 +158,6 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
                 />
               );
             })}
-
-            {isPartnerOrAdmin && (
-              <div className="mt-2 border-t border-border/60 pt-2">
-                <div className="flex items-center gap-1.5 px-2.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                  <span>Audit</span>
-                </div>
-                <NavButton
-                  label={SETTINGS_AUDIT_NAV.label}
-                  icon={SETTINGS_AUDIT_NAV.icon}
-                  hint="Moves to the Governance Log view"
-                  active={activePane === 'saica'}
-                  onSelect={() => setActivePane('saica')}
-                />
-              </div>
-            )}
           </div>
         </nav>
 

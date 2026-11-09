@@ -3,7 +3,6 @@ import {
   FileSpreadsheet,
   Palette,
   Plug,
-  ShieldCheck,
   User,
   Users,
   type LucideIcon,
@@ -24,8 +23,7 @@ export type SettingsPaneKey =
   | 'documenso'
   | 'xero'
   | 'ai'
-  | 'notifications'
-  | 'saica';
+  | 'notifications';
 
 export interface SettingsNavChild {
   pane: SettingsPaneKey;
@@ -81,17 +79,6 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { label: 'Notifications', icon: Bell, pane: 'notifications' },
 ];
 
-/**
- * Transitional: the SAICA audit pane leaves Settings once the Governance Log
- * view owns it. Kept reachable until then, set apart from the six groups.
- */
-export const SETTINGS_AUDIT_NAV: SettingsNavItem = {
-  label: 'SAICA Governance Log',
-  icon: ShieldCheck,
-  pane: 'saica',
-  adminOnly: true,
-};
-
 export function settingsPaneLabel(pane: SettingsPaneKey): string {
   const direct = SETTINGS_NAV.find((item) => item.pane === pane);
   if (direct) return direct.label;
@@ -99,11 +86,10 @@ export function settingsPaneLabel(pane: SettingsPaneKey): string {
     const child = item.children?.find((entry) => entry.pane === pane);
     if (child) return `${item.label} · ${child.label}`;
   }
-  return SETTINGS_AUDIT_NAV.label;
+  return 'Settings';
 }
 
 export function isAdminPane(pane: SettingsPaneKey): boolean {
-  if (pane === SETTINGS_AUDIT_NAV.pane) return true;
   return SETTINGS_NAV.some(
     (item) =>
       item.adminOnly && (item.pane === pane || item.children?.some((child) => child.pane === pane))

@@ -5,7 +5,6 @@ import { answerPracticeAssistantQuery } from '../ai/assistant-engine';
 import { getInitialPracticeState } from '@/context/PracticeStoreContext';
 import { DEFAULT_THEME_MODE, isThemeMode, resolveTheme } from '@/context/ThemeContext';
 import {
-  SETTINGS_AUDIT_NAV,
   SETTINGS_NAV,
   isAdminPane,
   settingsPaneLabel,
@@ -43,18 +42,12 @@ describe('Settings view panes and AI assistant engine', () => {
     expect(staffResponse).toContain('Wouter');
   });
 
-  it('verifies ServicePricingMatrixPane and SaicaGovernanceLogPane file existence and contracts', () => {
+  it('verifies ServicePricingMatrixPane file existence and contracts', () => {
     const matrixSrc = fs.readFileSync('src/components/settings/panes/ServicePricingMatrixPane.tsx', 'utf8');
-    const saicaSrc = fs.readFileSync('src/components/settings/panes/SaicaGovernanceLogPane.tsx', 'utf8');
 
     // Matrix pane contents
     expect(matrixSrc).toContain('Service Catalogue');
     expect(matrixSrc).toContain('Standard Rates');
-
-    // SAICA Governance Log contents
-    expect(saicaSrc).toContain('SAICA Governance Audit Log');
-    expect(saicaSrc).toContain('Export Audit Report');
-    expect(saicaSrc).toContain('SARS eFiling Confirmation');
   });
 });
 
@@ -89,13 +82,12 @@ describe('Settings navigation groups', () => {
     ]);
   });
 
-  it('keeps every pane reachable from the nav, including the SAICA audit pane', () => {
+  it('keeps every pane reachable from the nav', () => {
     const reachable = new Set<SettingsPaneKey>();
     for (const item of SETTINGS_NAV) {
       if (item.pane) reachable.add(item.pane);
       for (const child of item.children ?? []) reachable.add(child.pane);
     }
-    if (SETTINGS_AUDIT_NAV.pane) reachable.add(SETTINGS_AUDIT_NAV.pane);
 
     const expected: SettingsPaneKey[] = [
       'profile',
@@ -107,11 +99,9 @@ describe('Settings navigation groups', () => {
       'xero',
       'ai',
       'notifications',
-      'saica',
     ];
 
     expect(expected.filter((pane) => !reachable.has(pane))).toEqual([]);
-    expect(SETTINGS_AUDIT_NAV.pane).toBe('saica');
   });
 
   it('marks administration panes as partner-only and leaves personal panes open', () => {
@@ -124,7 +114,6 @@ describe('Settings navigation groups', () => {
     expect(isAdminPane('documenso')).toBe(true);
     expect(isAdminPane('xero')).toBe(true);
     expect(isAdminPane('ai')).toBe(true);
-    expect(isAdminPane('saica')).toBe(true);
   });
 
   it('labels a child pane with its owning group', () => {
@@ -147,7 +136,6 @@ describe('Settings view wiring', () => {
       'PublicHolidaysPane',
       'IntegrationsPane',
       'NotificationsPane',
-      'SaicaGovernanceLogPane',
     ]) {
       expect(settingsSrc).toContain(`<${pane}`);
     }
