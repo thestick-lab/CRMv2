@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
+import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
 import {
+  ACTIVITY_SEEDS,
   getInitialPracticeState,
   loadPracticeState,
   practiceReducer,
@@ -249,5 +251,19 @@ describe('PracticeStore foundation fields and legacy-state load', () => {
     expect(state.adhocTasks).toEqual([]);
     expect(state.sequences).toEqual({ quote: 0, invoice: 0 });
     expect(state.permissions).toEqual({ matrix: {} });
+  });
+
+  it('sources every activity seed from seeded clients and staff', () => {
+    const clientCodes = CLIENTS.map((c) => c.code);
+    const staffNames = [...STAFF.map((s) => s.name), getInitialPracticeState().currentUser.name];
+
+    expect(ACTIVITY_SEEDS.length).toBeGreaterThan(0);
+    for (const event of ACTIVITY_SEEDS) {
+      expect(staffNames).toContain(event.actorName);
+      for (const code of event.subline.match(/[A-Z]{3}-\d{3}/g) ?? []) {
+        expect(clientCodes).toContain(code);
+      }
+      expect(event.subline).not.toMatch(/SARS-|env-/);
+    }
   });
 });

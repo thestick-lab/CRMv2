@@ -85,10 +85,10 @@ const AVATAR_TINTS: Record<AvatarTint, string> = {
 
 export interface AvatarChipProps {
   initials: string;
-  tint?: AvatarTint;
+  tint: AvatarTint;
 }
 
-export function AvatarChip({ initials, tint = 'muted' }: AvatarChipProps) {
+export function AvatarChip({ initials, tint }: AvatarChipProps) {
   return (
     <span
       className={cn(
