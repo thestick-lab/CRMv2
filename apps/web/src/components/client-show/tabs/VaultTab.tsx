@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { Client } from 'fdoncall-practice/domain/types';
+import { boFilingState } from '../client-record-data';
 import { DocumensoDispatchDialog } from '@/components/integrations/DocumensoDispatchDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ export interface VaultFile {
   name: string;
   size: string;
   date: string;
-  status: 'Signed & Executed' | 'SARS Accepted' | 'Archived' | 'Pending Signature';
+  status: 'Signed & Executed' | 'SARS Accepted' | 'Archived' | 'Pending Signature' | 'Not in scope';
   signer?: string;
   reference?: string;
 }
@@ -29,6 +30,7 @@ export interface VaultFolder {
 }
 
 export function buildVaultFolders(client: Client): VaultFolder[] {
+  const boState = boFilingState(client);
   return [
     {
       name: 'Contracts & SLAs (Documenso)',
@@ -79,7 +81,12 @@ export function buildVaultFolders(client: Client): VaultFolder[] {
           name: `CIPC_Beneficial_Ownership_Register_Filing.pdf`,
           size: '310 KB',
           date: '2026-05-15',
-          status: client.beneficialOwnershipFiled ? 'Signed & Executed' : 'Pending Signature',
+          status:
+            boState === 'filed'
+              ? 'Signed & Executed'
+              : boState === 'required'
+                ? 'Pending Signature'
+                : 'Not in scope',
           reference: 'CIPC Disclosure Key #718402',
         },
       ],
@@ -181,8 +188,10 @@ export function VaultTab({ client }: { client: Client }) {
                     >
                       {file.status === 'Pending Signature' ? (
                         <Clock className="h-3 w-3" />
-                      ) : (
+                      ) : file.status === 'Signed & Executed' ? (
                         <CheckCircle2 className="h-3 w-3" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
                       )}
                       {file.status}
                     </Badge>

@@ -89,6 +89,16 @@ export function clientTags(client: Client): string[] {
   return [client.entityType, ...services];
 }
 
+/**
+ * BO filing state from the recorded scope and the filing flag. Ticking BO on
+ * the record puts the work in scope; the flag alone (used by legacy records)
+ * only speaks once BO is a service we provide.
+ */
+export function boFilingState(client: Client): 'out-of-scope' | 'required' | 'filed' {
+  if (!defaultServices(client).includes('BO')) return 'out-of-scope';
+  return client.beneficialOwnershipFiled === true ? 'filed' : 'required';
+}
+
 /** Store activity with the seeded historical feed appended (deduped by id). */
 export function withSeededActivity(activity: ActivityEvent[]): ActivityEvent[] {
   const seen = new Set(activity.map((event) => event.id));

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildProfileDetails, setServices } from './StatutoryProfileTab';
+import { buildProfileDetails, serviceTogglePatch, setServices } from './StatutoryProfileTab';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
+import type { ServiceCode, VatCategory } from 'fdoncall-practice/domain/types';
 
 describe('explicit service scope', () => {
   it('adds and removes services without reordering the recorded scope', () => {
@@ -10,6 +11,47 @@ describe('explicit service scope', () => {
     expect(setServices(['EMP201'], ['EMP201', 'EMP501'], true)).toEqual(['EMP201', 'EMP501']);
     expect(setServices(['EMP201', 'EMP501'], ['EMP201', 'EMP501'], false)).toEqual([]);
     expect(setServices(['AFS', 'VAT201'], ['VAT201'], true)).toEqual(['AFS', 'VAT201']);
+  });
+});
+
+describe('service checkbox patches', () => {
+  const base: {
+    services: ServiceCode[];
+    vatCategory?: VatCategory;
+    payroll: boolean;
+    employeeCount?: number;
+  } = { services: ['AFS', 'ITR14'], payroll: false };
+
+  it('tick then untick VAT201 leaves no phantom registration behind', () => {
+    const ticked = serviceTogglePatch(base, 'VAT201', true);
+    expect(ticked.vatCategory).toBe('B');
+    expect(ticked.services).toEqual(['AFS', 'ITR14', 'VAT201']);
+
+    const unticked = serviceTogglePatch({ ...base, ...ticked }, 'VAT201', false);
+    expect(unticked.vatCategory).toBeUndefined();
+    expect(unticked.services).toEqual(['AFS', 'ITR14']);
+  });
+
+  it('keeps an existing VAT category when VAT201 is ticked', () => {
+    expect(serviceTogglePatch({ ...base, vatCategory: 'A' }, 'VAT201', true).vatCategory).toBe('A');
+  });
+
+  it('tick then untick EMP201 returns the payroll switch and headcount', () => {
+    const ticked = serviceTogglePatch(base, 'EMP201', true);
+    expect(ticked.payroll).toBe(true);
+    expect(ticked.employeeCount).toBe(8);
+    expect(ticked.services).toEqual(['AFS', 'ITR14', 'EMP201', 'EMP501']);
+
+    const unticked = serviceTogglePatch({ ...base, ...ticked }, 'EMP201', false);
+    expect(unticked.payroll).toBe(false);
+    expect(unticked.employeeCount).toBe(0);
+    expect(unticked.services).toEqual(['AFS', 'ITR14']);
+  });
+
+  it('leaves the registration switches alone for a plain service', () => {
+    expect(serviceTogglePatch(base, 'CIPC_AR', true)).toEqual({
+      services: ['AFS', 'ITR14', 'CIPC_AR'],
+    });
   });
 });
 
@@ -48,7 +90,24 @@ describe('StatutoryProfileTab interactive details and services configuration', (
     // Checkboxes write the explicit service scope that drives the deadlines board.
     expect(tabSrc).toContain('defaultServices');
     expect(tabSrc).toContain('handleServiceToggle');
-    expect(tabSrc).toContain('services: setServices');
+    expect(tabSrc).toContain('serviceTogglePatch');
+  });
+
+  it('reads the BO status from the recorded scope, not only the legacy flag', () => {
+    // BO in scope and filed on the record.
+    expect(buildProfileDetails(muse).boStatusLabel).toBe('Filed with CIPC');
+    // BO in scope, not filed yet.
+    expect(
+      buildProfileDetails({ ...muse, services: ['AFS', 'BO'], beneficialOwnershipFiled: false })
+        .boStatusLabel
+    ).toBe('Filing required');
+    // BO out of scope: an explicit scope without BO, or a null filing flag.
+    expect(
+      buildProfileDetails({ ...muse, services: ['AFS', 'ITR14'] }).boStatusLabel
+    ).toBe('Not applicable');
+    expect(
+      buildProfileDetails({ ...muse, beneficialOwnershipFiled: null }).boStatusLabel
+    ).toBe('Not applicable');
   });
 
   it('verifies ClientShowView includes deep-link button to Deadlines board and the seven record tabs', () => {

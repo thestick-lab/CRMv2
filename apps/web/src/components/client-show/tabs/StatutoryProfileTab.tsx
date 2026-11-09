@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { Client, ClientContact, ServiceCode } from 'fdoncall-practice/domain/types';
+import type { Client, ClientContact, ServiceCode, VatCategory } from 'fdoncall-practice/domain/types';
 import { MONTHS_LONG, todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { defaultServices } from 'fdoncall-practice/domain/rules';
 import { STAFF, GROUPS } from 'fdoncall-practice/data/seed';
@@ -12,6 +12,7 @@ import type { PracticeTaskItem } from '@/components/deadlines/practice-tasks';
 import {
   buildMissingInformation,
   buildClientTimeline,
+  boFilingState,
   clientTags,
   nextOpenTask,
   withSeededActivity,
@@ -44,6 +45,48 @@ export function setServices(
     if (!next.includes(code)) next.push(code);
   }
   return next;
+}
+
+/**
+ * The patch a service checkbox (or the VAT/payroll switch) writes. VAT and
+ * payroll are registration facts the deadline calendar needs: ticking those
+ * boxes records what is missing, and unticking clears it symmetrically — so a
+ * scope change can never leave a phantom registration behind.
+ */
+export function serviceTogglePatch(
+  current: {
+    services: ServiceCode[];
+    vatCategory?: VatCategory;
+    payroll: boolean;
+    employeeCount?: number;
+  },
+  code: ServiceCode,
+  checked: boolean
+): Partial<Client> {
+  if (code === 'VAT201') {
+    return checked
+      ? {
+          vatCategory: current.vatCategory ?? 'B',
+          services: setServices(current.services, ['VAT201'], true),
+        }
+      : { vatCategory: undefined, services: setServices(current.services, ['VAT201'], false) };
+  }
+
+  if (code === 'EMP201') {
+    return checked
+      ? {
+          payroll: true,
+          employeeCount: current.payroll ? current.employeeCount : current.employeeCount || 8,
+          services: setServices(current.services, ['EMP201', 'EMP501'], true),
+        }
+      : {
+          payroll: false,
+          employeeCount: 0,
+          services: setServices(current.services, ['EMP201', 'EMP501'], false),
+        };
+  }
+
+  return { services: setServices(current.services, [code], checked) };
 }
 
 export interface ProfileDetails {
@@ -95,12 +138,13 @@ export function buildProfileDetails(client: Client): ProfileDetails {
 
   const group = GROUPS.find((g) => g.id === client.groupId);
 
+  const boState = boFilingState(client);
   const boStatusLabel =
-    client.beneficialOwnershipFiled === true
+    boState === 'filed'
       ? 'Filed with CIPC'
-      : client.beneficialOwnershipFiled === false
-      ? 'Filing Overdue / Required'
-      : 'Not Applicable';
+      : boState === 'required'
+        ? 'Filing required'
+        : 'Not applicable';
 
   return {
     entityType: client.entityType,
@@ -137,6 +181,13 @@ export function StatutoryProfileTab({
   const isCompany = client.entityType === 'Company' || client.entityType === 'Close corporation';
   /** Explicit scope when recorded, otherwise the attribute-derived list. */
   const services = defaultServices(client);
+  /** What the service checkboxes and switches read and write. */
+  const scopeState = {
+    services,
+    vatCategory: client.vatCategory,
+    payroll: client.payroll,
+    employeeCount: client.employeeCount,
+  };
 
   const [turnoverInput, setTurnoverInput] = React.useState(client.turnover?.toString() || '');
   const [incDate, setIncDate] = React.useState(client.incorporationDate || '');
@@ -188,45 +239,21 @@ export function StatutoryProfileTab({
   };
 
   const handleVatToggle = (checked: boolean) => {
-    updateClient(client.code, {
-      vatCategory: checked ? 'B' : undefined,
-      // Keep the recorded scope in step with the registration switch.
-      services: setServices(services, ['VAT201'], checked),
-    });
+    updateClient(client.code, serviceTogglePatch(scopeState, 'VAT201', checked));
   };
 
   const handlePayrollToggle = (checked: boolean) => {
-    updateClient(client.code, {
-      payroll: checked,
-      employeeCount: checked ? client.employeeCount || 8 : 0,
-      // Keep the recorded scope in step with the payroll switch.
-      services: setServices(services, ['EMP201', 'EMP501'], checked),
-    });
+    updateClient(client.code, serviceTogglePatch(scopeState, 'EMP201', checked));
   };
 
   /**
    * The service checkboxes write the client's explicit scope, which replaces
-   * the attribute-derived list for deadline generation. Switching VAT or
-   * payroll on also records what the deadline calendar needs — a VAT category
-   * or a payroll start — so ticking the box immediately creates the returns.
+   * the attribute-derived list for deadline generation. VAT and payroll also
+   * carry the registration facts the deadline calendar needs, and clearing the
+   * box clears them again (see `serviceTogglePatch`).
    */
   const handleServiceToggle = (code: ServiceCode, checked: boolean) => {
-    if (checked && code === 'VAT201' && !client.vatCategory) {
-      updateClient(client.code, {
-        vatCategory: 'B',
-        services: setServices(services, ['VAT201'], true),
-      });
-      return;
-    }
-    if (checked && code === 'EMP201' && !client.payroll) {
-      updateClient(client.code, {
-        payroll: true,
-        employeeCount: client.employeeCount || 8,
-        services: setServices(services, ['EMP201', 'EMP501'], true),
-      });
-      return;
-    }
-    updateClient(client.code, { services: setServices(services, [code], checked) });
+    updateClient(client.code, serviceTogglePatch(scopeState, code, checked));
   };
 
   const handleEfilingToggle = (checked: boolean) => {
