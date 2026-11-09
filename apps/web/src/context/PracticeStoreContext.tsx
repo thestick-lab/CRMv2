@@ -8,10 +8,16 @@ import type {
   VatCategory,
 } from 'fdoncall-practice/domain/types';
 import type { EstimateInput } from 'fdoncall-practice/domain/estimate';
-import type { ISODate } from 'fdoncall-practice/domain/dates';
+import { todayInSouthAfrica, type ISODate } from 'fdoncall-practice/domain/dates';
 import type { WorkflowStatus } from '@/lib/workflow';
 import { signInWithCredentials } from '@/lib/auth-client';
-export interface PipelineLead {
+
+/**
+ * A prospect as persisted by the legacy onboarding pipeline. Leads are no
+ * longer part of practice state: `MIGRATE_LEADS` converts them to quotes and
+ * the field is dropped on load.
+ */
+export interface LegacyLead {
   id: string;
   companyName: string;
   contactPerson: string;
@@ -234,7 +240,6 @@ export interface PracticeSequences {
 export interface PracticeState {
   clients: Client[];
   staff: StaffMember[];
-  leads: PipelineLead[];
   currentUser: PracticeUser;
   rates: PracticeRates;
   aiKeys: AiApiKeys;
@@ -251,7 +256,131 @@ export interface PracticeState {
   isAuthenticated: boolean;
 }
 
-export const INITIAL_LEADS: PipelineLead[] = [
+const LEAD_STAGE_TO_QUOTE_STAGE: Record<LegacyLead['stage'], QuoteStage> = {
+  Lead: 'Draft Quote',
+  Discovery: 'Draft Quote',
+  'Estimate Sent': 'Quote Sent',
+  'KYC & Transfer': 'Accepted',
+  'Active Client': 'Active Client',
+};
+
+const QUOTE_NEXT_STEP: Record<QuoteStage, string> = {
+  'Draft Quote': 'Send proposal',
+  'Quote Sent': 'Follow up on proposal',
+  Accepted: 'Send for signature',
+  Signed: 'Convert to active client',
+  'Active Client': 'Onboarding complete',
+  'Closed Lost': '',
+};
+
+/** Stable timestamp keeps seeded/migrated quotes deterministic across loads. */
+const MIGRATED_QUOTE_TIMESTAMP = '2026-11-01T08:00:00.000Z';
+
+interface QuoteSeedDefaults {
+  rate: number;
+  marchEscalationPct: number;
+}
+
+function sequenceFromNumber(number: string, fallback: number): number {
+  const match = /(\d+)$/.exec(number);
+  return match ? Math.max(fallback, Number(match[1])) : fallback;
+}
+
+/**
+ * A legacy lead becomes a quote whose `estimatedMonthlyFee` seeds one
+ * bookkeeping fee line at `fee ÷ adHocHourlyRate` hours — the same hours the
+ * quote carries as its monthly retainer allowance. The estimate input stays
+ * the authoritative record, so the quote is fully editable after migration.
+ */
+function quoteFromLead(lead: LegacyLead, sequence: number, defaults: QuoteSeedDefaults): Quote {
+  const monthlyRetainerHours =
+    Math.round((lead.estimatedMonthlyFee / defaults.rate) * 100) / 100;
+  const stage = LEAD_STAGE_TO_QUOTE_STAGE[lead.stage];
+
+  return {
+    id: `quote-${lead.id}`,
+    number: `Q-${sequence}`,
+    prospect: {
+      name: lead.companyName,
+      contactPerson: lead.contactPerson,
+      entityType: 'Company',
+      turnover: lead.turnover,
+      staffId: lead.partnerId,
+    },
+    estimateInput: {
+      startMonth: todayInSouthAfrica().slice(0, 7),
+      entityType: 'Company',
+      yearEndMonth: 2,
+      turnover: lead.turnover,
+      payroll: false,
+      provisionalTaxpayer: false,
+      directors: 1,
+      rate: defaults.rate,
+      marchIncreasePct: defaults.marchEscalationPct,
+      irp6Payable: false,
+      // Only the retainer line is known from a legacy lead's monthly fee.
+      selected: {
+        BOOKKEEPING: true,
+        AFS: false,
+        REVIEW: false,
+        ITR: false,
+        IRP6: false,
+        CIPC_AR: false,
+        XERO: false,
+        BO: false,
+      },
+      hours: { BOOKKEEPING: monthlyRetainerHours, PAYROLL: 0, MGMT: 0, AFS: 0, REVIEW: 0 },
+      months: { AFS: 2, REVIEW: 2, ITR: 2, CIPC_AR: 2 },
+      recharges: { XERO: 0, SIMPLEPAY: 0 },
+    },
+    monthlyRetainerHours,
+    adHocHourlyRate: defaults.rate,
+    vatInclusive: false,
+    paymentTerms: '30 days',
+    stage,
+    ownerStaffId: lead.partnerId,
+    nextStep: QUOTE_NEXT_STEP[stage] || undefined,
+    createdAt: MIGRATED_QUOTE_TIMESTAMP,
+    updatedAt: MIGRATED_QUOTE_TIMESTAMP,
+  };
+}
+
+/**
+ * Append quotes for legacy leads that do not already have one. Idempotent:
+ * re-running the migration for the same leads changes nothing.
+ */
+function migrateLeadsIntoState(state: PracticeState, leads: LegacyLead[]): PracticeState {
+  if (leads.length === 0) return state;
+
+  const knownIds = new Set(state.quotes.map((quote) => quote.id));
+  let sequence = state.quotes.reduce(
+    (max, quote) => sequenceFromNumber(quote.number, max),
+    state.sequences.quote
+  );
+  const defaults: QuoteSeedDefaults = {
+    rate: state.rates.standardHourlyRate,
+    marchEscalationPct: state.rates.marchEscalationPct,
+  };
+
+  const migrated: Quote[] = [];
+  for (const lead of leads) {
+    const id = `quote-${lead.id}`;
+    if (knownIds.has(id)) continue;
+    knownIds.add(id);
+    sequence += 1;
+    migrated.push(quoteFromLead(lead, sequence, defaults));
+  }
+
+  if (migrated.length === 0) return state;
+
+  return {
+    ...state,
+    quotes: [...state.quotes, ...migrated],
+    sequences: { ...state.sequences, quote: sequence },
+  };
+}
+
+export const INITIAL_LEADS: LegacyLead[] = [
   {
     id: 'lead-1',
     companyName: 'Cape Agulhas Distillers (Pty) Ltd',
@@ -412,29 +541,45 @@ function browserStorage(): PracticeStateStorage | null {
 }
 
 export function getInitialPracticeState(): PracticeState {
+  const seededQuotes = INITIAL_LEADS.map((lead, index) =>
+    quoteFromLead(lead, index + 1, {
+      rate: INITIAL_RATES.standardHourlyRate,
+      marchEscalationPct: INITIAL_RATES.marchEscalationPct,
+    })
+  );
+
   return {
     clients: [...CLIENTS],
     staff: [...STAFF],
-    leads: [...INITIAL_LEADS],
     currentUser: { ...INITIAL_USER },
     rates: { ...INITIAL_RATES },
     aiKeys: { ...INITIAL_AI_KEYS },
     division: 'fd-on-call',
     taskStatusOverrides: {},
     savedEstimates: {},
-    quotes: [],
+    quotes: seededQuotes,
     invoices: [],
     timeEntries: [],
     permissions: { matrix: {} },
     activity: [],
     adhocTasks: [],
-    sequences: { quote: 0, invoice: 0 },
+    sequences: { quote: seededQuotes.length, invoice: 0 },
     isAuthenticated: true,
   };
 }
 
 export type PracticeAction =
-  | { type: 'CONVERT_LEAD'; payload: { leadId: string; clientData?: Partial<Client> } }
+  | { type: 'ADD_QUOTE'; payload: Quote }
+  | {
+      type: 'UPDATE_QUOTE';
+      payload: { id: string; patch: Partial<Omit<Quote, 'id' | 'createdAt'>> };
+    }
+  | { type: 'ADD_INVOICE'; payload: Invoice }
+  | {
+      type: 'UPDATE_INVOICE';
+      payload: { id: string; patch: Partial<Omit<Invoice, 'id' | 'createdAt'>> };
+    }
+  | { type: 'MIGRATE_LEADS'; payload: { leads?: LegacyLead[] } }
   | { type: 'ADD_CLIENT'; payload: Client }
   | { type: 'UPDATE_CLIENT'; payload: { clientCode: string; patch: Partial<Client> } }
   | { type: 'SAVE_ESTIMATE'; payload: { clientCode: string; input: EstimateInput } }
@@ -470,75 +615,62 @@ export type PracticeAction =
   | { type: 'SET_CURRENT_USER'; payload: PracticeUser | string }
   | { type: 'SET_DIVISION'; payload: Division }
   | { type: 'SET_AI_KEYS'; payload: Partial<AiApiKeys> }
-  | { type: 'ADD_LEAD'; payload: Omit<PipelineLead, 'id'> }
-  | { type: 'UPDATE_LEAD_STAGE'; payload: { leadId: string; stage: PipelineLead['stage'] } }
   | { type: 'RESET_DATA' }
   | { type: 'LOAD_STATE'; payload: PracticeState };
 
-function generateCodeForName(name: string, existingClients: Client[]): string {
-  const words = name.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(/\s+/);
-  let prefix = 'NEW';
-  if (words.length >= 3) {
-    prefix = (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
-  } else if (words.length === 2) {
-    prefix = (words[0].substring(0, 2) + words[1][0]).toUpperCase();
-  } else if (words.length === 1 && words[0].length >= 3) {
-    prefix = words[0].substring(0, 3).toUpperCase();
-  }
-
-  // Ensure prefix is 3 chars
-  if (prefix.length < 3) {
-    prefix = (prefix + 'XXX').substring(0, 3);
-  }
-
-  let codeNumber = 100;
-  let code = `${prefix}-${codeNumber}`;
-  const existingCodes = new Set(existingClients.map((c) => c.code));
-
-  while (existingCodes.has(code)) {
-    codeNumber++;
-    code = `${prefix}-${codeNumber}`;
-  }
-
-  return code;
-}
-
 export function practiceReducer(state: PracticeState, action: PracticeAction): PracticeState {
   switch (action.type) {
-    case 'CONVERT_LEAD': {
-      const { leadId, clientData } = action.payload;
-      const lead = state.leads.find((l) => l.id === leadId);
-      if (!lead) return state;
-
-      const newCode = generateCodeForName(lead.companyName, state.clients);
-      const newClient: Client = {
-        code: newCode,
-        name: lead.companyName,
-        entityType: 'Company',
-        efilingProfile: 'client',
-        staffId: lead.partnerId || 'erik',
-        payroll: false,
-        status: 'Active',
-        yearEndAssumed: true,
-        yearEndMonth: 2,
-        taxElsewhere: false,
-        lastAfsYear: 2026,
-        lastIncomeTaxYear: 2026,
-        lastAnnualReturnYear: 2025,
-        beneficialOwnershipFiled: true,
-        ...clientData,
-      };
-
-      const updatedLeads = state.leads.map((l) =>
-        l.id === leadId ? { ...l, stage: 'Active Client' as const } : l
-      );
-
+    case 'ADD_QUOTE': {
+      const quote = action.payload;
+      if (state.quotes.some((q) => q.id === quote.id)) return state;
       return {
         ...state,
-        clients: [...state.clients, newClient],
-        leads: updatedLeads,
+        quotes: [...state.quotes, quote],
+        sequences: {
+          ...state.sequences,
+          quote: sequenceFromNumber(quote.number, state.sequences.quote),
+        },
       };
     }
+
+    case 'UPDATE_QUOTE': {
+      const { id, patch } = action.payload;
+      if (!state.quotes.some((q) => q.id === id)) return state;
+      return {
+        ...state,
+        quotes: state.quotes.map((quote) =>
+          quote.id === id ? { ...quote, ...patch, updatedAt: new Date().toISOString() } : quote
+        ),
+      };
+    }
+
+    case 'ADD_INVOICE': {
+      const invoice = action.payload;
+      if (state.invoices.some((i) => i.id === invoice.id)) return state;
+      return {
+        ...state,
+        invoices: [...state.invoices, invoice],
+        sequences: {
+          ...state.sequences,
+          invoice: sequenceFromNumber(invoice.number, state.sequences.invoice),
+        },
+      };
+    }
+
+    case 'UPDATE_INVOICE': {
+      const { id, patch } = action.payload;
+      if (!state.invoices.some((i) => i.id === id)) return state;
+      return {
+        ...state,
+        invoices: state.invoices.map((invoice) =>
+          invoice.id === id ? { ...invoice, ...patch } : invoice
+        ),
+      };
+    }
+
+    case 'MIGRATE_LEADS':
+      return migrateLeadsIntoState(state, action.payload.leads ?? []);
+
     case 'SAVE_ESTIMATE': {
       return {
         ...state,
@@ -732,23 +864,6 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
       };
     }
 
-    case 'ADD_LEAD': {
-      const id = `lead-${Date.now()}`;
-      return {
-        ...state,
-        leads: [...state.leads, { ...action.payload, id }],
-      };
-    }
-
-    case 'UPDATE_LEAD_STAGE': {
-      return {
-        ...state,
-        leads: state.leads.map((l) =>
-          l.id === action.payload.leadId ? { ...l, stage: action.payload.stage } : l
-        ),
-      };
-    }
-
     case 'RESET_DATA': {
       return getInitialPracticeState();
     }
@@ -765,9 +880,12 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
 /**
  * Merge a persisted state over the pristine defaults: fields added after the
  * state was persisted fall back to their defaults, persisted values are never
- * overwritten.
+ * overwritten. Legacy pipeline leads are converted to quotes and dropped.
  */
-export function mergePracticeState(persisted: Partial<PracticeState>): PracticeState {
+export function mergePracticeState(
+  persisted: Partial<PracticeState> & { leads?: LegacyLead[] }
+): PracticeState {
+  const { leads: legacyLeads, ...persistedRest } = persisted;
   const initial = getInitialPracticeState();
 
   // One-time contact migration: records persisted before `Client.contacts`
@@ -792,11 +910,25 @@ export function mergePracticeState(persisted: Partial<PracticeState>): PracticeS
       }
     : initial.currentUser;
 
-  return {
+  // A state persisted before quotes existed starts empty so its leads are the
+  // only source of quote cards; pristine states keep the seeded quote prospects.
+  const quotes =
+    persisted.quotes ?? (legacyLeads && legacyLeads.length > 0 ? [] : initial.quotes);
+
+  // Number migrated quotes after whatever the persisted store already issued.
+  const baseQuoteSequence =
+    persisted.quotes !== undefined
+      ? persisted.sequences?.quote ?? 0
+      : legacyLeads && legacyLeads.length > 0
+        ? 0
+        : initial.sequences.quote;
+
+  const merged: PracticeState = {
     ...initial,
-    ...persisted,
+    ...persistedRest,
     clients,
     currentUser,
+    quotes,
     rates: {
       ...initial.rates,
       ...(persisted.rates || {}),
@@ -805,11 +937,19 @@ export function mergePracticeState(persisted: Partial<PracticeState>): PracticeS
         ...(persisted.rates?.serviceFees || {}),
       },
     },
-    sequences: { ...initial.sequences, ...(persisted.sequences || {}) },
+    sequences: {
+      quote: quotes.reduce(
+        (max, quote) => sequenceFromNumber(quote.number, max),
+        baseQuoteSequence
+      ),
+      invoice: persisted.sequences?.invoice ?? initial.sequences.invoice,
+    },
     permissions: { ...initial.permissions, ...(persisted.permissions || {}) },
     adhocTasks: persisted.adhocTasks ?? initial.adhocTasks,
     activity: persisted.activity ?? initial.activity,
   };
+
+  return practiceReducer(merged, { type: 'MIGRATE_LEADS', payload: { leads: legacyLeads } });
 }
 
 /**
@@ -845,7 +985,6 @@ export interface PracticeStoreContextValue extends PracticeState {
   addClient: (client: Client) => void;
   updateClient: (clientCode: string, patch: Partial<Client>) => void;
   saveEstimate: (clientCode: string, input: EstimateInput) => void;
-  convertLead: (leadId: string, clientData?: Partial<Client>) => Client | undefined;
   updateTaskStatus: (taskId: string, status: string, metadata?: TaskStatusMetadata) => void;
   addAdhocTask: (task: AdHocTask) => void;
   updateAdhocTask: (
@@ -868,8 +1007,10 @@ export interface PracticeStoreContextValue extends PracticeState {
   setCurrentUser: (user: PracticeUser | string) => void;
   setDivision: (division: Division) => void;
   setAiKeys: (keys: Partial<AiApiKeys>) => void;
-  addLead: (lead: Omit<PipelineLead, 'id'>) => void;
-  updateLeadStage: (leadId: string, stage: PipelineLead['stage']) => void;
+  addQuote: (quote: Quote) => void;
+  updateQuote: (id: string, patch: Partial<Omit<Quote, 'id' | 'createdAt'>>) => void;
+  addInvoice: (invoice: Invoice) => void;
+  updateInvoice: (id: string, patch: Partial<Omit<Invoice, 'id' | 'createdAt'>>) => void;
   exportData: () => PracticeState;
   resetData: () => void;
 }
@@ -887,34 +1028,6 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
   const addClient = React.useCallback((client: Client) => {
     dispatch({ type: 'ADD_CLIENT', payload: client });
   }, []);
-
-  const convertLead = React.useCallback(
-    (leadId: string, clientData?: Partial<Client>) => {
-      const targetLead = state.leads.find((l) => l.id === leadId);
-      if (!targetLead) return undefined;
-      dispatch({ type: 'CONVERT_LEAD', payload: { leadId, clientData } });
-      const code = generateCodeForName(targetLead.companyName, state.clients);
-      const created: Client = {
-        code,
-        name: targetLead.companyName,
-        entityType: 'Company',
-        efilingProfile: 'client',
-        staffId: targetLead.partnerId || 'erik',
-        payroll: false,
-        status: 'Active',
-        yearEndAssumed: true,
-        yearEndMonth: 2,
-        taxElsewhere: false,
-        lastAfsYear: 2026,
-        lastIncomeTaxYear: 2026,
-        lastAnnualReturnYear: 2025,
-        beneficialOwnershipFiled: true,
-        ...clientData,
-      };
-      return created;
-    },
-    [state.leads, state.clients]
-  );
 
   const updateTaskStatus = React.useCallback(
     (taskId: string, status: string, metadata?: TaskStatusMetadata) => {
@@ -991,13 +1104,27 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     dispatch({ type: 'SET_AI_KEYS', payload: keys });
   }, []);
 
-  const addLead = React.useCallback((lead: Omit<PipelineLead, 'id'>) => {
-    dispatch({ type: 'ADD_LEAD', payload: lead });
+  const addQuote = React.useCallback((quote: Quote) => {
+    dispatch({ type: 'ADD_QUOTE', payload: quote });
   }, []);
 
-  const updateLeadStage = React.useCallback((leadId: string, stage: PipelineLead['stage']) => {
-    dispatch({ type: 'UPDATE_LEAD_STAGE', payload: { leadId, stage } });
+  const updateQuote = React.useCallback(
+    (id: string, patch: Partial<Omit<Quote, 'id' | 'createdAt'>>) => {
+      dispatch({ type: 'UPDATE_QUOTE', payload: { id, patch } });
+    },
+    []
+  );
+
+  const addInvoice = React.useCallback((invoice: Invoice) => {
+    dispatch({ type: 'ADD_INVOICE', payload: invoice });
   }, []);
+
+  const updateInvoice = React.useCallback(
+    (id: string, patch: Partial<Omit<Invoice, 'id' | 'createdAt'>>) => {
+      dispatch({ type: 'UPDATE_INVOICE', payload: { id, patch } });
+    },
+    []
+  );
 
   const exportData = React.useCallback(() => {
     return state;
@@ -1023,7 +1150,10 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       ...state,
       addClient,
       updateClient,
-      convertLead,
+      addQuote,
+      updateQuote,
+      addInvoice,
+      updateInvoice,
       updateTaskStatus,
       addAdhocTask,
       updateAdhocTask,
@@ -1039,8 +1169,6 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser,
       setDivision,
       setAiKeys,
-      addLead,
-      updateLeadStage,
       exportData,
       resetData,
     }),
@@ -1048,7 +1176,10 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       state,
       addClient,
       updateClient,
-      convertLead,
+      addQuote,
+      updateQuote,
+      addInvoice,
+      updateInvoice,
       updateTaskStatus,
       addAdhocTask,
       updateAdhocTask,
@@ -1064,8 +1195,6 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser,
       setDivision,
       setAiKeys,
-      addLead,
-      updateLeadStage,
       exportData,
       resetData,
     ]

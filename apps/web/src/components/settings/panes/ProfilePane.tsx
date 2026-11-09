@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export function ProfilePane() {
-  const { currentUser, clients, staff, leads, exportData, resetData } = usePracticeStore();
+  const { currentUser, clients, staff, quotes, exportData, resetData } = usePracticeStore();
   const [resetConfirm, setResetConfirm] = React.useState(false);
   const [downloadSuccess, setDownloadSuccess] = React.useState(false);
 
@@ -78,7 +78,7 @@ export function ProfilePane() {
               Export My Practice Data
             </div>
             <p className="text-muted-foreground mt-1 leading-relaxed">
-              Download a complete JSON snapshot of all {clients.length} practice clients, {staff.length} team members, {leads.length} onboarding pipeline leads, and statutory compliance status overrides.
+              Download a complete JSON snapshot of all {clients.length} practice clients, {staff.length} team members, {quotes.length} fee quotes, and statutory compliance status overrides.
             </p>
           </div>
         </div>
@@ -108,7 +108,7 @@ export function ProfilePane() {
           Reset Practice State
         </div>
         <p className="text-muted-foreground leading-relaxed">
-          Reset local storage back to pristine seed defaults (13 clients, 9 staff, default pipeline leads). This will clear all local task status overrides and newly added prospects.
+          Reset local storage back to pristine seed defaults (13 clients, 9 staff, the seeded fee quotes). This will clear all local task status overrides and newly added prospects.
         </p>
 
         {resetConfirm ? (

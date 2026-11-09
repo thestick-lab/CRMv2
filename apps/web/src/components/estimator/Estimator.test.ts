@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { computeEstimate, type EstimateInput, STANDARD_RATE } from 'fdoncall-practice/domain/estimate';
 
-describe('Unified Fee Estimator and Sent Quotes pipeline', () => {
+describe('Unified Fee Estimator and quote lifecycle', () => {
   it('computes 12-month rolling estimate with March escalation', () => {
     const input: EstimateInput = {
       startMonth: '2026-12',
@@ -53,13 +53,15 @@ describe('Unified Fee Estimator and Sent Quotes pipeline', () => {
     expect(result.months).toHaveLength(12);
   });
 
-  it('verifies EstimatorView renders 2 tabs: Estimate Calculator and Sent Quotes & Onboarding', () => {
-    const viewSrc = fs.readFileSync('src/components/views/EstimatorView.tsx', 'utf8');
+  it('replaces the estimator tabs with the quote lifecycle the pipeline consumes', () => {
+    const lifecycleSrc = fs.readFileSync('src/lib/quote-lifecycle.ts', 'utf8');
 
-    expect(viewSrc).toContain('Estimate Calculator');
-    expect(viewSrc).toContain('Sent Quotes & Onboarding');
-    expect(viewSrc).toContain('EstimateCalculator');
-    expect(viewSrc).toContain('SentQuotesPipeline');
+    expect(lifecycleSrc).toContain('QUOTE_STAGE_ORDER');
+    expect(lifecycleSrc).toContain('canTransitionQuote');
+    expect(lifecycleSrc).toContain("'Draft Quote'");
+    expect(lifecycleSrc).toContain("'Quote Sent'");
+    expect(lifecycleSrc).toContain("'Active Client'");
+    expect(lifecycleSrc).toContain("'Closed Lost'");
   });
 
   it('verifies EstimateCalculator includes client selector, services inputs, and PDF/Excel export actions', () => {
@@ -75,10 +77,12 @@ describe('Unified Fee Estimator and Sent Quotes pipeline', () => {
     expect(calcSrc).toContain('Download Excel Workings');
   });
 
-  it('verifies SentQuotesPipeline tracks proposals and provides client conversion', () => {
-    const pipelineSrc = fs.readFileSync('src/components/estimator/SentQuotesPipeline.tsx', 'utf8');
+  it('tracks quote proposals through the store instead of the sent-quotes pipeline', () => {
+    const storeSrc = fs.readFileSync('src/context/PracticeStoreContext.tsx', 'utf8');
 
-    expect(pipelineSrc).toContain('SentQuotesPipeline');
-    expect(pipelineSrc).toContain('Convert to Practice Client');
+    expect(storeSrc).toContain("type: 'ADD_QUOTE'");
+    expect(storeSrc).toContain("type: 'UPDATE_QUOTE'");
+    expect(storeSrc).toContain("type: 'MIGRATE_LEADS'");
+    expect(storeSrc).not.toContain('CONVERT_LEAD');
   });
 });

@@ -40,6 +40,13 @@ describe('Settings view panes and AI assistant engine', () => {
     const staffResponse = answerPracticeAssistantQuery('who are the partners in the firm?', state);
     expect(staffResponse).toContain('Erik');
     expect(staffResponse).toContain('Wouter');
+
+    const openQuotes = state.quotes.filter(
+      (quote) => quote.stage !== 'Closed Lost' && quote.stage !== 'Active Client'
+    ).length;
+    const pipelineResponse = answerPracticeAssistantQuery('how many quotes are open?', state);
+    expect(pipelineResponse).toContain(`${openQuotes} open quotes`);
+    expect(pipelineResponse).not.toContain('onboarding pipeline');
   });
 
   it('verifies ServicePricingMatrixPane file existence and contracts', () => {

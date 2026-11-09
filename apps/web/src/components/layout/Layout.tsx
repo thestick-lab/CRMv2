@@ -28,7 +28,7 @@ export function Layout({
   const [aiDrawerOpen, setAiDrawerOpen] = React.useState(false);
   const { isDark, toggle: toggleTheme } = useTheme();
 
-  const { clients } = usePracticeStore();
+  const { clients, quotes, timeEntries } = usePracticeStore();
   // Keyboard shortcut for Cmd+K / Ctrl+K
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -41,7 +41,7 @@ export function Layout({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Build command search items from navigation views + seeded clients
+  // Build command search items from navigation views, clients, quotes and time entries
   const commandItems = React.useMemo<CommandItem[]>(() => {
     const viewItems: CommandItem[] = NAV_ITEMS.map((item) => ({
       id: item.id,
@@ -57,11 +57,31 @@ export function Layout({
       clientCode: c.code,
     }));
 
-    return [...viewItems, ...clientItems];
-  }, [clients]);
+    const clientName = (code?: string) =>
+      code ? clients.find((client) => client.code === code)?.name : undefined;
+
+    const quoteItems: CommandItem[] = quotes.map((quote) => ({
+      id: `quote-${quote.id}`,
+      label: `${quote.number} · ${clientName(quote.clientCode) ?? quote.prospect?.name ?? 'Unnamed prospect'}`,
+      section: 'Quotes',
+      view: 'sales-pipeline',
+      badge: quote.stage,
+    }));
+
+    const timeItems: CommandItem[] = timeEntries.map((entry) => ({
+      id: `time-${entry.id}`,
+      label: `${clientName(entry.clientCode) ?? entry.clientCode} · ${entry.description}`,
+      section: 'Time entries',
+      view: 'time',
+    }));
+
+    return [...viewItems, ...clientItems, ...quoteItems, ...timeItems];
+  }, [clients, quotes, timeEntries]);
 
   const handleSelectCommand = (item: CommandItem) => {
-    if (item.clientCode) {
+    if (item.view) {
+      onViewChange(item.view);
+    } else if (item.clientCode) {
       onViewChange('client', item.clientCode);
     } else {
       onViewChange(item.id as ViewKey);

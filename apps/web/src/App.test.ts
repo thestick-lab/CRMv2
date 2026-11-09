@@ -72,6 +72,14 @@ describe('App shell and view integration', () => {
     expect(estimateSource).toContain('XeroSyncDialog');
   });
 
+  it('searches quotes and time entries from the command palette', () => {
+    const layoutSource = fs.readFileSync('src/components/layout/Layout.tsx', 'utf8');
+    expect(layoutSource).toContain('quotes');
+    expect(layoutSource).toContain('timeEntries');
+    expect(layoutSource).toContain(`section: 'Quotes'`);
+    expect(layoutSource).toContain(`section: 'Time entries'`);
+  });
+
   it('mounts PracticeStoreProvider and routes every ViewKey to its view', () => {
     const appSource = fs.readFileSync('src/App.tsx', 'utf8');
     expect(appSource).toContain('PracticeStoreProvider');

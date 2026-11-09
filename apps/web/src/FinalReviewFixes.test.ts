@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { canTransitionQuote } from '@/lib/quote-lifecycle';
 
 describe('Final review fixes: cross-view reactivity and user experience', () => {
   it('wires usePracticeStore into ClientsView, ClientShowView, DashboardView, Layout, and EstimateTab', () => {
@@ -38,9 +39,18 @@ describe('Final review fixes: cross-view reactivity and user experience', () => 
     expect(userPopoverSrc).toContain('logout');
   });
 
-  it('ensures OnboardingPipeline dragStart invokes dataTransfer.setData', () => {
-    const pipelineSrc = fs.readFileSync('src/components/pipeline/OnboardingPipeline.tsx', 'utf8');
-
-    expect(pipelineSrc).toContain('dataTransfer.setData');
+  it('routes prospect progression through validated quote stage transitions', () => {
+    expect(canTransitionQuote('Draft Quote', 'Quote Sent', { hasClient: true, hasFeeLines: true })).toBe(
+      true
+    );
+    expect(
+      canTransitionQuote('Draft Quote', 'Quote Sent', { hasClient: false, hasFeeLines: true })
+    ).toBe(false);
+    expect(canTransitionQuote('Quote Sent', 'Accepted', { hasClient: false, hasFeeLines: false })).toBe(
+      true
+    );
+    expect(canTransitionQuote('Signed', 'Closed Lost', { hasClient: true, hasFeeLines: true })).toBe(
+      false
+    );
   });
 });

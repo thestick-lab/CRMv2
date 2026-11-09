@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { ViewKey } from '@/types/navigation';
 
 export interface CommandItem {
   id: string;
@@ -9,6 +10,8 @@ export interface CommandItem {
   section: string;
   clientCode?: string;
   badge?: string;
+  /** View the item opens; defaults to the item id for navigation entries. */
+  view?: ViewKey;
   icon?: React.ComponentType<{ className?: string }>;
 }
 
@@ -19,6 +22,7 @@ export function filterCommandItems(items: CommandItem[], query: string): Command
     return (
       item.label.toLowerCase().includes(q) ||
       item.section.toLowerCase().includes(q) ||
+      (item.badge && item.badge.toLowerCase().includes(q)) ||
       (item.clientCode && item.clientCode.toLowerCase().includes(q))
     );
   });
@@ -79,7 +83,7 @@ export function CommandDialog({ open, onOpenChange, items, onSelect }: CommandDi
           {/* Accessible title and description for Radix Dialog */}
           <DialogPrimitive.Title className="sr-only">Command Menu</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
-            Search practice views, clients, and statutory deadlines
+            Search practice views, clients, quotes, and time entries
           </DialogPrimitive.Description>
 
           <div className="flex items-center border-b border-border px-3 py-2.5">
@@ -89,7 +93,7 @@ export function CommandDialog({ open, onOpenChange, items, onSelect }: CommandDi
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search views, clients (ALC-610), or statutory ops..."
+              placeholder="Search views, clients (ALC-610), quotes, or time entries..."
               className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
             <button
@@ -103,7 +107,7 @@ export function CommandDialog({ open, onOpenChange, items, onSelect }: CommandDi
           <div className="max-h-80 overflow-y-auto p-2 space-y-1">
             {filtered.length === 0 ? (
               <div className="py-6 text-center text-xs text-muted-foreground">
-                No matching view or client found for "{query}".
+                No matching view, client, quote, or time entry found for "{query}".
               </div>
             ) : (
               filtered.map((item, idx) => {
