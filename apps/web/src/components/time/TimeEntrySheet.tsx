@@ -4,7 +4,13 @@ import type { ServiceCode } from 'fdoncall-practice/domain/types';
 import { SERVICE_TYPES } from 'fdoncall-practice/domain/catalogue';
 import { defaultServices } from 'fdoncall-practice/domain/rules';
 import { usePracticeStore, type TimeEntry } from '@/context/PracticeStoreContext';
-import { entryDurationMinutes, formatHours, roundToQuarterMinutes } from '@/lib/billing';
+import {
+  entryDurationMinutes,
+  formatHours,
+  resolveRoundedMinutes,
+  resolveWorkedMinutes,
+  roundToQuarterMinutes,
+} from '@/lib/billing';
 import { Button } from '@/components/ui/button';
 import { Clock, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -60,7 +66,7 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
   const [endedAt, setEndedAt] = React.useState(
     localInputValue(entry.endedAt ?? entry.startedAt)
   );
-  const [roundedMinutes, setRoundedMinutes] = React.useState(entry.roundedMinutes);
+  const [roundedInput, setRoundedInput] = React.useState(String(entry.roundedMinutes));
   const [billable, setBillable] = React.useState(entry.billable);
   const [description, setDescription] = React.useState(entry.description);
   const [timesEdited, setTimesEdited] = React.useState(false);
@@ -70,8 +76,11 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
   const client = clients.find((candidate) => candidate.code === clientCode);
   const startedIso = localInputToIso(startedAt);
   const endedIso = localInputToIso(endedAt);
-  const workedMinutes =
-    startedIso && endedIso ? entryDurationMinutes(startedIso, endedIso) : 0;
+  // The stopped timer's pause-excluded duration stays authoritative until a
+  // time field is edited; only then is the timestamp span re-read.
+  const workedMinutes = resolveWorkedMinutes(entry, timesEdited, startedIso, endedIso);
+  // Typing is never clamped mid-edit — the quarter-hour snap happens on save.
+  const roundedMinutes = resolveRoundedMinutes(roundedInput, workedMinutes);
   // A timer stopped inside its first minute still yields a valid entry: the
   // quarter-hour floor bills it as 0.25h. Only a reversed pair is invalid.
   const endBeforeStart =
@@ -95,9 +104,9 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
     const startIso = localInputToIso(nextStart);
     const endIso = localInputToIso(nextEnd);
     if (startIso && endIso) {
-      // The timestamps are the source of truth; rounding follows them until
-      // the user edits the rounded field itself.
-      setRoundedMinutes(roundToQuarterMinutes(entryDurationMinutes(startIso, endIso)));
+      // Editing a timestamp makes the span authoritative, so the rounded
+      // figure follows it until the user overrides the field again.
+      setRoundedInput(String(roundToQuarterMinutes(entryDurationMinutes(startIso, endIso))));
     }
   };
 
@@ -134,11 +143,9 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
       startedAt: savedStart,
       endedAt: savedEnd,
       durationMinutes: savedDuration,
-      // The sheet owns its own validation, and the billable figure always
-      // lands on a quarter hour even if a non-quarter value was typed.
-      roundedMinutes: roundToQuarterMinutes(
-        Number.isFinite(roundedMinutes) ? roundedMinutes : savedDuration
-      ),
+      // The sheet owns its own validation, and the typed billable figure
+      // lands on a quarter hour with the 15 minute floor on save.
+      roundedMinutes: resolveRoundedMinutes(roundedInput, savedDuration),
       billable,
       description: description.trim(),
     });
@@ -268,12 +275,9 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
                   data-testid="entry-rounded"
                   type="number"
                   min={15}
-                  value={roundedMinutes}
+                  value={roundedInput}
                   onFocus={(event) => event.currentTarget.select()}
-                  onChange={(event) => {
-                    const next = Number(event.target.value);
-                    setRoundedMinutes(Number.isFinite(next) ? Math.max(15, next) : 15);
-                  }}
+                  onChange={(event) => setRoundedInput(event.target.value)}
                   className={cn(FIELD_CLASS, 'w-20 text-right tabular-nums')}
                 />
                 <span className="text-[10px] text-muted-foreground">min</span>

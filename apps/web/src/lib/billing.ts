@@ -40,6 +40,38 @@ export function entryDurationMinutes(startedAt: string, endedAt?: string): numbe
   return Math.max(0, Math.round((end - start) / 60_000));
 }
 
+/**
+ * Worked minutes the capture sheet shows and saves.
+ *
+ * A stopped timer entry carries `durationMinutes` with its paused segments
+ * already excluded, and that figure stays authoritative until the user edits
+ * the start or end field. Only then is the timestamp span re-read. The `> 0`
+ * guard keeps a sub-minute stop on the "under a minute" path instead of
+ * falling back to a span that has lost its seconds.
+ */
+export function resolveWorkedMinutes(
+  entry: { durationMinutes: number },
+  timesEdited: boolean,
+  startedAtIso: string | null,
+  endedAtIso: string | null
+): number {
+  if (!timesEdited && entry.durationMinutes > 0) return entry.durationMinutes;
+  return startedAtIso && endedAtIso ? entryDurationMinutes(startedAtIso, endedAtIso) : 0;
+}
+
+/**
+ * The billable minutes a typed rounded field saves.
+ *
+ * Typing is never clamped mid-edit; the quarter-hour snap and the 15 minute
+ * floor are applied once, at save time. An empty or unusable field falls back
+ * to the worked duration's rounding.
+ */
+export function resolveRoundedMinutes(input: string, workedMinutes: number): number {
+  const typed = Number(input);
+  const usable = input.trim() !== '' && Number.isFinite(typed);
+  return roundToQuarterMinutes(usable ? typed : workedMinutes);
+}
+
 export interface BillableMinutesEntry {
   billableMinutes: number;
 }

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   entryDurationMinutes,
   formatHours,
+  resolveRoundedMinutes,
+  resolveWorkedMinutes,
   roundToQuarterMinutes,
   splitRetainerOverage,
 } from './billing';
@@ -118,5 +120,50 @@ describe('formatHours', () => {
     [120, '2h'],
   ])('formats %i minutes as %s', (minutes, expected) => {
     expect(formatHours(minutes)).toBe(expected);
+  });
+});
+
+describe('resolveWorkedMinutes', () => {
+  // 5 minutes of work, 40 minutes paused: the wall clock spans 45 minutes but
+  // the stopped timer only counts the worked segments.
+  const pausedStop = { durationMinutes: 5 };
+  const start = '2026-11-09T09:00:00+02:00';
+  const end = '2026-11-09T09:45:00+02:00';
+
+  it('shows the pause-excluded duration the stopped timer stored', () => {
+    expect(resolveWorkedMinutes(pausedStop, false, start, end)).toBe(5);
+  });
+
+  it('re-reads the timestamp span once either time field was edited', () => {
+    expect(resolveWorkedMinutes(pausedStop, true, start, end)).toBe(45);
+  });
+
+  it('keeps a sub-minute stop on the under-a-minute path', () => {
+    expect(resolveWorkedMinutes({ durationMinutes: 0 }, false, start, start)).toBe(0);
+  });
+
+  it('reads zero when the timestamps are unusable', () => {
+    expect(resolveWorkedMinutes({ durationMinutes: 0 }, true, null, null)).toBe(0);
+  });
+});
+
+describe('resolveRoundedMinutes', () => {
+  it('keeps a typed quarter-hour value exactly as entered', () => {
+    expect(resolveRoundedMinutes('45', 7)).toBe(45);
+    expect(resolveRoundedMinutes('30', 60)).toBe(30);
+  });
+
+  it('snaps a typed non-quarter value to the nearest quarter hour', () => {
+    expect(resolveRoundedMinutes('155', 7)).toBe(150);
+    expect(resolveRoundedMinutes('20', 7)).toBe(15);
+  });
+
+  it('enforces the 15 minute minimum at save time', () => {
+    expect(resolveRoundedMinutes('-20', 60)).toBe(15);
+  });
+
+  it('falls back to the worked duration when the field is empty or unusable', () => {
+    expect(resolveRoundedMinutes('', 7)).toBe(15);
+    expect(resolveRoundedMinutes('abc', 80)).toBe(75);
   });
 });
