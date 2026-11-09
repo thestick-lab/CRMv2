@@ -1,5 +1,6 @@
 import type { ActivityEvent } from '@/context/PracticeStoreContext';
 import type { PracticeTaskItem } from '@/components/deadlines/practice-tasks';
+import { personInitials } from './initials';
 
 type SubmissionTask = Pick<
   PracticeTaskItem,
@@ -20,13 +21,7 @@ export function submissionActivity(
   return {
     type: 'submission',
     actorName,
-    actorInitials: actorName
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase(),
+    actorInitials: personInitials(actorName),
     tint: 'crimson',
     text: `Submitted ${task.service} · ${task.period}`,
     subline: `${task.clientCode} · ${task.clientName}`,

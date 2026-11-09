@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { AvatarChip, EmptyStateCard } from '@/components/ui/list-primitives';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
-import { initialsFor } from '@/lib/initials';
+import { personInitials } from '@/lib/initials';
 import { can } from '@/lib/permissions';
 import { NoAccessView } from '@/components/layout/NoAccessView';
 import {
@@ -301,7 +301,7 @@ export function GovernanceLogView() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <AvatarChip initials={initialsFor(entry.actorName)} tint={actionTone(entry.action)} />
+                        <AvatarChip initials={personInitials(entry.actorName)} tint={actionTone(entry.action)} />
                         <div className="min-w-0">
                           <p className="truncate font-medium text-foreground">{entry.actorName}</p>
                           <p className="truncate text-[10px] text-muted-foreground">{entry.actorRole}</p>

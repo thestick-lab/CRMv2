@@ -5,6 +5,7 @@ import { usePracticeStore, type AdHocTask } from '@/context/PracticeStoreContext
 import { WORKFLOW_STATUSES, type WorkflowStatus } from '@/lib/workflow';
 import { Button } from '@/components/ui/button';
 import { can, scopeToAssigned } from '@/lib/permissions';
+import { personInitials } from '@/lib/initials';
 import { adHocTaskIsValid, createAdHocTask, type AdHocTaskDraft } from './ad-hoc';
 
 export interface AdHocTaskModalProps {
@@ -96,7 +97,7 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
       logActivity({
         type: 'task',
         actorName: currentUser.name,
-        actorInitials: currentUser.name.slice(0, 2).toUpperCase(),
+        actorInitials: personInitials(currentUser.name),
         tint: 'muted',
         text: `Updated ad-hoc task “${draft.description.trim()}”`,
         subline,
@@ -107,7 +108,7 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
       logActivity({
         type: 'task',
         actorName: currentUser.name,
-        actorInitials: currentUser.name.slice(0, 2).toUpperCase(),
+        actorInitials: personInitials(currentUser.name),
         tint: 'crimson',
         text: `Added ad-hoc task “${created.description}”`,
         subline,
@@ -127,7 +128,7 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
     logActivity({
       type: 'task',
       actorName: currentUser.name,
-      actorInitials: currentUser.name.slice(0, 2).toUpperCase(),
+      actorInitials: personInitials(currentUser.name),
       tint: 'muted',
       text: `Deleted ad-hoc task “${task.description}”`,
       subline: client ? `${client.code} · ${client.name}` : task.clientCode,

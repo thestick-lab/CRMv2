@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
 import type { ActivityEvent } from '@/context/PracticeStoreContext';
-import { initialsFor } from '@/lib/initials';
+import { entityInitials } from '@/lib/initials';
 import {
   buildClientTimeline,
   buildMissingInformation,
@@ -63,8 +63,8 @@ describe('client record derived data', () => {
   });
 
   it('derives initials for the avatar tile', () => {
-    expect(initialsFor('Muse 1399')).toBe('M');
-    expect(initialsFor('A & L Contracting')).toBe('AL');
+    expect(entityInitials('Muse 1399')).toBe('M');
+    expect(entityInitials('A & L Contracting')).toBe('AL');
   });
 
   it('builds a client-scoped timeline newest first', () => {

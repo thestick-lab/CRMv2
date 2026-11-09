@@ -4,6 +4,7 @@ import { ChevronRight, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { can } from '@/lib/permissions';
+import { personInitials } from '@/lib/initials';
 
 export interface UserPopoverProps {
   collapsed?: boolean;
@@ -15,7 +16,7 @@ export function UserPopover({ collapsed = false, onNavigateSettings, defaultOpen
   const [open, setOpen] = React.useState(defaultOpen);
   const { currentUser, logout, permissions } = usePracticeStore();
 
-  const initials = currentUser.name.slice(0, 2).toUpperCase();
+  const initials = personInitials(currentUser.name);
 
   const handleOpenProfile = () => {
     setOpen(false);

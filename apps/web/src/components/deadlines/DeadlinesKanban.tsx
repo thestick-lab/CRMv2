@@ -16,6 +16,7 @@ import {
   type WorkflowStatus,
 } from '@/lib/workflow';
 import { AvatarChip, PriorityPill, type PriorityLevel } from '@/components/ui/list-primitives';
+import { personInitials } from '@/lib/initials';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Calendar, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -515,7 +516,7 @@ export function DeadlinesKanban({
       logActivity({
         type: 'task',
         actorName: currentUser.name,
-        actorInitials: currentUser.name.slice(0, 2).toUpperCase(),
+        actorInitials: personInitials(currentUser.name),
         tint: 'muted',
         text: `Moved ad-hoc task “${card.adhoc.description}” to ${targetStatus}`,
         subline: `${card.clientCode} · ${card.clientName}`,
@@ -605,16 +606,6 @@ export function DeadlinesKanban({
 
 const AVATAR_TINTS = ['crimson', 'amber', 'muted'] as const;
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: string }) {
   const blocked = Boolean(card.blockedReason);
   const overdue = Boolean(card.due && card.due < asOfDate);
@@ -684,7 +675,7 @@ function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: s
           ) : card.needsPartnerReview ? (
             <ShieldCheck className="h-3 w-3 text-amber-500" />
           ) : null}
-          <AvatarChip initials={initials(card.staffName)} tint={tint} />
+          <AvatarChip initials={personInitials(card.staffName)} tint={tint} />
         </span>
       </div>
 

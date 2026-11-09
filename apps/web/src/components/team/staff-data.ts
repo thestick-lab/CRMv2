@@ -1,7 +1,7 @@
 import type { StaffMember } from 'fdoncall-practice/domain/types';
 import type { ISODate } from 'fdoncall-practice/domain/dates';
 import type { PracticeUser } from '@/context/PracticeStoreContext';
-import { initialsFor } from '@/lib/initials';
+import { personInitials } from '@/lib/initials';
 
 /* ---------------------------------------------------------------------------
  * Staff register data (Team view): a dense, HR-style view of the practice
@@ -84,7 +84,7 @@ export function staffRows(staff: StaffMember[], users: PracticeUser[]): StaffRow
     return {
       id: member.id,
       name: member.name,
-      initials: initialsFor(member.name),
+      initials: personInitials(member.name),
       role: user?.role ?? member.role,
       kind: member.kind,
       email: user?.email,

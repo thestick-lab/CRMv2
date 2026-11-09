@@ -121,6 +121,7 @@ function StaffProfile({ row, onBack }: { row: StaffRow; onBack: () => void }) {
         }
         tabs={STAFF_TABS}
         tabsLabel="Staff record sections"
+        avatar="person"
         activeTab={activeTab}
         onTab={setActiveTab}
       >

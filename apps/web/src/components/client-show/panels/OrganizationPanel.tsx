@@ -3,7 +3,7 @@ import type { ClientContact } from 'fdoncall-practice/domain/types';
 import { Building2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CardHeaderWithLink } from '@/components/ui/list-primitives';
-import { initialsFor } from '@/lib/initials';
+import { personInitials } from '@/lib/initials';
 
 export interface OrganizationPanelProps {
   entityType: string;
@@ -113,7 +113,7 @@ export function OrganizationPanel({
           {visibleContacts.map((contact) => (
             <li key={contact.id} className="flex items-start gap-2">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground">
-                {initialsFor(contact.name)}
+                {personInitials(contact.name)}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium text-foreground">{contact.name}</p>

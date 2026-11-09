@@ -23,6 +23,7 @@ import {
 } from '@/lib/integrations/xero';
 import { cn } from '@/lib/utils';
 import { southAfricaDay } from '@/lib/dates';
+import { personInitials } from '@/lib/initials';
 import { can } from '@/lib/permissions';
 import {
   billingMonthRange,
@@ -82,15 +83,6 @@ function parseAmount(raw: string): number | null {
   if (raw.trim() === '' || raw === '-' || raw === '-.') return null;
   const value = Number(raw);
   return Number.isFinite(value) ? value : null;
-}
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 /**
@@ -224,7 +216,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
       type: 'invoice',
       invoiceId: draftInvoice.id,
       actorName: currentUser.name,
-      actorInitials: initials(currentUser.name),
+      actorInitials: personInitials(currentUser.name),
       tint: 'crimson',
       text,
       subline,

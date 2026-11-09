@@ -1,19 +1,10 @@
 import { ArrowRight } from 'lucide-react';
+import { entityInitials } from '@/lib/initials';
 import type { HomeBanner } from './home-logic';
 
 export interface EngagementBannerProps {
   banner: HomeBanner;
   onOpenClient: (clientCode: string) => void;
-}
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase();
 }
 
 /**
@@ -32,7 +23,7 @@ export function EngagementBanner({ banner, onOpenClient }: EngagementBannerProps
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#c4161c] font-mono text-sm font-semibold text-white"
             aria-hidden="true"
           >
-            {isClient ? initials(banner.clientName) : 'FO'}
+            {isClient ? entityInitials(banner.clientName) : 'FO'}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

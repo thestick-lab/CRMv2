@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { can, isAssignedTo } from '@/lib/permissions';
 import { StatutoryActionForm } from './StatutoryActionForm';
 import { formatElapsed, useTimer } from '@/components/time/timer-context';
+import { personInitials } from '@/lib/initials';
 
 export interface TaskDetailPanelProps {
   task: PracticeTaskItem | null;
@@ -82,12 +83,7 @@ export function TaskDetailPanel({
     logActivity({
       type: 'task',
       actorName: currentUser.name,
-      actorInitials: currentUser.name
-        .split(/\s+/)
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase(),
+      actorInitials: personInitials(currentUser.name),
       tint: 'muted',
       text: `Commented: ${text}`,
       subline: `${task.clientCode} · ${task.service} ${task.period}`,

@@ -11,6 +11,7 @@ import { servicesFromEstimate, type EstimateInput } from 'fdoncall-practice/doma
 import { endOfMonth, todayInSouthAfrica, yearOf, type ISODate } from 'fdoncall-practice/domain/dates';
 import type { WorkflowStatus } from '@/lib/workflow';
 import { formatHours } from '@/lib/billing';
+import { personInitials } from '@/lib/initials';
 import { signInWithCredentials } from '@/lib/auth-client';
 import {
   validatePermissionChange,
@@ -445,16 +446,6 @@ function lastClosedFinancialYear(yearEndMonth: number, asOf: ISODate): number {
   return year;
 }
 
-function initialsFromName(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 /**
  * Turn a signed quote into the client record it was quoted for. The code is
  * derived from the prospect name, the entity fields come from the prospect and
@@ -782,15 +773,6 @@ export type PracticeAction =
   | { type: 'RESET_DATA' }
   | { type: 'LOAD_STATE'; payload: PracticeState };
 
-function activityInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
 function permissionActivity(
   actorName: string,
   text: string,
@@ -802,7 +784,7 @@ function permissionActivity(
     id: `activity-permission-${Date.parse(at)}-${seq}`,
     type: 'permission',
     actorName,
-    actorInitials: activityInitials(actorName),
+    actorInitials: personInitials(actorName),
     tint: 'amber',
     text,
     subline,
@@ -905,7 +887,7 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
         payload: {
           type: 'client',
           actorName: state.currentUser.name,
-          actorInitials: initialsFromName(state.currentUser.name),
+          actorInitials: personInitials(state.currentUser.name),
           tint: 'crimson',
           text,
           subline: `${code} · ${quote.number}`,
@@ -951,7 +933,7 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
         payload: {
           type: 'time',
           actorName: state.currentUser.name,
-          actorInitials: initialsFromName(state.currentUser.name),
+          actorInitials: personInitials(state.currentUser.name),
           tint: 'muted',
           text: `Logged ${formatHours(entry.roundedMinutes)} — ${entry.description}`,
           subline: entry.serviceCode

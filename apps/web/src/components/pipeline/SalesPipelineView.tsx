@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { KanbanBoard, type KanbanColumn, type KanbanTone } from '@/components/kanban/KanbanBoard';
 import { DonutChart } from '@/components/analytics/analytics-charts';
 import { QuoteBuilderView } from '@/components/quote/QuoteBuilderView';
+import { personInitials } from '@/lib/initials';
 import { formatZar } from '@/components/quote/estimate-form';
 import { can } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
@@ -159,13 +160,7 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
           monthlyFee: value.monthly,
           annualValue: value.annual,
           ownerName,
-          ownerInitials: ownerName
-            .split(/\s+/)
-            .filter(Boolean)
-            .map((part) => part[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase(),
+          ownerInitials: personInitials(ownerName),
           ownerTint: OWNER_TINTS[Math.max(ownerIndex, 0) % OWNER_TINTS.length],
           ageDays: ageDays(quote, today),
           nextStep: quote.nextStep,
@@ -255,13 +250,7 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
       type: 'quote',
       quoteId: quote.id,
       actorName: currentUser.name,
-      actorInitials: currentUser.name
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase(),
+      actorInitials: personInitials(currentUser.name),
       tint: 'muted',
       text: `Quote ${quote.number} moved to ${to}`,
       subline: `${name} · ${formatZar(quoteValue(quote).annual, 0)} incl. 15% VAT`,

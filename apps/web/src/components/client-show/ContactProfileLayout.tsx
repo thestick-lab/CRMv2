@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { initialsFor } from '@/lib/initials';
+import { entityInitials, personInitials } from '@/lib/initials';
 
 /* ---------------------------------------------------------------------------
  * Shared company/person profile shell (crm-contact-profile anatomy): an
@@ -38,6 +38,8 @@ export interface ContactProfileLayoutProps {
   onTab: (id: string) => void;
   /** Accessible label for the tab rail; defaults to the client record wording. */
   tabsLabel?: string;
+  /** What the identity avatar represents: a company/client tile or a person. */
+  avatar?: 'entity' | 'person';
   children: React.ReactNode;
 }
 
@@ -56,6 +58,7 @@ export function ContactProfileLayout({
   activeTab,
   onTab,
   tabsLabel = 'Client record sections',
+  avatar = 'entity',
   children,
 }: ContactProfileLayoutProps) {
   return (
@@ -67,7 +70,7 @@ export function ContactProfileLayout({
               aria-hidden="true"
               className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#c4161c]/15 bg-[#c4161c]/[0.08] font-serif text-xl leading-none text-[#c4161c] dark:text-[#f87171]"
             >
-              {initialsFor(identity.name)}
+              {avatar === 'person' ? personInitials(identity.name) : entityInitials(identity.name)}
             </div>
 
             <div className="min-w-0 space-y-1.5">

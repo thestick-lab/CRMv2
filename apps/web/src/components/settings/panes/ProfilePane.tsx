@@ -3,6 +3,7 @@ import { Download, RotateCcw, ShieldCheck, MapPin, AlertTriangle } from 'lucide-
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { personInitials } from '@/lib/initials';
 
 export function ProfilePane() {
   const { currentUser, clients, staff, quotes, exportData, resetData } = usePracticeStore();
@@ -44,7 +45,7 @@ export function ProfilePane() {
       <div className="p-4 rounded-xl border border-border bg-card space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-mono font-bold text-base">
-            {currentUser.name.slice(0, 2).toUpperCase()}
+            {personInitials(currentUser.name)}
           </div>
           <div>
             <div className="text-sm font-semibold text-foreground flex items-center gap-2">

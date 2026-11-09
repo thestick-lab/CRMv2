@@ -511,7 +511,7 @@ export function TimeReport() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-foreground">Billable vs non-billable</h2>
           </div>
-          {empty ? (
+          {empty || kpis.total === 0 ? (
             <EmptyStateCard
               icon={PieChart}
               title="No split to show"

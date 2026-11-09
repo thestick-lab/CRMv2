@@ -18,6 +18,7 @@ import {
   QUOTE_STAGE_ORDER,
 } from '@/lib/quote-lifecycle';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
+import { personInitials } from '@/lib/initials';
 import {
   DocumensoDispatchDialog,
 } from '@/components/integrations/DocumensoDispatchDialog';
@@ -366,12 +367,7 @@ export function QuoteBuilderView({
       type: 'quote',
       quoteId,
       actorName: currentUser.name,
-      actorInitials: currentUser.name
-        .split(/\s+/)
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase(),
+      actorInitials: personInitials(currentUser.name),
       tint: 'crimson',
       text,
       subline,
