@@ -170,7 +170,7 @@ describe('buildAuditEntries', () => {
     const reset = entries.find((entry) => entry.id === 'audit-activity-activity-permission-reset');
     expect(reset).toBeDefined();
     expect(reset!.action).toBe('Reset permissions');
-    expect(reset!.detail).toContain('all roles');
+    expect(reset!.detail).toBe('Roles & Permissions · all roles');
   });
 
   it('resolves a quote stage change to the quoted client', () => {
@@ -188,7 +188,7 @@ describe('buildAuditEntries', () => {
           at: '2026-11-07T08:00:00+02:00',
         },
       ],
-      quotes: [{ number: 'Q-9', clientCode: 'KFE-100' }],
+      quotes: [{ id: 'quote-9', number: 'Q-9', clientCode: 'KFE-100' }],
     });
 
     const entry = entries.find((item) => item.id === 'audit-activity-activity-quote-stage');
@@ -213,13 +213,52 @@ describe('buildAuditEntries', () => {
           at: '2026-11-07T09:00:00+02:00',
         },
       ],
-      invoices: [{ number: 'INV-1', clientCode: 'MUS-875' }],
+      invoices: [{ id: 'invoice-1', number: 'INV-1', clientCode: 'MUS-875' }],
     });
 
     const entry = entries.find((item) => item.id === 'audit-activity-activity-invoice-created');
     expect(entry).toBeDefined();
     expect(entry!.action).toBe('Invoice created');
     expect(entry!.clientCode).toBe('MUS-875');
+  });
+
+  it('joins a quote or invoice to its client by record id even without the number', () => {
+    const entries = buildAuditEntries({
+      ...source,
+      activity: [
+        {
+          id: 'activity-quote-id',
+          type: 'quote',
+          quoteId: 'quote-9',
+          actorName: 'Erik',
+          actorInitials: 'E',
+          tint: 'crimson',
+          text: 'Stage moved after client call',
+          subline: 'Kouga Fynbos Exports',
+          at: '2026-11-07T08:10:00+02:00',
+        },
+        {
+          id: 'activity-invoice-id',
+          type: 'invoice',
+          invoiceId: 'invoice-1',
+          actorName: 'Erik',
+          actorInitials: 'E',
+          tint: 'crimson',
+          text: 'Marked paid',
+          subline: 'R4,125 received',
+          at: '2026-11-07T08:20:00+02:00',
+        },
+      ],
+      quotes: [{ id: 'quote-9', number: 'Q-9', clientCode: 'KFE-100' }],
+      invoices: [{ id: 'invoice-1', number: 'INV-1', clientCode: 'MUS-875' }],
+    });
+
+    expect(entries.find((item) => item.id === 'audit-activity-activity-quote-id')?.clientCode).toBe(
+      'KFE-100'
+    );
+    expect(
+      entries.find((item) => item.id === 'audit-activity-activity-invoice-id')?.clientCode
+    ).toBe('MUS-875');
   });
 
   it('keeps one row when a sign-off writes both an override and a submission event', () => {
@@ -355,7 +394,7 @@ describe('buildClientAuditEntries', () => {
         at: '2026-11-04T12:00:00+02:00',
       },
     ],
-    invoices: [{ number: 'INV-1', clientCode: 'MUS-875' }],
+    invoices: [{ id: 'invoice-1', number: 'INV-1', clientCode: 'MUS-875' }],
   };
 
   it('returns only the events that touch one client', () => {

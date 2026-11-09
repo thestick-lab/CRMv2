@@ -253,6 +253,7 @@ export function SalesPipelineView({ onOpenInvoice, onCreateInvoice }: SalesPipel
     });
     logActivity({
       type: 'quote',
+      quoteId: quote.id,
       actorName: currentUser.name,
       actorInitials: currentUser.name
         .split(/\s+/)

@@ -123,7 +123,7 @@ describe('client record derived data', () => {
     ];
 
     const timeline = buildClientTimeline(muse, trail, {}, {
-      invoices: [{ number: 'INV-1', clientCode: 'MUS-875' }],
+      invoices: [{ id: 'invoice-1', number: 'INV-1', clientCode: 'MUS-875' }],
     });
 
     expect(timeline.map((entry) => entry.action)).toEqual(

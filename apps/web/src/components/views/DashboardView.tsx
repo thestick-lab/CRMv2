@@ -10,6 +10,7 @@ import { StatutoryActionModal } from '@/components/deadlines/StatutoryActionModa
 import { buildEstimateForClient } from '@/components/client-show/tabs/EstimateTab';
 import { downloadExcelQuote } from '@/lib/export-actions';
 import { canSignOff, can, isAssignedTo } from '@/lib/permissions';
+import { submissionActivity } from '@/lib/activity-events';
 import { Button } from '@/components/ui/button';
 import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { EngagementBanner } from '@/components/home/EngagementBanner';
@@ -50,6 +51,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     division,
     rates,
     updateTaskStatus,
+    logActivity,
     permissions,
   } = usePracticeStore();
   const today = todayInSouthAfrica();
@@ -112,12 +114,17 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
       );
       return;
     }
-    updateTaskStatus(task.id, 'Submitted', {
-      submissionDate: today,
-      service: task.service,
-      clientName: task.clientName,
-      period: task.period,
-    });
+    if (taskStatusOverrides[task.id]?.status !== 'Submitted') {
+      updateTaskStatus(task.id, 'Submitted', {
+        submissionDate: today,
+        service: task.service,
+        clientName: task.clientName,
+        period: task.period,
+      });
+      // The quick checkbox writes no signed override, so only the activity
+      // event can put the filing in the governance trail.
+      logActivity(submissionActivity(task, currentUser.name));
+    }
   };
 
   const handleExportPartnerSummary = () => {

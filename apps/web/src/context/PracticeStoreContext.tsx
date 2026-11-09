@@ -250,6 +250,10 @@ export interface ActivityEvent {
    * event into the task's status override instead of logging the act twice.
    */
   taskId?: string;
+  /** Quote record the event describes; the audit trail joins it to the client. */
+  quoteId?: string;
+  /** Invoice record the event describes; the audit trail joins it to the client. */
+  invoiceId?: string;
 }
 
 export interface PracticeSequences {

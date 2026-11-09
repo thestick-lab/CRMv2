@@ -116,8 +116,8 @@ export interface ClientTimelineEntry {
 export interface ClientTimelineSource {
   clients?: Pick<Client, 'code' | 'name'>[];
   staff?: Pick<StaffMember, 'id' | 'name' | 'role'>[];
-  quotes?: Pick<Quote, 'number' | 'clientCode'>[];
-  invoices?: Pick<Invoice, 'number' | 'clientCode'>[];
+  quotes?: Pick<Quote, 'id' | 'number' | 'clientCode'>[];
+  invoices?: Pick<Invoice, 'id' | 'number' | 'clientCode'>[];
 }
 
 /**

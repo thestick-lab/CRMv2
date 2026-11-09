@@ -222,6 +222,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   const log = (text: string, subline: string) => {
     logActivity({
       type: 'invoice',
+      invoiceId: draftInvoice.id,
       actorName: currentUser.name,
       actorInitials: initials(currentUser.name),
       tint: 'crimson',

@@ -361,9 +361,10 @@ export function QuoteBuilderView({
     return quote;
   };
 
-  const logStage = (text: string, subline: string) => {
+  const logStage = (text: string, subline: string, quoteId: string) => {
     logActivity({
       type: 'quote',
+      quoteId,
       actorName: currentUser.name,
       actorInitials: currentUser.name
         .split(/\s+/)
@@ -411,7 +412,7 @@ export function QuoteBuilderView({
       setDocumensoOpen(true);
       return;
     }
-    persist(target);
+    const saved = persist(target);
     setStage(target);
     setFeedback({
       tone: 'success',
@@ -428,13 +429,14 @@ export function QuoteBuilderView({
       target === 'Quote Sent'
         ? `Quote ${number} sent to ${displayName || 'the client'}`
         : `Quote ${number} moved to ${target}`,
-      `${formatZar(estimate.annualInclVat)} incl. 15% VAT · ${displayName || 'New prospect'}`
+      `${formatZar(estimate.annualInclVat)} incl. 15% VAT · ${displayName || 'New prospect'}`,
+      saved.id
     );
   };
 
   const handleDispatched = (envelope: DocumensoEnvelope) => {
     const signatory = envelope.recipients[0]?.name ?? preparedFor ?? displayName;
-    persist('Signed', {
+    const signed = persist('Signed', {
       documensoEnvelopeId: envelope.envelopeId,
       signedBy: signatory,
       signedAt: envelope.sentAt,
@@ -445,7 +447,8 @@ export function QuoteBuilderView({
     setFeedback({ tone: 'success', text: `Quote ${number} signed by ${signatory}` });
     logStage(
       `Quote ${number} signed by ${signatory}`,
-      `Documenso ${envelope.envelopeId} · countersigned by ${partnerName}`
+      `Documenso ${envelope.envelopeId} · countersigned by ${partnerName}`,
+      signed.id
     );
   };
 

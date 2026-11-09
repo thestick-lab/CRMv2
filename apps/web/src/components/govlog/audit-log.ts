@@ -37,8 +37,8 @@ export interface AuditLogSource {
   taskStatusOverrides: Record<string, TaskStatusOverride>;
   activity?: ActivityEvent[];
   /** Stage/creation events name their quote but not always their client. */
-  quotes?: Pick<Quote, 'number' | 'clientCode'>[];
-  invoices?: Pick<Invoice, 'number' | 'clientCode'>[];
+  quotes?: Pick<Quote, 'id' | 'number' | 'clientCode'>[];
+  invoices?: Pick<Invoice, 'id' | 'number' | 'clientCode'>[];
 }
 
 /** Activity types mapped onto the actions shown in the log. */
@@ -184,17 +184,21 @@ function buildSubmissionEntries(source: AuditLogSource): KeyedAuditEntry[] {
       // Unsigned overrides are skipped by the sign-off builder but still hold
       // the filing identity and SARS reference for a non-gated submission.
       const override = event.taskId ? source.taskStatusOverrides[event.taskId] : undefined;
+      const clientCode = event.taskId
+        ? clientCodeFromTaskId(event.taskId)
+        : clientCodeFromSubline(event.subline);
+      const clientName = source.clients.find((client) => client.code === clientCode)?.name;
+      const detail = override?.sarsReference
+        ? `SARS reference ${override.sarsReference}`
+        : base.detail;
 
       return {
         ...base,
         subject:
           [override?.service, override?.period].filter(Boolean).join(' · ') || base.subject,
-        clientCode: event.taskId
-          ? clientCodeFromTaskId(event.taskId)
-          : clientCodeFromSubline(event.subline),
-        detail: override?.sarsReference
-          ? `SARS reference ${override.sarsReference}`
-          : base.detail,
+        clientCode,
+        // The client column already carries the name.
+        detail: detail === clientName ? undefined : detail,
         dedupeKey: event.taskId ? `submission:${event.taskId}` : undefined,
       };
     });
@@ -224,7 +228,7 @@ function buildPermissionEntries(source: AuditLogSource): KeyedAuditEntry[] {
         return {
           ...base,
           subject: 'Default permission matrix',
-          detail: [group, 'all roles'].filter(Boolean).join(' · '),
+          detail: [role, group].filter(Boolean).join(' · '),
         };
       }
 
@@ -241,8 +245,13 @@ function buildQuoteEntries(source: AuditLogSource): KeyedAuditEntry[] {
   return (source.activity ?? [])
     .filter((event) => event.type === 'quote')
     .map((event) => {
+      // The record id is authoritative; older events only name the number.
       const number = /\bQ-\d+\b/.exec(event.text)?.[0];
-      const quote = number ? source.quotes?.find((entry) => entry.number === number) : undefined;
+      const quote =
+        (event.quoteId
+          ? source.quotes?.find((entry) => entry.id === event.quoteId)
+          : undefined) ??
+        (number ? source.quotes?.find((entry) => entry.number === number) : undefined);
 
       return {
         ...entryFromActivity(source, event),
@@ -255,10 +264,13 @@ function buildInvoiceEntries(source: AuditLogSource): KeyedAuditEntry[] {
   return (source.activity ?? [])
     .filter((event) => event.type === 'invoice')
     .map((event) => {
+      // The record id is authoritative; older events only name the number.
       const number = /\bINV-\d+\b/.exec(event.text)?.[0];
-      const invoice = number
-        ? source.invoices?.find((entry) => entry.number === number)
-        : undefined;
+      const invoice =
+        (event.invoiceId
+          ? source.invoices?.find((entry) => entry.id === event.invoiceId)
+          : undefined) ??
+        (number ? source.invoices?.find((entry) => entry.number === number) : undefined);
 
       return {
         ...entryFromActivity(source, event),

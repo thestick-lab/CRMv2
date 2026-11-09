@@ -13,6 +13,7 @@ import {
 } from '@/lib/workflow';
 import { cn } from '@/lib/utils';
 import { can, isAssignedTo } from '@/lib/permissions';
+import { submissionActivity } from '@/lib/activity-events';
 
 export interface StatutoryActionFormProps {
   task: PracticeTaskItem;
@@ -130,22 +131,10 @@ export function StatutoryActionForm({
     // the partner gate, so no signed override records them. The submission
     // event is what puts them in the governance trail; for gated returns the
     // signed override is the richer row and the trail folds this one away.
-    if (status === 'Submitted') {
-      logActivity({
-        type: 'submission',
-        actorName: currentUser.name,
-        actorInitials: currentUser.name
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((part) => part[0])
-          .slice(0, 2)
-          .join('')
-          .toUpperCase(),
-        tint: 'crimson',
-        text: `Submitted ${task.service} · ${task.period}`,
-        subline: `${task.clientCode} · ${task.clientName}`,
-        taskId: task.id,
-      });
+    // Re-saving an already-submitted return updates the override in place and
+    // must not append a second event.
+    if (status === 'Submitted' && override?.status !== 'Submitted') {
+      logActivity(submissionActivity(task, currentUser.name));
     }
 
     onClose?.();
