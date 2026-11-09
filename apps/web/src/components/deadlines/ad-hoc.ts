@@ -42,10 +42,9 @@ export interface AdHocFilterOptions {
   asOfDate: string;
 }
 
-const HORIZON_DAYS: Record<AdHocFilterOptions['horizon'], number> = {
+const HORIZON_DAYS: Record<'30' | '90', number> = {
   '30': 30,
   '90': 90,
-  '365': 365,
 };
 
 /**
@@ -82,6 +81,9 @@ export function filterAdhocTasks(
 
     if (days === undefined) return true;
     if (days < 0) return true;
+    // "Full year" is the unfiltered view: `filterPracticeTasks` has no cutoff
+    // at 365 days either, so ad-hoc work stays consistent with statutory tasks.
+    if (options.horizon === '365') return true;
     return days <= HORIZON_DAYS[options.horizon];
   });
 }

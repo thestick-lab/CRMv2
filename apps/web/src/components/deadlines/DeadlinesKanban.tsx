@@ -656,7 +656,10 @@ function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: s
 
         <span className="flex items-center gap-1.5">
           {card.sarsReference ? (
-            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2
+              className="h-3 w-3 text-[#c4161c] dark:text-[#f87171]"
+              aria-label="SARS reference recorded"
+            />
           ) : card.needsPartnerReview ? (
             <ShieldCheck className="h-3 w-3 text-amber-500" />
           ) : null}

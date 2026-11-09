@@ -20,6 +20,7 @@ const tasks: AdHocTask[] = [
   task({ id: 'a-alc-undated', clientCode: 'ALC-610' }),
   task({ id: 'a-mus-overdue', clientCode: 'MUS-875', dueDate: '2026-10-20', assigneeId: 'wouter' }),
   task({ id: 'a-mus-far', clientCode: 'MUS-875', dueDate: '2027-06-30', assigneeId: 'wouter' }),
+  task({ id: 'a-beyond-year', clientCode: 'MUS-875', dueDate: '2028-01-31', assigneeId: 'wouter' }),
 ];
 
 const base = {
@@ -35,17 +36,17 @@ describe('ad-hoc board filters', () => {
       horizon: '365',
       clientCode: 'MUS-875',
     }).map((t) => t.id);
-    expect(ids).toEqual(['a-mus-overdue', 'a-mus-far']);
+    expect(ids).toEqual(['a-mus-overdue', 'a-mus-far', 'a-beyond-year']);
   });
 
   it('filters by assignee and hides ad-hoc work under a return-type filter', () => {
     expect(
       filterAdhocTasks(tasks, { ...base, horizon: '365', staffId: 'wouter' }).map((t) => t.id)
-    ).toEqual(['a-mus-overdue', 'a-mus-far']);
+    ).toEqual(['a-mus-overdue', 'a-mus-far', 'a-beyond-year']);
     expect(filterAdhocTasks(tasks, { ...base, serviceCode: 'VAT201' })).toEqual([]);
     expect(
       filterAdhocTasks(tasks, { ...base, horizon: '365', serviceCode: 'all' })
-    ).toHaveLength(4);
+    ).toHaveLength(5);
   });
 
   it('keeps undated ad-hoc work visible in every horizon and buckets it as missing', () => {
@@ -56,7 +57,7 @@ describe('ad-hoc board filters', () => {
       expect(ids).toContain('a-alc-dated');
       expect(ids).toContain('a-mus-overdue');
     }
-    // The far-dated task only enters at the 365-day horizon.
+    // Dated work only enters once it falls inside the horizon.
     expect(
       filterAdhocTasks(tasks, { ...base, horizon: '30' }).map((t) => t.id)
     ).not.toContain('a-mus-far');
@@ -67,6 +68,14 @@ describe('ad-hoc board filters', () => {
     expect(
       filterAdhocTasks(tasks, { ...base, kpiFilter: 'missing' }).map((t) => t.id)
     ).toEqual(['a-alc-undated']);
+  });
+
+  it('keeps ad-hoc work beyond 365 days visible under Full year, matching statutory tasks', () => {
+    const fullYear = filterAdhocTasks(tasks, { ...base, horizon: '365' }).map((t) => t.id);
+    expect(fullYear).toContain('a-beyond-year');
+    expect(
+      filterAdhocTasks(tasks, { ...base, horizon: '90' }).map((t) => t.id)
+    ).not.toContain('a-beyond-year');
   });
 
   it('applies KPI date ranges to ad-hoc due dates', () => {
