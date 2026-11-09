@@ -604,62 +604,65 @@ export const INITIAL_INTEGRATION_CONFIG: IntegrationConfig = {
   xeroTenantId: '',
 };
 
+/** A seed event whose avatar initials always follow the person convention. */
+function activitySeed(event: Omit<ActivityEvent, 'actorInitials'>): ActivityEvent {
+  return { ...event, actorInitials: personInitials(event.actorName) };
+}
+
 /**
  * Historical team-activity feed seeded onto Home's Team Activity card.
  * The store itself starts with an empty `activity` array so persisted
- * practice state always wins; the Home view appends these seeds.
+ * practice state always wins; the Home view appends these seeds. Each event's
+ * `actorInitials` is derived, so a seed can never disagree with the avatar
+ * convention used by the rest of the app.
  */
+
 export const ACTIVITY_SEEDS: ActivityEvent[] = [
-  {
+  activitySeed({
     id: 'activity-seed-vat201',
     type: 'submission',
     actorName: 'Erik',
-    actorInitials: 'E',
     tint: 'crimson',
     text: 'Submitted VAT201 for Kheper SA t/a Silki',
     subline: 'KHE-615 · VAT category C',
     at: '2026-11-06T09:12:00+02:00',
-  },
-  {
+  }),
+  activitySeed({
     id: 'activity-seed-review',
     type: 'task',
     actorName: 'Lungani',
-    actorInitials: 'L',
     tint: 'amber',
     text: 'Sent year-end workpapers to partner review',
     subline: 'MUS-875 · Muse 1399',
     at: '2026-11-05T15:40:00+02:00',
-  },
-  {
+  }),
+  activitySeed({
     id: 'activity-seed-quote',
     type: 'quote',
     actorName: 'Erik',
-    actorInitials: 'E',
     tint: 'crimson',
     text: 'Sent fee proposal to Stellenbosch BioTech Labs',
     subline: 'Prospect · 12-month statutory engagement',
     at: '2026-11-04T11:05:00+02:00',
-  },
-  {
+  }),
+  activitySeed({
     id: 'activity-seed-time',
     type: 'time',
     actorName: 'Nikita',
-    actorInitials: 'N',
     tint: 'muted',
     text: 'Logged 2.5h on EMP501 reconciliation',
     subline: 'KHE-615 · Kheper SA t/a Silki',
     at: '2026-11-04T08:30:00+02:00',
-  },
-  {
+  }),
+  activitySeed({
     id: 'activity-seed-file',
     type: 'file',
     actorName: 'Erik',
-    actorInitials: 'E',
     tint: 'muted',
     text: 'Added signed engagement letter to the vault',
     subline: 'ALC-610 · A & L Contracting',
     at: '2026-11-03T16:22:00+02:00',
-  },
+  }),
 ];
 
 export const STORAGE_KEY = 'crmv2_practice_state';

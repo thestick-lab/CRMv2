@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { CLIENTS, STAFF } from 'fdoncall-practice/data/seed';
 import { defaultServices, generateTasks } from 'fdoncall-practice/domain/rules';
 import { servicesFromEstimate } from 'fdoncall-practice/domain/estimate';
+import { personInitials } from '@/lib/initials';
 import {
   ACTIVITY_SEEDS,
   INITIAL_LEADS,
@@ -593,6 +594,22 @@ describe('PracticeStore foundation fields and legacy-state load', () => {
       }
       expect(event.subline).not.toMatch(/SARS-|env-/);
     }
+  });
+
+  it('stamps every activity seed with the person avatar initials for its actor', () => {
+    // Home's Team Activity card and the Analytics feed render `actorInitials`
+    // verbatim, so a hardcoded seed letter would disagree with the topbar and
+    // the Team register. Derive-and-pin: single-word staff read ER / LU / NI.
+    for (const event of ACTIVITY_SEEDS) {
+      expect(event.actorInitials).toBe(personInitials(event.actorName));
+    }
+    expect(ACTIVITY_SEEDS.map((event) => event.actorInitials)).toEqual([
+      'ER',
+      'LU',
+      'ER',
+      'NI',
+      'ER',
+    ]);
   });
 });
 
