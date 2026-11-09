@@ -1,11 +1,31 @@
 import * as React from 'react';
-import type { Client } from 'fdoncall-practice/domain/types';
-import { MONTHS_LONG } from 'fdoncall-practice/domain/dates';
+import type { Client, ClientContact } from 'fdoncall-practice/domain/types';
+import { MONTHS_LONG, todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
 import { STAFF, GROUPS } from 'fdoncall-practice/data/seed';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Building2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { StatutoryActionModal } from '@/components/deadlines/StatutoryActionModal';
+import type { PracticeTaskItem } from '@/components/deadlines/practice-tasks';
+import {
+  buildMissingInformation,
+  buildClientTimeline,
+  clientTags,
+  nextOpenTask,
+  withSeededActivity,
+  type MissingInformationItem,
+} from '../client-record-data';
+import {
+  ContactDetailsPanel,
+  type ContactChannel,
+} from '../panels/ContactDetailsPanel';
+import { MissingInformationPanel } from '../panels/MissingInformationPanel';
+import { OrganizationPanel } from '../panels/OrganizationPanel';
+import { RelationshipHistoryPanel } from '../panels/RelationshipHistoryPanel';
+import { NextActionPanel } from '../panels/NextActionPanel';
+import { InternalNotesPanel } from '../panels/InternalNotesPanel';
+import { TagsPanel } from '../panels/TagsPanel';
 
 export interface ProfileDetails {
   entityType: string;
@@ -46,7 +66,7 @@ export function buildProfileDetails(client: Client): ProfileDetails {
 
   const turnoverLabel = client.turnover
     ? `R ${client.turnover.toLocaleString('en-ZA')} (${client.turnoverSource ?? 'Estimate'})`
-    : 'Turnover Not Recorded';
+    : '—';
 
   const staff = STAFF.find((s) => s.id === client.staffId);
   const partnerLabel = staff ? `${staff.name} (${staff.role})` : 'Practice Pool';
@@ -79,19 +99,52 @@ export function buildProfileDetails(client: Client): ProfileDetails {
   };
 }
 
-export function StatutoryProfileTab({ client }: { client: Client }) {
-  const { updateClient } = usePracticeStore();
+export interface StatutoryProfileTabProps {
+  client: Client;
+  /** Jump to the Organization tab (used by the Missing Information Add links). */
+  onOpenOrganization?: () => void;
+  /** Jump to the Tasks tab from the Next Action panel. */
+  onOpenTasks?: () => void;
+}
+
+export function StatutoryProfileTab({
+  client,
+  onOpenOrganization,
+  onOpenTasks,
+}: StatutoryProfileTabProps) {
+  const { clients, updateClient, taskStatusOverrides, activity } = usePracticeStore();
+  const asOf = todayInSouthAfrica();
 
   const isCompany = client.entityType === 'Company' || client.entityType === 'Close corporation';
 
   const [turnoverInput, setTurnoverInput] = React.useState(client.turnover?.toString() || '');
   const [incDate, setIncDate] = React.useState(client.incorporationDate || '');
+  const [editingChannel, setEditingChannel] = React.useState<ContactChannel | null>(null);
+  const [activeTask, setActiveTask] = React.useState<PracticeTaskItem | null>(null);
 
   // Keep local input in sync with store
   React.useEffect(() => {
     setTurnoverInput(client.turnover?.toString() || '');
     setIncDate(client.incorporationDate || '');
   }, [client]);
+
+  const details = React.useMemo(() => buildProfileDetails(client), [client]);
+  const missing = React.useMemo(() => buildMissingInformation(client), [client]);
+  const tags = React.useMemo(() => clientTags(client), [client]);
+  const timeline = React.useMemo(
+    () => buildClientTimeline(client, withSeededActivity(activity), taskStatusOverrides),
+    [client, activity, taskStatusOverrides]
+  );
+  const nextTask = React.useMemo(
+    () => nextOpenTask(client, taskStatusOverrides, asOf),
+    [client, taskStatusOverrides, asOf]
+  );
+  const groupMembers = React.useMemo(() => {
+    if (!client.groupId) return [];
+    return clients
+      .filter((c) => c.groupId === client.groupId && c.code !== client.code)
+      .map((c) => ({ code: c.code, name: c.name }));
+  }, [clients, client]);
 
   const handleYearEndChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updateClient(client.code, {
@@ -131,6 +184,41 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
       efilingProfile: checked ? 'firm' : 'client',
       efilingTransferredOn: checked ? new Date().toISOString().split('T')[0] : undefined,
     });
+  };
+
+  const handleChannelSave = (channel: ContactChannel, value: string) => {
+    updateClient(client.code, { [channel]: value || undefined });
+  };
+
+  const handleMissingAdd = (item: MissingInformationItem) => {
+    if (item.kind === 'contact') {
+      setEditingChannel(item.id as ContactChannel);
+      return;
+    }
+    if (item.kind === 'organization') {
+      onOpenOrganization?.();
+      return;
+    }
+    const control = document.getElementById(item.id);
+    if (control) {
+      control.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      (control as HTMLElement).focus();
+    }
+  };
+
+  const handleContactsChange = (contacts: ClientContact[]) => {
+    updateClient(client.code, { contacts });
+  };
+
+  const handleNotesSave = (notes: string | undefined) => {
+    updateClient(client.code, { notes });
+  };
+
+  const handleManageTags = () => {
+    const card = document.getElementById('statutory-services');
+    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const firstCheckbox = card?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    firstCheckbox?.focus();
   };
 
   // Statutory Services Checklist
@@ -187,31 +275,46 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-xs">
-      {/* Left Column: Editable Details Form */}
-      <div className="lg:col-span-6 space-y-4">
-        <div className="p-4 rounded-xl border border-border bg-card space-y-4 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-border/70">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              Statutory Profile Details
-            </h2>
+    <div className="grid grid-cols-1 items-start gap-4 text-xs lg:grid-cols-3">
+      {/* Left column — contact channels and what is still missing */}
+      <div className="space-y-4">
+        <ContactDetailsPanel
+          channels={{
+            email: client.email,
+            phone: client.phone,
+            location: client.location,
+            timezone: client.timezone,
+          }}
+          editing={editingChannel}
+          onEditingChange={setEditingChannel}
+          onSave={handleChannelSave}
+          details={details}
+        />
+
+        <MissingInformationPanel items={missing} onAdd={handleMissingAdd} />
+
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Building2 className="h-3.5 w-3.5 text-[#c4161c]" />
+              Statutory profile
+            </h3>
             <Badge variant="outline" className="font-mono text-[10px]">
               {client.code}
             </Badge>
           </div>
 
-          <div className="space-y-3.5">
+          <div className="space-y-3.5 px-4 py-3">
             {/* Financial Year End */}
             <div>
-              <label htmlFor="yearEndMonth" className="font-medium text-foreground block mb-1">
+              <label htmlFor="yearEndMonth" className="mb-1 block font-medium text-foreground">
                 Financial Year End
               </label>
               <select
                 id="yearEndMonth"
                 value={client.yearEndMonth}
                 onChange={handleYearEndChange}
-                className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-foreground"
+                className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-foreground"
               >
                 {MONTHS_LONG.map((m, idx) => (
                   <option key={m} value={idx + 1}>
@@ -220,7 +323,7 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                 ))}
               </select>
               {client.yearEndAssumed && (
-                <span className="text-[10px] text-amber-500 block mt-0.5 font-mono">
+                <span className="mt-0.5 block font-mono text-[10px] text-amber-500">
                   * Assumed February: unconfirmed by client CIPC incorporation papers
                 </span>
               )}
@@ -229,7 +332,7 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
             {/* Incorporation Date */}
             {isCompany && (
               <div>
-                <label htmlFor="incorporationDate" className="font-medium text-foreground block mb-1">
+                <label htmlFor="incorporationDate" className="mb-1 block font-medium text-foreground">
                   Incorporation Date
                 </label>
                 <input
@@ -238,10 +341,10 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                   value={incDate}
                   onChange={(e) => setIncDate(e.target.value)}
                   onBlur={handleIncDateBlur}
-                  className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-mono"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 font-mono text-foreground"
                 />
                 {!client.incorporationDate && (
-                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
                     Required to determine exact CIPC Annual Return statutory filing window
                   </span>
                 )}
@@ -250,11 +353,11 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
 
             {/* Turnover Input */}
             <div>
-              <label htmlFor="turnover" className="font-medium text-foreground block mb-1">
+              <label htmlFor="turnover" className="mb-1 block font-medium text-foreground">
                 Annual Turnover (Last Known)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-muted-foreground">
                   R
                 </span>
                 <input
@@ -264,19 +367,19 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                   value={turnoverInput}
                   onChange={(e) => setTurnoverInput(e.target.value)}
                   onBlur={handleTurnoverBlur}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-mono"
+                  className="w-full rounded-lg border border-border bg-background py-1.5 pl-8 pr-3 font-mono text-foreground"
                 />
               </div>
-              <span className="text-[10px] text-muted-foreground block mt-0.5 font-mono">
+              <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
                 Determines CIPC filing fee band and accounting turnover tier
               </span>
             </div>
 
             {/* VAT Switch */}
-            <div className="p-3 rounded-lg border border-border/60 bg-muted/30 flex items-center justify-between">
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 p-3">
               <div>
                 <div className="font-medium text-foreground">VAT Registration</div>
-                <div className="text-[11px] text-muted-foreground font-mono">
+                <div className="font-mono text-[11px] text-muted-foreground">
                   {client.vatCategory ? `Category ${client.vatCategory} (Registered)` : 'Not Registered'}
                 </div>
               </div>
@@ -286,13 +389,13 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                 aria-checked={Boolean(client.vatCategory)}
                 onClick={() => handleVatToggle(!client.vatCategory)}
                 className={cn(
-                  'w-10 h-5 rounded-full transition-colors relative flex items-center p-0.5',
+                  'flex h-5 w-10 items-center rounded-full p-0.5 transition-colors',
                   client.vatCategory ? 'bg-primary' : 'bg-muted-foreground/30'
                 )}
               >
                 <div
                   className={cn(
-                    'w-4 h-4 rounded-full bg-white shadow-xs transition-transform',
+                    'h-4 w-4 rounded-full bg-white shadow-xs transition-transform',
                     client.vatCategory ? 'translate-x-5' : 'translate-x-0'
                   )}
                 />
@@ -300,10 +403,10 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
             </div>
 
             {/* Payroll Switch */}
-            <div className="p-3 rounded-lg border border-border/60 bg-muted/30 flex items-center justify-between">
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 p-3">
               <div>
                 <div className="font-medium text-foreground">Payroll Processing</div>
-                <div className="text-[11px] text-muted-foreground font-mono">
+                <div className="font-mono text-[11px] text-muted-foreground">
                   {client.payroll ? `Active (${client.employeeCount ?? 8} employees)` : 'No Payroll'}
                 </div>
               </div>
@@ -313,13 +416,13 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                 aria-checked={Boolean(client.payroll)}
                 onClick={() => handlePayrollToggle(!client.payroll)}
                 className={cn(
-                  'w-10 h-5 rounded-full transition-colors relative flex items-center p-0.5',
+                  'flex h-5 w-10 items-center rounded-full p-0.5 transition-colors',
                   client.payroll ? 'bg-primary' : 'bg-muted-foreground/30'
                 )}
               >
                 <div
                   className={cn(
-                    'w-4 h-4 rounded-full bg-white shadow-xs transition-transform',
+                    'h-4 w-4 rounded-full bg-white shadow-xs transition-transform',
                     client.payroll ? 'translate-x-5' : 'translate-x-0'
                   )}
                 />
@@ -327,10 +430,10 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
             </div>
 
             {/* eFiling Profile Switch */}
-            <div className="p-3 rounded-lg border border-border/60 bg-muted/30 flex items-center justify-between">
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 p-3">
               <div>
                 <div className="font-medium text-foreground">SARS eFiling Profile</div>
-                <div className="text-[11px] text-muted-foreground font-mono">
+                <div className="font-mono text-[11px] text-muted-foreground">
                   {client.efilingProfile === 'firm' ? "FD on Call's Firm Profile" : "Client's Own Profile"}
                 </div>
               </div>
@@ -340,49 +443,62 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                 aria-checked={client.efilingProfile === 'firm'}
                 onClick={() => handleEfilingToggle(client.efilingProfile !== 'firm')}
                 className={cn(
-                  'w-10 h-5 rounded-full transition-colors relative flex items-center p-0.5',
+                  'flex h-5 w-10 items-center rounded-full p-0.5 transition-colors',
                   client.efilingProfile === 'firm' ? 'bg-primary' : 'bg-muted-foreground/30'
                 )}
               >
                 <div
                   className={cn(
-                    'w-4 h-4 rounded-full bg-white shadow-xs transition-transform',
+                    'h-4 w-4 rounded-full bg-white shadow-xs transition-transform',
                     client.efilingProfile === 'firm' ? 'translate-x-5' : 'translate-x-0'
                   )}
                 />
               </button>
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
-      {/* Right Column: Statutory Services Switches */}
-      <div className="lg:col-span-6 space-y-4">
-        <div className="p-4 rounded-xl border border-border bg-card space-y-3.5 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-border/70">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                Statutory Compliance Services
-              </h2>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Switch a service on or off and its compliance deadlines automatically update on the Deadlines board.
-              </p>
-            </div>
+      {/* Middle column — who the client is and what has happened */}
+      <div className="space-y-4">
+        <OrganizationPanel
+          entityType={client.entityType}
+          groupName={details.groupLabel}
+          groupMembers={groupMembers}
+          employeeCount={client.payroll ? client.employeeCount : undefined}
+          contacts={client.contacts ?? []}
+          onContactsChange={handleContactsChange}
+        />
+
+        <RelationshipHistoryPanel entries={timeline} limit={4} />
+
+        <section
+          id="statutory-services"
+          className="overflow-hidden rounded-xl border border-border bg-card"
+        >
+          <div className="border-b border-border px-4 py-3">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#c4161c]" />
+              Statutory compliance services
+            </h3>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Switch a service on or off and its compliance deadlines automatically update on the
+              Deadlines board.
+            </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5 px-4 py-3">
             {servicesList.map((svc) => (
               <div
                 key={svc.code}
                 className={cn(
-                  'p-3 rounded-lg border flex items-center justify-between transition-colors',
+                  'flex items-center justify-between gap-2 rounded-lg border p-2.5 transition-colors',
                   svc.enabled
-                    ? 'border-primary/30 bg-primary/5'
+                    ? 'border-[#c4161c]/30 bg-[#c4161c]/5'
                     : 'border-border/60 bg-muted/20 opacity-70'
                 )}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex min-w-0 items-center gap-2.5">
                   <input
                     type="checkbox"
                     id={`svc-${svc.code}`}
@@ -395,38 +511,57 @@ export function StatutoryProfileTab({ client }: { client: Client }) {
                       else if (svc.code === 'AFS' || svc.code === 'ITR14') updateClient(client.code, { taxElsewhere: !e.target.checked });
                       else if (svc.code === 'BO') updateClient(client.code, { beneficialOwnershipFiled: e.target.checked });
                     }}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
+                    className="h-4 w-4 shrink-0 cursor-pointer rounded border-border text-primary focus:ring-primary disabled:cursor-not-allowed"
                   />
                   <label htmlFor={`svc-${svc.code}`} className="min-w-0 cursor-pointer select-none">
-                    <span className="font-medium text-foreground block truncate">{svc.label}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground">{svc.code}</span>
+                    <span className="block truncate font-medium text-foreground">{svc.label}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{svc.code}</span>
                   </label>
                 </div>
 
-                <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
                   {svc.fee}
                 </Badge>
               </div>
             ))}
-          </div>
 
-          {/* Historical Governance Records */}
-          <div className="pt-3 border-t border-border/70 space-y-1.5 text-[11px] font-mono text-muted-foreground">
-            <div className="flex justify-between">
-              <span>Last AFS Signed Off:</span>
-              <span className="text-foreground">{client.lastAfsYear ?? 'Pending'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Last Income Tax Filed:</span>
-              <span className="text-foreground">{client.lastIncomeTaxYear ?? 'Pending'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>CIPC Annual Return:</span>
-              <span className="text-foreground">{client.lastAnnualReturnYear ?? 'Pending'}</span>
+            {/* Historical Governance Records */}
+            <div className="space-y-1.5 border-t border-border/70 pt-2.5 font-mono text-[11px] text-muted-foreground">
+              <div className="flex justify-between">
+                <span>Last AFS Signed Off:</span>
+                <span className="text-foreground">{client.lastAfsYear ?? 'Pending'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Last Income Tax Filed:</span>
+                <span className="text-foreground">{client.lastIncomeTaxYear ?? 'Pending'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>CIPC Annual Return:</span>
+                <span className="text-foreground">{client.lastAnnualReturnYear ?? 'Pending'}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
+
+      {/* Right column — what happens next and the internal context */}
+      <div className="space-y-4">
+        <NextActionPanel
+          task={nextTask}
+          onComplete={setActiveTask}
+          onViewAll={onOpenTasks}
+        />
+        <InternalNotesPanel notes={client.notes} onSave={handleNotesSave} />
+        <TagsPanel tags={tags} onManage={handleManageTags} />
+      </div>
+
+      <StatutoryActionModal
+        task={activeTask}
+        open={Boolean(activeTask)}
+        onOpenChange={(open) => {
+          if (!open) setActiveTask(null);
+        }}
+      />
     </div>
   );
 }

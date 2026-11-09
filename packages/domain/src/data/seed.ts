@@ -43,6 +43,15 @@ export const CLIENTS: Client[] = [
     lastIncomeTaxYear: 2026,
     lastAnnualReturnYear: 2025,
     beneficialOwnershipFiled: true,
+    contacts: [
+      {
+        id: 'dir-alc',
+        name: 'Lucas Van Niekerk',
+        role: 'Director',
+        email: 'lucas@alcontracting.co.za',
+        phone: '+27 83 290 4112',
+      },
+    ],
   },
   {
     ...base,
@@ -57,6 +66,15 @@ export const CLIENTS: Client[] = [
     lastIncomeTaxYear: 2026,
     lastAnnualReturnYear: null,
     beneficialOwnershipFiled: null,
+    contacts: [
+      {
+        id: 'dir-alb',
+        name: 'Albert Coetzee',
+        role: 'Primary contact',
+        email: 'albert@coetzeefamily.co.za',
+        phone: '+27 82 455 1982',
+      },
+    ],
   },
   {
     ...base,
@@ -71,6 +89,15 @@ export const CLIENTS: Client[] = [
     lastIncomeTaxYear: 2026,
     lastAnnualReturnYear: 2026,
     beneficialOwnershipFiled: true,
+    contacts: [
+      {
+        id: 'dir-all',
+        name: 'Francois Du Plessis',
+        role: 'Managing Director',
+        email: 'francois@alliedservices.co.za',
+        phone: '+27 82 918 3340',
+      },
+    ],
   },
   {
     ...base,
@@ -195,6 +222,15 @@ export const CLIENTS: Client[] = [
     lastIncomeTaxYear: 2025,
     lastAnnualReturnYear: 2025,
     beneficialOwnershipFiled: true,
+    contacts: [
+      {
+        id: 'dir-mus',
+        name: 'Marthinus De Villiers',
+        role: 'Director',
+        email: 'marthinus@muse1399.co.za',
+        phone: '+27 82 344 9102',
+      },
+    ],
   },
   {
     ...base,

@@ -1,40 +1,114 @@
 import * as React from 'react';
-import * as TabsPrimitive from '@radix-ui/react-tabs';
+import * as PopoverPrimitive from '@radix-ui/react-popover';
 import type { ViewKey } from '@/types/navigation';
+import type { Client } from 'fdoncall-practice/domain/types';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
+import { STAFF, GROUPS } from 'fdoncall-practice/data/seed';
 import { todayInSouthAfrica } from 'fdoncall-practice/domain/dates';
-import { CLIENT_SHOW_TABS, ClientSummaryBar } from './ClientSummaryBar';
+import {
+  CalendarClock,
+  Calculator,
+  Clock,
+  FilePlus2,
+  FolderLock,
+  History,
+  LayoutGrid,
+  Plus,
+  StickyNote,
+  Users,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  ContactProfileLayout,
+  type TabConfig,
+} from './ContactProfileLayout';
+import { ClientSummaryBar } from './ClientSummaryBar';
 import { StatutoryProfileTab } from './tabs/StatutoryProfileTab';
-import { buildEstimateForClient } from './tabs/EstimateTab';
+import { EstimateTab, buildEstimateForClient } from './tabs/EstimateTab';
+import { VaultTab } from './tabs/VaultTab';
+import { DeadlinesTab } from './tabs/DeadlinesTab';
+import { InternalNotesPanel } from './panels/InternalNotesPanel';
+import { OrganizationPanel } from './panels/OrganizationPanel';
+import { RelationshipHistoryPanel } from './panels/RelationshipHistoryPanel';
+import { buildClientTimeline, clientTags, withSeededActivity } from './client-record-data';
 import { downloadExcelQuote, downloadPdfQuote } from '@/lib/export-actions';
-import { cn } from '@/lib/utils';
+
+export interface ClientSummary {
+  name: string;
+  code: string;
+  entityType: string;
+  partnerLabel: string;
+  turnoverLabel: string;
+  vatLabel: string;
+  groupName?: string;
+}
+
+export function formatClientSummary(client: Client): ClientSummary {
+  const staff = STAFF.find((s) => s.id === client.staffId);
+  const partnerLabel = staff ? `${staff.name} (${staff.role})` : 'Practice Pool';
+
+  let turnoverLabel = 'Turnover Pending';
+  if (client.turnover) {
+    const mil = client.turnover / 1_000_000;
+    turnoverLabel = Number.isInteger(mil) ? `R${mil}M Turnover` : `R${mil.toFixed(1)}M Turnover`;
+  }
+
+  const vatLabel = client.vatCategory ? `VAT Cat ${client.vatCategory}` : 'Non-VAT';
+
+  const group = GROUPS.find((g) => g.id === client.groupId);
+
+  return {
+    name: client.name,
+    code: client.code,
+    entityType: client.entityType,
+    partnerLabel,
+    turnoverLabel,
+    vatLabel,
+    groupName: group?.name,
+  };
+}
+
+export type ClientTabId =
+  | 'overview'
+  | 'organization'
+  | 'history'
+  | 'tasks'
+  | 'estimate'
+  | 'vault'
+  | 'notes';
+
+export const CLIENT_SHOW_TABS: Array<TabConfig & { id: ClientTabId }> = [
+  { id: 'overview', label: 'Overview', icon: LayoutGrid },
+  { id: 'organization', label: 'Organization', icon: Users },
+  { id: 'history', label: 'History', icon: History },
+  { id: 'tasks', label: 'Tasks', icon: CalendarClock },
+  { id: 'estimate', label: 'Estimate', icon: Calculator },
+  { id: 'vault', label: 'Vault', icon: FolderLock },
+  { id: 'notes', label: 'Notes', icon: StickyNote },
+];
 
 export interface ClientShowViewProps {
   clientCode: string;
   onBack: () => void;
   onNavigate?: (view: ViewKey, clientCode?: string) => void;
-  initialTab?: 'details' | 'profile' | 'deadlines' | 'estimate';
-  childrenTabs?: {
-    details?: React.ReactNode;
-    profile?: React.ReactNode;
-    deadlines?: React.ReactNode;
-    estimate?: React.ReactNode;
-  };
+  initialTab?: ClientTabId;
 }
 
 export function ClientShowView({
   clientCode,
   onBack,
-  initialTab = 'details',
+  initialTab = 'overview',
   onNavigate,
-  childrenTabs,
 }: ClientShowViewProps) {
-  const [activeTab, setActiveTab] = React.useState<string>(initialTab);
+  const [activeTab, setActiveTab] = React.useState<ClientTabId>(initialTab);
 
-  const { clients, rates } = usePracticeStore();
+  const { clients, rates, activity, taskStatusOverrides, updateClient } = usePracticeStore();
   const client = clients.find((c) => c.code === clientCode);
   const estimate = React.useMemo(
-    () => (client ? buildEstimateForClient(client, undefined, rates.standardHourlyRate, rates.marchEscalationPct) : undefined),
+    () =>
+      client
+        ? buildEstimateForClient(client, undefined, rates.standardHourlyRate, rates.marchEscalationPct)
+        : undefined,
     [client, rates]
   );
 
@@ -49,81 +123,172 @@ export function ClientShowView({
       downloadExcelQuote(client, estimate, todayInSouthAfrica());
     }
   };
+
   if (!client) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-4">
-        <div className="border border-border/80 rounded-lg p-6 bg-card/60 text-center">
+      <div className="mx-auto max-w-7xl space-y-4 p-6">
+        <div className="rounded-xl border border-border bg-card p-6 text-center">
           <h2 className="text-lg font-semibold text-foreground">Client Not Found</h2>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="mt-1 text-xs text-muted-foreground">
             No practice record matches code "{clientCode}".
           </p>
-          <button
-            onClick={onBack}
-            className="mt-4 px-3 py-1.5 text-xs rounded bg-[#c4161c] text-white hover:bg-[#a01217]"
-          >
+          <Button onClick={onBack} className="mt-4">
             Return to Clients Register
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header Bar with Deadlines Deep Link */}
-      <div className="flex items-center justify-between gap-4">
-        <ClientSummaryBar
-          client={client}
-          onBack={onBack}
-          onDownloadPdf={handlePdf}
-          onDownloadExcel={handleExcel}
-        />
-      </div>
+  const summary = formatClientSummary(client);
+  const tags = clientTags(client);
+  const firstNoteLine = client.notes?.split('\n').find((line) => line.trim().length > 0)?.trim();
+  const timeline = buildClientTimeline(client, withSeededActivity(activity), taskStatusOverrides);
+  const groupMembers = client.groupId
+    ? clients
+        .filter((c) => c.groupId === client.groupId && c.code !== client.code)
+        .map((c) => ({ code: c.code, name: c.name }))
+    : [];
 
-      <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => onNavigate ? onNavigate('deadlines', client.code) : undefined}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-medium transition-colors cursor-pointer"
-        >
-          <span>View Client Deadlines ➔</span>
-        </button>
-      </div>
-      <TabsPrimitive.Root
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-4"
+  return (
+    <div className="mx-auto max-w-7xl space-y-5 p-6">
+      <ClientSummaryBar
+        onBack={onBack}
+        onDownloadPdf={handlePdf}
+        onDownloadExcel={handleExcel}
+        onViewDeadlines={() => onNavigate?.('deadlines', client.code)}
+      />
+
+      <ContactProfileLayout
+        identity={{
+          name: client.name,
+          code: client.code,
+          subtitle: `${summary.entityType}${summary.groupName ? ` · ${summary.groupName}` : ' · Independent'}`,
+          description: firstNoteLine ?? `Responsible partner · ${summary.partnerLabel}`,
+          tags,
+        }}
+        meta={{
+          email: client.email,
+          phone: client.phone,
+          location: client.location,
+          timezone: client.timezone,
+        }}
+        actions={
+          <AddActionMenu
+            onLogTime={() => onNavigate?.('time')}
+            onNewQuote={() => onNavigate?.('sales-pipeline')}
+            onAddNote={() => setActiveTab('notes')}
+          />
+        }
+        tabs={CLIENT_SHOW_TABS}
+        activeTab={activeTab}
+        onTab={(id) => setActiveTab(id as ClientTabId)}
       >
-        <TabsPrimitive.List className="flex items-center gap-1 border-b border-border/80 overflow-x-auto pb-px">
-          {CLIENT_SHOW_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+        {activeTab === 'overview' && (
+          <StatutoryProfileTab
+            client={client}
+            onOpenOrganization={() => setActiveTab('organization')}
+            onOpenTasks={() => setActiveTab('tasks')}
+          />
+        )}
+
+        {activeTab === 'organization' && (
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <OrganizationPanel
+              expanded
+              entityType={client.entityType}
+              groupName={summary.groupName}
+              groupMembers={groupMembers}
+              employeeCount={client.payroll ? client.employeeCount : undefined}
+              contacts={client.contacts ?? []}
+              onContactsChange={(contacts) => updateClient(client.code, { contacts })}
+            />
+            <RelationshipHistoryPanel entries={timeline} />
+          </div>
+        )}
+
+        {activeTab === 'history' && <RelationshipHistoryPanel entries={timeline} />}
+
+        {activeTab === 'tasks' && (
+          <DeadlinesTab client={client} asOfDate={todayInSouthAfrica()} />
+        )}
+
+        {activeTab === 'estimate' && (
+          <EstimateTab
+            client={client}
+            onDownloadPdf={handlePdf}
+            onDownloadExcel={handleExcel}
+          />
+        )}
+
+        {activeTab === 'vault' && <VaultTab client={client} />}
+
+        {activeTab === 'notes' && (
+          <div className="max-w-2xl">
+            <InternalNotesPanel
+              notes={client.notes}
+              defaultEditing
+              onSave={(notes) => updateClient(client.code, { notes })}
+            />
+          </div>
+        )}
+      </ContactProfileLayout>
+    </div>
+  );
+}
+
+function AddActionMenu({
+  onLogTime,
+  onNewQuote,
+  onAddNote,
+}: {
+  onLogTime: () => void;
+  onNewQuote: () => void;
+  onAddNote: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  const run = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
+
+  const items = [
+    { label: 'Log Time', icon: Clock, onSelect: onLogTime },
+    { label: 'New Quote', icon: FilePlus2, onSelect: onNewQuote },
+    { label: 'Add Note', icon: StickyNote, onSelect: onAddNote },
+  ];
+
+  return (
+    <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
+      <PopoverPrimitive.Trigger asChild>
+        <Button size="sm" className="h-8 gap-1.5 text-[11px]">
+          <Plus className="h-3.5 w-3.5" />
+          Add Action
+        </Button>
+      </PopoverPrimitive.Trigger>
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          align="end"
+          sideOffset={6}
+          className="z-50 w-44 rounded-lg border border-border bg-popover p-1 shadow-lg outline-none"
+        >
+          {items.map((item) => {
+            const Icon = item.icon;
             return (
-              <TabsPrimitive.Trigger
-                key={tab.id}
-                value={tab.id}
-                className={cn(
-                  'flex items-center gap-2 px-3.5 py-2 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c]',
-                  isActive
-                    ? 'border-[#c4161c] text-[#c4161c] dark:text-[#f87171] font-semibold'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                )}
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => run(item.onSelect)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-1 focus-visible:ring-[#c4161c]"
               >
-                <Icon className={cn('h-3.5 w-3.5', isActive ? 'text-[#c4161c] dark:text-[#f87171]' : 'text-muted-foreground')} />
-                <span>{tab.label}</span>
-              </TabsPrimitive.Trigger>
+                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                {item.label}
+              </button>
             );
           })}
-        </TabsPrimitive.List>
-
-        <TabsPrimitive.Content value="details" className="outline-none">
-          {childrenTabs?.details ?? childrenTabs?.profile ?? <StatutoryProfileTab client={client} />}
-        </TabsPrimitive.Content>
-
-        <TabsPrimitive.Content value="profile" className="outline-none">
-          {childrenTabs?.profile ?? <StatutoryProfileTab client={client} />}
-        </TabsPrimitive.Content>
-      </TabsPrimitive.Root>
-    </div>
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
   );
 }

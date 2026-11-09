@@ -19,11 +19,28 @@ export interface Group {
   name: string;
 }
 
+/** A director or contact person belonging to a client record. */
+export interface ClientContact {
+  id: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+}
+
 export interface Client {
   code: string;
   name: string;
   entityType: EntityType;
   groupId?: string;
+  /** Primary client communication channels. Absent until recorded on the record. */
+  email?: string;
+  phone?: string;
+  location?: string;
+  timezone?: string;
+  /** Directors and contact people owned by this client record. */
+  contacts?: ClientContact[];
   /** Withheld in the prototype; held encrypted in the live system. */
   regOrIdNumber?: string;
   taxNumber?: string;

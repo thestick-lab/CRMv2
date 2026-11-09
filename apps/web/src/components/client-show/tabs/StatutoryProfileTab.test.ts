@@ -36,14 +36,16 @@ describe('StatutoryProfileTab interactive details and services configuration', (
     expect(tabSrc).toContain('Beneficial ownership (CIPC)');
   });
 
-  it('verifies ClientShowView includes deep-link button to Deadlines board and streamlined tabs', () => {
+  it('verifies ClientShowView includes deep-link button to Deadlines board and the seven record tabs', () => {
     const showSrc = fs.readFileSync('src/components/client-show/ClientShowView.tsx', 'utf8');
+    const barSrc = fs.readFileSync('src/components/client-show/ClientSummaryBar.tsx', 'utf8');
 
     // Must have direct button to view client deadlines on the main board
-    expect(showSrc).toContain('View Client Deadlines');
-    expect(showSrc).toContain("onNavigate('deadlines'");
+    expect(barSrc).toContain('View Client Deadlines');
+    expect(showSrc).toContain("'deadlines'");
 
-    // Deadlines and Estimate tabs moved out to top level, keeping Details
-    expect(showSrc).toContain('details');
+    // Details/statutory profile moved into the Overview tab of the seven-tab record
+    expect(showSrc).toContain("id: 'overview'");
+    expect(showSrc).toContain('StatutoryProfileTab');
   });
 });

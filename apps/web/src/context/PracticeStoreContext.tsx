@@ -712,9 +712,21 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
  */
 export function mergePracticeState(persisted: Partial<PracticeState>): PracticeState {
   const initial = getInitialPracticeState();
+
+  // One-time contact migration: records persisted before `Client.contacts`
+  // existed adopt the seeded directors for their code. A client that already
+  // carries a contacts array (even an empty one) keeps it as the source of truth.
+  const seededContacts = new Map(CLIENTS.map((c) => [c.code, c.contacts]));
+  const clients = (persisted.clients ?? initial.clients).map((client) => {
+    if (client.contacts !== undefined) return client;
+    const contacts = seededContacts.get(client.code);
+    return contacts ? { ...client, contacts } : client;
+  });
+
   return {
     ...initial,
     ...persisted,
+    clients,
     rates: {
       ...initial.rates,
       ...(persisted.rates || {}),

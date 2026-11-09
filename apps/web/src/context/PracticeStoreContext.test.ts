@@ -237,6 +237,21 @@ describe('PracticeStore foundation fields and legacy-state load', () => {
     expect(state.permissions.lastEditedBy).toBe('Erik');
   });
 
+  it('migrates seeded director contacts onto persisted clients that predate contacts', () => {
+    const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
+    const axe = CLIENTS.find((c) => c.code === 'AXE-460')!;
+    const legacyMuse: Record<string, unknown> = { ...muse };
+    delete legacyMuse.contacts;
+
+    const state = loadPracticeState(
+      storageWith({ clients: [legacyMuse, { ...axe, contacts: [] }] })
+    );
+
+    expect(state.clients[0].contacts?.[0].name).toBe('Marthinus De Villiers');
+    // A client that already carries an explicit (empty) contact list keeps it.
+    expect(state.clients[1].contacts).toEqual([]);
+  });
+
   it('is idempotent across repeated loads of the same persisted state', () => {
     const storage = storageWith(LEGACY_STATE);
     expect(loadPracticeState(storage)).toEqual(loadPracticeState(storage));
