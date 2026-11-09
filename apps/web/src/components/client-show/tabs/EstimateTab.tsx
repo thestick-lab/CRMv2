@@ -158,7 +158,7 @@ export function EstimateTab({
               onClick={handleExcel}
               className="h-7 text-[11px] gap-1 px-2 font-mono flex-1"
             >
-              <FileSpreadsheet className="h-3 w-3 text-emerald-500" />
+              <FileSpreadsheet className="h-3 w-3 text-muted-foreground" />
               Excel
             </Button>
             <Button
@@ -173,7 +173,7 @@ export function EstimateTab({
               variant="outline"
               size="sm"
               onClick={() => setXeroOpen(true)}
-              className="h-7 text-[11px] gap-1 px-2 font-mono flex-1 text-[#13b5ea] hover:text-[#13b5ea] border-[#13b5ea]/30 hover:bg-[#13b5ea]/10"
+              className="h-7 text-[11px] gap-1 px-2 font-mono flex-1 text-[#c4161c] hover:text-[#c4161c] border-[#c4161c]/30 hover:bg-[#c4161c]/10"
             >
               <RefreshCw className="h-3 w-3" />
               Xero
@@ -292,8 +292,7 @@ export function EstimateTab({
       <XeroSyncDialog
         open={xeroOpen}
         onOpenChange={setXeroOpen}
-        client={client}
-        estimate={estimate}
+        target={{ kind: 'estimate', client, estimate }}
       />
     </div>
   );

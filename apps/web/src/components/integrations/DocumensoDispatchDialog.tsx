@@ -1,196 +1,250 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import type { Client } from 'fdoncall-practice/domain/types';
-import { STAFF } from 'fdoncall-practice/data/seed';
+import type { Quote } from '@/context/PracticeStoreContext';
+import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  CheckCircle2,
+  CircleCheck,
   FileSignature,
   FileText,
+  Info,
   Mail,
   Send,
   ShieldCheck,
-  UserCheck,
+  UserRound,
   X,
 } from 'lucide-react';
+import {
+  createDocumensoEnvelope,
+  createDocumensoSlaEnvelope,
+  documensoDocumentForQuote,
+  documensoDocumentForSla,
+  type DocumensoEnvelope,
+} from '@/lib/integrations/documenso';
 
-export interface DocumensoSigner {
-  name: string;
-  email: string;
-  role: 'Managing Partner' | 'Client Representative';
-}
-
-export interface DocumensoEnvelope {
-  envelopeId: string;
-  title: string;
-  documentName: string;
-  signers: DocumensoSigner[];
-}
-
-export function buildDocumensoEnvelope(client: Client): DocumensoEnvelope {
-  const staff = STAFF.find((s) => s.id === client.staffId);
-  const partnerName = staff ? staff.name : 'Erik';
-  const partnerEmail = `${partnerName.toLowerCase()}w@fdoncall.co.za`;
-
-  return {
-    envelopeId: `DOCU-${client.code}-SLA-2026`,
-    title: `FD on Call SLA & Engagement Agreement - ${client.name} (${client.code})`,
-    documentName: `FD_on_Call_Master_Services_Agreement_${client.code}_SLA.pdf`,
-    signers: [
-      {
-        name: `${partnerName} (CA(SA))`,
-        email: partnerEmail,
-        role: 'Managing Partner',
-      },
-      {
-        name: `Director (${client.name})`,
-        email: `director@${client.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.co.za`,
-        role: 'Client Representative',
-      },
-    ],
-  };
-}
+/**
+ * What is being sent for signature: a fee quote (the quote builder path) or a
+ * client's master services agreement (the vault path).
+ */
+export type DocumensoDispatchTarget =
+  | { kind: 'quote'; quote: Quote; client?: Client }
+  | { kind: 'sla'; client: Client };
 
 export interface DocumensoDispatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  client: Client;
-  onDispatched?: (envelopeId: string) => void;
+  target: DocumensoDispatchTarget;
+  onDispatched?: (envelope: DocumensoEnvelope) => void;
 }
+
+const FIELD_CLASS =
+  'h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[11px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40';
 
 export function DocumensoDispatchDialog({
   open,
   onOpenChange,
-  client,
+  target,
   onDispatched,
 }: DocumensoDispatchDialogProps) {
-  const envelope = React.useMemo(() => buildDocumensoEnvelope(client), [client]);
-  const [clientEmail, setClientEmail] = React.useState(envelope.signers[1].email);
+  const { currentUser } = usePracticeStore();
   const [isSent, setIsSent] = React.useState(false);
+
+  const quote = target.kind === 'quote' ? target.quote : undefined;
+  const quoteClient = target.kind === 'quote' ? target.client : undefined;
+  const slaClient = target.kind === 'sla' ? target.client : undefined;
+
+  const envelope = React.useMemo<DocumensoEnvelope>(() => {
+    const countersigner = { name: currentUser.name, email: currentUser.email };
+    if (quote) {
+      return createDocumensoEnvelope(quote, { client: quoteClient, countersigner });
+    }
+    if (slaClient) {
+      return createDocumensoSlaEnvelope(slaClient, { countersigner });
+    }
+    throw new Error('Documenso dispatch needs a quote or a client');
+    // `target` is rebuilt by callers on every render; these records are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote, quoteClient, slaClient, currentUser.name, currentUser.email]);
+
+  const documentInfo = React.useMemo(() => {
+    if (quote) return documensoDocumentForQuote(quote, quoteClient);
+    if (slaClient) return documensoDocumentForSla(slaClient);
+    throw new Error('Documenso dispatch needs a quote or a client');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote, quoteClient, slaClient]);
+
+  const [clientEmail, setClientEmail] = React.useState(envelope.recipients[0].email);
+
+  React.useEffect(() => {
+    setClientEmail(envelope.recipients[0].email);
+    setIsSent(false);
+  }, [envelope]);
+
+  React.useEffect(() => {
+    if (!open) setIsSent(false);
+  }, [open]);
 
   const handleSend = () => {
     setIsSent(true);
-    if (onDispatched) {
-      onDispatched(envelope.envelopeId);
-    }
+    onDispatched?.(envelope);
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-    setTimeout(() => setIsSent(false), 300);
-  };
+  const close = () => onOpenChange(false);
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs transition-opacity" />
-        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-6 shadow-2xl transition-all outline-none space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-md bg-[#c4161c]/15 text-[#c4161c] flex items-center justify-center shrink-0">
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs" />
+        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-card shadow-2xl outline-none">
+          <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#c4161c]/20 bg-[#c4161c]/10 text-[#c4161c]">
                 <FileSignature className="h-4 w-4" />
-              </div>
-              <div>
-                <DialogPrimitive.Title className="text-sm font-semibold text-foreground">
-                  Dispatch Dual-Signature SLA
+              </span>
+              <div className="space-y-0.5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Documenso · e-signature
+                </p>
+                <DialogPrimitive.Title className="font-serif text-lg leading-tight text-foreground">
+                  Send for signature
                 </DialogPrimitive.Title>
-                <DialogPrimitive.Description className="text-xs text-muted-foreground font-mono">
-                  Documenso eSignature API • Envelope ID: {envelope.envelopeId}
+                <DialogPrimitive.Description className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+                  Two signatures in order: the client signatory first, the practice counter-signer
+                  second.
                 </DialogPrimitive.Description>
               </div>
             </div>
             <button
-              onClick={handleClose}
-              className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              type="button"
+              onClick={close}
+              aria-label="Close"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#c4161c]"
             >
               <X className="h-4 w-4" />
             </button>
-          </div>
+          </header>
 
           {isSent ? (
-            <div className="py-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-500 mx-auto flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6" />
+            <div className="space-y-4 px-5 py-8 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#c4161c]/10 text-[#c4161c]">
+                <CircleCheck className="h-6 w-6" />
+              </span>
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-semibold text-foreground">Envelope recorded</h3>
+                <p className="mx-auto max-w-sm text-xs leading-relaxed text-muted-foreground">
+                  Signature requests would go to {clientEmail} and{' '}
+                  {envelope.recipients[1].email}. This is a simulated dispatch — no email leaves
+                  the browser and the envelope id is synthetic.
+                </p>
               </div>
-              <h3 className="text-base font-semibold text-foreground">
-                SLA Dispatched Successfully
-              </h3>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto font-sans">
-                Electronic signature request routed to {clientEmail} and {envelope.signers[0].email}. Status updated to "Dispatched for Signature".
-              </p>
-              <Button size="sm" onClick={handleClose} className="mt-2 text-xs">
+              <div className="mx-auto flex max-w-sm items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 font-mono text-[11px]">
+                <span className="text-muted-foreground">Envelope</span>
+                <span className="text-foreground">{envelope.envelopeId}</span>
+              </div>
+              <Button size="sm" onClick={close}>
                 Close
               </Button>
             </div>
           ) : (
-            <div className="space-y-4 text-xs font-sans">
-              {/* Document Info */}
-              <div className="border border-border/80 rounded-md p-3 bg-muted/20 flex items-center gap-2.5 font-mono text-[11px]">
-                <FileText className="h-4 w-4 text-[#c4161c] shrink-0" />
-                <span className="truncate flex-1 text-foreground">{envelope.documentName}</span>
-                <Badge variant="outline" className="text-[10px] py-0 px-1 font-mono">
-                  248 KB
+            <div className="space-y-4 px-5 py-4 text-xs">
+              <div className="flex items-start gap-2.5 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5">
+                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#c4161c]" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground" title={documentInfo.documentName}>
+                    {documentInfo.documentName}
+                  </p>
+                  <p className="truncate text-[11px] text-muted-foreground">{documentInfo.title}</p>
+                </div>
+                <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                  PDF
                 </Badge>
               </div>
 
-              {/* Signers List */}
-              <div className="space-y-2.5">
-                <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                  Required Dual Signers
-                </div>
+              <div className="space-y-2">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Signing order
+                </p>
 
-                {/* Signer 1: Partner */}
-                <div className="border border-border/80 rounded-md p-2.5 bg-card/60 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="h-4 w-4 text-[#c4161c]" />
-                    <div>
-                      <div className="font-medium text-foreground">{envelope.signers[0].name}</div>
-                      <div className="text-[11px] text-muted-foreground font-mono">{envelope.signers[0].email}</div>
-                    </div>
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#c4161c]/25 bg-[#c4161c]/10 font-mono text-[10px] text-[#c4161c]">
+                    1
+                  </span>
+                  <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground">
+                      {envelope.recipients[0].name}
+                    </p>
+                    <p className="truncate font-mono text-[11px] text-muted-foreground">
+                      {clientEmail}
+                    </p>
                   </div>
-                  <Badge variant="outline" className="font-mono text-[10px]">
-                    Managing Partner
+                  <Badge variant="crimsonSubdued" className="shrink-0 font-mono text-[10px]">
+                    Client signatory
                   </Badge>
                 </div>
 
-                {/* Signer 2: Client */}
-                <div className="border border-border/80 rounded-md p-2.5 bg-card/60 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground">{envelope.signers[1].name}</span>
-                    </div>
-                    <Badge variant="outline" className="font-mono text-[10px]">
-                      Client Signer
-                    </Badge>
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted/50 font-mono text-[10px] text-muted-foreground">
+                    2
+                  </span>
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground">
+                      {envelope.recipients[1].name}
+                    </p>
+                    <p className="truncate font-mono text-[11px] text-muted-foreground">
+                      {envelope.recipients[1].email}
+                    </p>
                   </div>
-                  <input
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    className="w-full h-8 px-2.5 text-xs rounded border border-border bg-card text-foreground font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[#c4161c]"
-                    placeholder="director@client.co.za"
-                  />
+                  <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                    Counter-signer
+                  </Badge>
                 </div>
               </div>
 
-              {/* Security Audit Badge */}
-              <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground bg-muted/30 p-2.5 rounded-md">
-                <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
-                <span>SHA-256 tamper-proof audit trail enabled with SAICA compliance logging.</span>
+              <div className="space-y-1">
+                <label htmlFor="documenso-client-email" className="flex items-center gap-1.5 font-medium text-foreground">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                  Client signatory email
+                </label>
+                <input
+                  id="documenso-client-email"
+                  type="email"
+                  value={clientEmail}
+                  onChange={(event) => setClientEmail(event.target.value)}
+                  className={FIELD_CLASS}
+                  placeholder="director@client.co.za"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Corrected on the record only — nothing is sent in the simulated mode.
+                </p>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/80">
-                <Button variant="outline" size="sm" onClick={handleClose} className="text-xs">
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleSend} className="text-xs gap-1.5 font-mono bg-[#c4161c] hover:bg-[#a01217]">
-                  <Send className="h-3 w-3" />
-                  Dispatch Envelope
-                </Button>
+              <div className="flex items-start gap-2.5 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <p className="leading-relaxed text-muted-foreground">
+                  Simulated Documenso envelope: the id, timestamp and recipients are recorded
+                  against the record, with no network call. The live adapter posts the same payload
+                  to your workspace once the credentials in Settings → Integrations are enabled.
+                </p>
               </div>
+
+              <footer className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {envelope.envelopeId}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={close}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSend} className="gap-1.5">
+                    <Send className="h-3 w-3" />
+                    Dispatch envelope
+                  </Button>
+                </div>
+              </footer>
             </div>
           )}
         </DialogPrimitive.Content>

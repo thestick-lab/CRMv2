@@ -801,9 +801,9 @@ export function EstimateCalculator() {
 
       {/* Documenso SLA Dispatch Modal */}
       <DocumensoDispatchDialog
-        client={activeClientObject}
         open={documensoOpen}
         onOpenChange={setDocumensoOpen}
+        target={{ kind: 'sla', client: activeClientObject }}
       />
     </div>
   );

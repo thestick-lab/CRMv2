@@ -196,7 +196,7 @@ export function VaultTab({ client }: { client: Client }) {
       <DocumensoDispatchDialog
         open={documensoOpen}
         onOpenChange={setDocumensoOpen}
-        client={client}
+        target={{ kind: 'sla', client }}
       />
     </div>
   );

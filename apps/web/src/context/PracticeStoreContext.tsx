@@ -61,6 +61,19 @@ export interface AiApiKeys {
   gemini?: string;
 }
 
+/**
+ * Credentials for the external integration services. Stored locally next to the
+ * AI provider keys; the simulated adapters ignore them until the live Documenso
+ * and Xero connections are switched on.
+ */
+export interface IntegrationConfig {
+  documensoBaseUrl: string;
+  documensoApiKey: string;
+  xeroClientId: string;
+  xeroClientSecret: string;
+  xeroTenantId: string;
+}
+
 export interface TaskStatusMetadata {
   sarsReference?: string;
   partnerSignOff?: boolean;
@@ -243,6 +256,7 @@ export interface PracticeState {
   currentUser: PracticeUser;
   rates: PracticeRates;
   aiKeys: AiApiKeys;
+  integrationConfig: IntegrationConfig;
   division: Division;
   taskStatusOverrides: Record<string, TaskStatusOverride>;
   savedEstimates: Record<string, EstimateInput>;
@@ -468,6 +482,14 @@ export const INITIAL_AI_KEYS: AiApiKeys = {
   gemini: '',
 };
 
+export const INITIAL_INTEGRATION_CONFIG: IntegrationConfig = {
+  documensoBaseUrl: '',
+  documensoApiKey: '',
+  xeroClientId: '',
+  xeroClientSecret: '',
+  xeroTenantId: '',
+};
+
 /**
  * Historical team-activity feed seeded onto Home's Team Activity card.
  * The store itself starts with an empty `activity` array so persisted
@@ -554,6 +576,7 @@ export function getInitialPracticeState(): PracticeState {
     currentUser: { ...INITIAL_USER },
     rates: { ...INITIAL_RATES },
     aiKeys: { ...INITIAL_AI_KEYS },
+    integrationConfig: { ...INITIAL_INTEGRATION_CONFIG },
     division: 'fd-on-call',
     taskStatusOverrides: {},
     savedEstimates: {},
@@ -615,6 +638,7 @@ export type PracticeAction =
   | { type: 'SET_CURRENT_USER'; payload: PracticeUser | string }
   | { type: 'SET_DIVISION'; payload: Division }
   | { type: 'SET_AI_KEYS'; payload: Partial<AiApiKeys> }
+  | { type: 'SET_INTEGRATION_CONFIG'; payload: Partial<IntegrationConfig> }
   | { type: 'RESET_DATA' }
   | { type: 'LOAD_STATE'; payload: PracticeState };
 
@@ -864,6 +888,16 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
       };
     }
 
+    case 'SET_INTEGRATION_CONFIG': {
+      return {
+        ...state,
+        integrationConfig: {
+          ...state.integrationConfig,
+          ...action.payload,
+        },
+      };
+    }
+
     case 'RESET_DATA': {
       return getInitialPracticeState();
     }
@@ -883,7 +917,10 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
  * overwritten. Legacy pipeline leads are converted to quotes and dropped.
  */
 export function mergePracticeState(
-  persisted: Partial<PracticeState> & { leads?: LegacyLead[] }
+  persisted: Partial<Omit<PracticeState, 'integrationConfig'>> & {
+    leads?: LegacyLead[];
+    integrationConfig?: Partial<IntegrationConfig>;
+  }
 ): PracticeState {
   const { leads: legacyLeads, ...persistedRest } = persisted;
   const initial = getInitialPracticeState();
@@ -945,6 +982,11 @@ export function mergePracticeState(
       invoice: persisted.sequences?.invoice ?? initial.sequences.invoice,
     },
     permissions: { ...initial.permissions, ...(persisted.permissions || {}) },
+    // Credentials saved before this field existed (or missing keys) default to empty.
+    integrationConfig: {
+      ...initial.integrationConfig,
+      ...(persisted.integrationConfig || {}),
+    },
     adhocTasks: persisted.adhocTasks ?? initial.adhocTasks,
     activity: persisted.activity ?? initial.activity,
   };
@@ -1007,6 +1049,7 @@ export interface PracticeStoreContextValue extends PracticeState {
   setCurrentUser: (user: PracticeUser | string) => void;
   setDivision: (division: Division) => void;
   setAiKeys: (keys: Partial<AiApiKeys>) => void;
+  setIntegrationConfig: (config: Partial<IntegrationConfig>) => void;
   addQuote: (quote: Quote) => void;
   updateQuote: (id: string, patch: Partial<Omit<Quote, 'id' | 'createdAt'>>) => void;
   addInvoice: (invoice: Invoice) => void;
@@ -1104,6 +1147,10 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
     dispatch({ type: 'SET_AI_KEYS', payload: keys });
   }, []);
 
+  const setIntegrationConfig = React.useCallback((config: Partial<IntegrationConfig>) => {
+    dispatch({ type: 'SET_INTEGRATION_CONFIG', payload: config });
+  }, []);
+
   const addQuote = React.useCallback((quote: Quote) => {
     dispatch({ type: 'ADD_QUOTE', payload: quote });
   }, []);
@@ -1169,6 +1216,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser,
       setDivision,
       setAiKeys,
+      setIntegrationConfig,
       exportData,
       resetData,
     }),
@@ -1195,6 +1243,7 @@ export function PracticeStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser,
       setDivision,
       setAiKeys,
+      setIntegrationConfig,
       exportData,
       resetData,
     ]
