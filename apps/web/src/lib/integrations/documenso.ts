@@ -105,6 +105,19 @@ export function documensoDocumentForSla(client: Client): DocumensoDocument {
 }
 
 /**
+ * The dialog lets the user correct the signatory address before dispatch; the
+ * envelope consumers record must carry that correction, not the pre-edit value.
+ */
+export function withRecipientEmail(envelope: DocumensoEnvelope, email: string): DocumensoEnvelope {
+  return {
+    ...envelope,
+    recipients: envelope.recipients.map((recipient, index) =>
+      index === 0 ? { ...recipient, email: email.trim() } : recipient
+    ),
+  };
+}
+
+/**
  * Simulated dual-signature envelope for a fee quote: the client signatory signs
  * first, the practice countersigns second.
  */

@@ -21,6 +21,7 @@ import {
   createDocumensoSlaEnvelope,
   documensoDocumentForQuote,
   documensoDocumentForSla,
+  withRecipientEmail,
   type DocumensoEnvelope,
 } from '@/lib/integrations/documenso';
 
@@ -49,7 +50,7 @@ export function DocumensoDispatchDialog({
   onDispatched,
 }: DocumensoDispatchDialogProps) {
   const { currentUser } = usePracticeStore();
-  const [isSent, setIsSent] = React.useState(false);
+  const [dispatched, setDispatched] = React.useState<DocumensoEnvelope | null>(null);
 
   const quote = target.kind === 'quote' ? target.quote : undefined;
   const quoteClient = target.kind === 'quote' ? target.client : undefined;
@@ -79,16 +80,17 @@ export function DocumensoDispatchDialog({
 
   React.useEffect(() => {
     setClientEmail(envelope.recipients[0].email);
-    setIsSent(false);
+    setDispatched(null);
   }, [envelope]);
 
   React.useEffect(() => {
-    if (!open) setIsSent(false);
+    if (!open) setDispatched(null);
   }, [open]);
 
   const handleSend = () => {
-    setIsSent(true);
-    onDispatched?.(envelope);
+    const outgoing = withRecipientEmail(envelope, clientEmail);
+    setDispatched(outgoing);
+    onDispatched?.(outgoing);
   };
 
   const close = () => onOpenChange(false);
@@ -126,7 +128,7 @@ export function DocumensoDispatchDialog({
             </button>
           </header>
 
-          {isSent ? (
+          {dispatched ? (
             <div className="space-y-4 px-5 py-8 text-center">
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#c4161c]/10 text-[#c4161c]">
                 <CircleCheck className="h-6 w-6" />
@@ -134,14 +136,14 @@ export function DocumensoDispatchDialog({
               <div className="space-y-1.5">
                 <h3 className="text-sm font-semibold text-foreground">Envelope recorded</h3>
                 <p className="mx-auto max-w-sm text-xs leading-relaxed text-muted-foreground">
-                  Signature requests would go to {clientEmail} and{' '}
-                  {envelope.recipients[1].email}. This is a simulated dispatch — no email leaves
+                  Signature requests would go to {dispatched.recipients[0].email} and{' '}
+                  {dispatched.recipients[1].email}. This is a simulated dispatch — no email leaves
                   the browser and the envelope id is synthetic.
                 </p>
               </div>
               <div className="mx-auto flex max-w-sm items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 font-mono text-[11px]">
                 <span className="text-muted-foreground">Envelope</span>
-                <span className="text-foreground">{envelope.envelopeId}</span>
+                <span className="text-foreground">{dispatched.envelopeId}</span>
               </div>
               <Button size="sm" onClick={close}>
                 Close

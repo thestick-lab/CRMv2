@@ -11,6 +11,7 @@ import {
   buildXeroDraftInvoicePayload,
   buildXeroEstimateDraftPayload,
   simulateXeroSync,
+  summariseXeroDraft,
   type XeroSyncResult,
 } from '@/lib/integrations/xero';
 
@@ -46,16 +47,7 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
   }, [invoice, estimate, client]);
 
   const draft = payload.Invoices[0];
-  const exclusiveSubtotal = cents(
-    draft.LineItems.reduce((sum, line) => sum + line.Quantity * line.UnitAmount, 0)
-  );
-  const taxableSubtotal = cents(
-    draft.LineItems.filter((line) => line.TaxType === 'OUTPUT2').reduce(
-      (sum, line) => sum + line.Quantity * line.UnitAmount,
-      0
-    )
-  );
-  const vat = cents(taxableSubtotal * 0.15);
+  const totals = summariseXeroDraft(draft);
 
   React.useEffect(() => {
     if (!open) setSyncResult(null);
@@ -207,16 +199,16 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
               <div className="space-y-1 border-t border-border/80 pt-2 font-mono text-xs">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal (excl. VAT)</span>
-                  <span className="tabular-nums">{zar(exclusiveSubtotal)}</span>
+                  <span className="tabular-nums">{zar(totals.exclusiveSubtotal)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>VAT 15% (OUTPUT2 lines)</span>
-                  <span className="tabular-nums">{zar(vat)}</span>
+                  <span className="tabular-nums">{zar(totals.vat)}</span>
                 </div>
                 <div className="flex justify-between border-t border-border/50 pt-1 text-sm font-bold text-foreground">
                   <span>Invoice total</span>
                   <span className="tabular-nums text-[#c4161c]">
-                    {zar(cents(exclusiveSubtotal + vat))}
+                    {zar(totals.total)}
                   </span>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
 import {
   getInitialPracticeState,
@@ -6,8 +7,12 @@ import {
   type Invoice,
   type Quote,
 } from '@/context/PracticeStoreContext';
-import { buildXeroDraftInvoicePayload, simulateXeroSync } from '@/lib/integrations/xero';
-import { createDocumensoEnvelope } from '@/lib/integrations/documenso';
+import {
+  buildXeroDraftInvoicePayload,
+  simulateXeroSync,
+  summariseXeroDraft,
+} from '@/lib/integrations/xero';
+import { createDocumensoEnvelope, withRecipientEmail } from '@/lib/integrations/documenso';
 
 const muse = CLIENTS.find((c) => c.code === 'MUS-875')!;
 
@@ -134,6 +139,48 @@ describe('Xero draft invoice payload', () => {
     expect(result.xeroInvoiceId).not.toBe(invoice.number);
     expect(Number.isNaN(Date.parse(result.at))).toBe(false);
   });
+
+  it('rounds VAT per taxable line so fractional quantities reconcile cent-exact', () => {
+    const fractional: Invoice = {
+      ...invoice,
+      lineItems: [
+        {
+          id: 'line-overage-a',
+          description: 'Time overage — Oct (bookkeeping)',
+          quantity: 2.5,
+          unitAmount: 625,
+          accountCode: '200',
+          taxType: 'OUTPUT2',
+          lineAmount: 1562.5,
+        },
+        {
+          id: 'line-overage-b',
+          description: 'Time overage — Oct (payroll)',
+          quantity: 1.5,
+          unitAmount: 625,
+          accountCode: '200',
+          taxType: 'OUTPUT2',
+          lineAmount: 937.5,
+        },
+      ],
+      subtotal: 2500,
+      vat: 375.01,
+      total: 2875.01,
+    };
+
+    const totals = summariseXeroDraft(buildXeroDraftInvoicePayload(fractional, muse).Invoices[0]);
+    // 234.375 -> 234.38 and 140.625 -> 140.63 per line (Xero/document rule).
+    expect(totals.vat).toBe(375.01);
+    expect(totals.exclusiveSubtotal).toBe(2500);
+    expect(totals.total).toBe(2875.01);
+    // Aggregate rounding would have produced 375.00 — a cent of drift.
+    expect(Math.round(2500 * 0.15 * 100) / 100).toBe(375);
+  });
+
+  it('drives the dialog totals from the per-line summary', () => {
+    const source = fs.readFileSync('src/components/integrations/XeroSyncDialog.tsx', 'utf8');
+    expect(source).toContain('summariseXeroDraft');
+  });
 });
 
 describe('Documenso envelope creation', () => {
@@ -162,6 +209,30 @@ describe('Documenso envelope creation', () => {
     const first = createDocumensoEnvelope(prospectQuote);
     const second = createDocumensoEnvelope(prospectQuote);
     expect(first.envelopeId).not.toBe(second.envelopeId);
+  });
+
+  it('carries the corrected signatory email into the dispatched envelope', () => {
+    const envelope = createDocumensoEnvelope(prospectQuote);
+    const corrected = withRecipientEmail(envelope, 'anja.visser@biotech.example');
+
+    expect(corrected.envelopeId).toBe(envelope.envelopeId);
+    expect(corrected.recipients[0]).toEqual({
+      ...envelope.recipients[0],
+      email: 'anja.visser@biotech.example',
+    });
+    expect(corrected.recipients[0]).toMatchObject({ role: 'SIGNER', signingOrder: 1 });
+    expect(corrected.recipients[1]).toEqual(envelope.recipients[1]);
+    // The memoized preview remains untouched; only the dispatched copy changes.
+    expect(envelope.recipients[0].email).not.toBe('anja.visser@biotech.example');
+  });
+
+  it('dispatches the edited email rather than the pre-edit envelope', () => {
+    const source = fs.readFileSync(
+      'src/components/integrations/DocumensoDispatchDialog.tsx',
+      'utf8'
+    );
+    expect(source).toContain('withRecipientEmail(envelope, clientEmail)');
+    expect(source).toContain('onDispatched?.(outgoing)');
   });
 });
 

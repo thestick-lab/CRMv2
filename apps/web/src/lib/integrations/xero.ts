@@ -96,6 +96,35 @@ export function buildXeroDraftInvoicePayload(invoice: Invoice, client: Client): 
   };
 }
 
+export interface XeroDraftTotals {
+  exclusiveSubtotal: number;
+  vat: number;
+  total: number;
+}
+
+/**
+ * Totals exactly as Xero computes them: VAT is rounded to the cent on each
+ * taxable line (`Quantity × UnitAmount × 15%`), not on the aggregate. That is
+ * also the rule the invoice document and `reconcileInvoice` use, so the preview
+ * reconciles cent-exact even with fractional (time-based) quantities.
+ */
+export function summariseXeroDraft(draft: XeroDraftInvoice): XeroDraftTotals {
+  let exclusiveSubtotal = 0;
+  let vat = 0;
+  for (const line of draft.LineItems) {
+    const lineAmount = cents(line.Quantity * line.UnitAmount);
+    exclusiveSubtotal = cents(exclusiveSubtotal + lineAmount);
+    if (line.TaxType === 'OUTPUT2') {
+      vat = cents(vat + cents(line.Quantity * line.UnitAmount * 0.15));
+    }
+  }
+  return {
+    exclusiveSubtotal: cents(exclusiveSubtotal),
+    vat: cents(vat),
+    total: cents(exclusiveSubtotal + vat),
+  };
+}
+
 export interface XeroSyncResult {
   /** Synthetic until the live connection lands — never a real Xero id. */
   xeroInvoiceId: string;
