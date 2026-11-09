@@ -5,6 +5,7 @@ import {
   INITIAL_LEADS,
   getInitialPracticeState,
   loadPracticeState,
+  mergePracticeState,
   practiceReducer,
   type Invoice,
   type LegacyLead,
@@ -132,6 +133,37 @@ describe('PracticeStore state initialization and persistence', () => {
     expect(
       practiceReducer(added, { type: 'UPDATE_INVOICE', payload: { id: 'missing', patch: {} } })
     ).toBe(added);
+  });
+
+  it('keeps persisted invoice payment details and leaves absent ones undefined', () => {
+    const invoice: Invoice = {
+      id: 'invoice-new',
+      number: 'INV-1',
+      clientCode: 'ALC-610',
+      lineItems: [],
+      taxRate: 0.15,
+      subtotal: 0,
+      vat: 0,
+      total: 0,
+      status: 'Sent',
+      issueDate: '2026-11-09',
+      dueDate: '2026-12-09',
+      createdAt: '2026-11-09T08:00:00.000Z',
+    };
+
+    const state = mergePracticeState({
+      ...getInitialPracticeState(),
+      invoices: [
+        { ...invoice, paymentTerms: '14 days', paymentMethods: ['EFT', 'Debit order'] },
+        { ...invoice, id: 'invoice-legacy', number: 'INV-2' },
+      ],
+    });
+
+    expect(state.invoices[0].paymentTerms).toBe('14 days');
+    expect(state.invoices[0].paymentMethods).toEqual(['EFT', 'Debit order']);
+    // Invoices saved before the fields existed keep today's fallback behaviour.
+    expect(state.invoices[1].paymentTerms).toBeUndefined();
+    expect(state.invoices[1].paymentMethods).toBeUndefined();
   });
 
   it('updates task status with SARS reference and partner sign-off', () => {

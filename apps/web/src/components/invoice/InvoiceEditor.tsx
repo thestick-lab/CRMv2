@@ -33,6 +33,7 @@ import {
   computeInvoiceStatus,
   createInvoiceFromQuote,
   invoiceMonth,
+  invoicePaymentDetails,
   nextUnbilledMonth,
   paymentTermsDays,
   reconcileInvoice,
@@ -128,8 +129,9 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
   const [issueDate, setIssueDate] = React.useState(seeded?.issueDate ?? today);
   const [dueDate, setDueDate] = React.useState(seeded?.dueDate ?? addDays(today, 30));
   const [status, setStatus] = React.useState<InvoiceStatus>(seeded?.status ?? 'Draft');
-  const [paymentTerms, setPaymentTerms] = React.useState(quote?.paymentTerms ?? '30 days');
-  const [paymentMethods, setPaymentMethods] = React.useState<string[]>(['EFT']);
+  const initialPayment = invoicePaymentDetails(savedInvoice, quote?.paymentTerms);
+  const [paymentTerms, setPaymentTerms] = React.useState(initialPayment.terms);
+  const [paymentMethods, setPaymentMethods] = React.useState<string[]>(initialPayment.methods);
   const [month, setMonth] = React.useState(initialMonth);
   const [xeroResult, setXeroResult] = React.useState<XeroSyncResult | null>(null);
   const [feedback, setFeedback] = React.useState<{ tone: 'success' | 'error'; text: string } | null>(
@@ -154,6 +156,8 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     status,
     issueDate,
     dueDate,
+    paymentTerms,
+    paymentMethods,
     xeroSync: savedInvoice?.xeroSync,
     createdAt: savedInvoice?.createdAt ?? new Date().toISOString(),
   };
@@ -194,6 +198,8 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
         status: record.status,
         issueDate: record.issueDate,
         dueDate: record.dueDate,
+        paymentTerms: record.paymentTerms,
+        paymentMethods: record.paymentMethods,
         xeroSync: record.xeroSync,
       });
     } else {
@@ -253,7 +259,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
       previous.map((line) => {
         if (line.id !== id) return line;
         const next = { ...line, ...patch };
-        next.lineAmount = cents(next.quantity * next.unitAmount);
+        next.lineAmount = cents(next.quantity * cents(next.unitAmount));
         return next;
       })
     );

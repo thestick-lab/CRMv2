@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import type { Client } from 'fdoncall-practice/domain/types';
 import type { EstimateInput } from 'fdoncall-practice/domain/estimate';
 import { computeEstimate } from 'fdoncall-practice/domain/estimate';
 import type { Invoice, InvoiceLine, Quote } from '@/context/PracticeStoreContext';
 import {
+  buildXeroDraftInvoicePayload,
+  summariseXeroDraft,
+} from '@/lib/integrations/xero';
+import {
   INVOICE_TAX_RATE,
   computeInvoiceStatus,
   createInvoiceFromQuote,
+  invoicePaymentDetails,
   nextUnbilledMonth,
   reconcileInvoice,
 } from './invoice-logic';
@@ -124,6 +130,30 @@ describe('reconcileInvoice', () => {
     expect(totals).toEqual({ subtotal: 3500, vat: 525, total: 4025 });
   });
 
+  it('matches the Xero summary on a sub-cent unit price', () => {
+    // Raw quantity x unit would charge 0.034 x 15% = 0.01 VAT, while the
+    // payload rounds the unit to 0.03 first and charges no VAT on that line.
+    const lines = [
+      line({ id: 'time', unitAmount: 0.015, quantity: 2.5 }),
+      line({ id: 'rounding', unitAmount: 0.034, quantity: 1 }),
+      line({ id: 'fee', unitAmount: 100 }),
+    ];
+    const documentTotals = reconcileInvoice(lines, INVOICE_TAX_RATE);
+    const xeroTotals = summariseXeroDraft(
+      buildXeroDraftInvoicePayload(
+        invoice({ lineItems: lines, ...documentTotals }),
+        { name: 'Table Bay Logistics CC' } as Client
+      ).Invoices[0]
+    );
+
+    expect(documentTotals).toEqual({
+      subtotal: xeroTotals.exclusiveSubtotal,
+      vat: xeroTotals.vat,
+      total: xeroTotals.total,
+    });
+    expect(documentTotals.vat).toBe(xeroTotals.vat);
+  });
+
   it('leaves CIPC disbursements out of VAT', () => {
     const totals = reconcileInvoice(
       [line({ unitAmount: 1000 }), line({ unitAmount: 200, taxType: 'NONE' })],
@@ -131,6 +161,28 @@ describe('reconcileInvoice', () => {
     );
 
     expect(totals).toEqual({ subtotal: 1200, vat: 150, total: 1350 });
+  });
+});
+
+describe('invoicePaymentDetails', () => {
+  it('restores saved terms and methods ahead of the quote defaults', () => {
+    expect(
+      invoicePaymentDetails(
+        { paymentTerms: '14 days', paymentMethods: ['EFT', 'Debit order'] },
+        '30 days'
+      )
+    ).toEqual({ terms: '14 days', methods: ['EFT', 'Debit order'] });
+  });
+
+  it('falls back to the quote terms and EFT for invoices saved before the fields', () => {
+    expect(invoicePaymentDetails({}, '14 days')).toEqual({
+      terms: '14 days',
+      methods: ['EFT'],
+    });
+    expect(invoicePaymentDetails(undefined, undefined)).toEqual({
+      terms: '30 days',
+      methods: ['EFT'],
+    });
   });
 });
 

@@ -179,6 +179,10 @@ export interface Invoice {
   status: InvoiceStatus;
   issueDate: ISODate;
   dueDate: ISODate;
+  /** Terms printed on the document; older invoices fall back to the quote's. */
+  paymentTerms?: string;
+  /** Methods printed on the document; older invoices fall back to EFT. */
+  paymentMethods?: string[];
   xeroSync?: 'pending' | 'synced' | 'failed';
   createdAt: string;
 }

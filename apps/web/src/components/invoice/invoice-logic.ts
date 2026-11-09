@@ -38,10 +38,12 @@ export interface InvoiceTotals {
 /**
  * Cent-exact totals for a set of invoice lines.
  *
- * `subtotal` is the sum of `lineAmount` (what the user sees charged); VAT is
- * computed per taxable line from quantity × unit amount so it matches Xero's
- * `Quantity × UnitAmount × 15%` rounding. The editor keeps `lineAmount` in
- * step with quantity × unit amount on every edit, so both bases agree.
+ * Both bases come from the amount the Xero payload sends: the unit price is
+ * rounded to the cent first (`buildXeroDraftInvoicePayload` sends
+ * `UnitAmount: cents(unitAmount)`), the line amount is
+ * `cents(quantity × roundedUnit)`, and VAT is `cents(quantity × roundedUnit ×
+ * taxRate)` per taxable line — exactly `summariseXeroDraft`'s rule. A document
+ * and its Xero draft therefore cannot disagree, even for a sub-cent unit price.
  */
 export function reconcileInvoice(
   lines: InvoiceLine[],
@@ -51,9 +53,11 @@ export function reconcileInvoice(
   let vat = 0;
 
   for (const line of lines) {
-    subtotal = cents(subtotal + cents(line.lineAmount));
+    const unitAmount = cents(line.unitAmount);
+    const lineAmount = cents(line.quantity * unitAmount);
+    subtotal = cents(subtotal + lineAmount);
     if (line.taxType === 'OUTPUT2') {
-      vat = cents(vat + cents(cents(line.quantity * line.unitAmount) * taxRate));
+      vat = cents(vat + cents(line.quantity * unitAmount * taxRate));
     }
   }
 
@@ -88,6 +92,26 @@ export function paymentTermsDays(terms: string | undefined): number {
   return 30;
 }
 
+export interface InvoicePaymentDetails {
+  terms: string;
+  methods: string[];
+}
+
+/**
+ * Payment terms and methods to print for an invoice. Persisted values win;
+ * invoices saved before those fields existed fall back to the quote's terms
+ * and EFT, so an old document renders exactly as it did.
+ */
+export function invoicePaymentDetails(
+  invoice: Pick<Invoice, 'paymentTerms' | 'paymentMethods'> | undefined,
+  quoteTerms?: string
+): InvoicePaymentDetails {
+  return {
+    terms: invoice?.paymentTerms ?? quoteTerms ?? '30 days',
+    methods: invoice?.paymentMethods ?? ['EFT'],
+  };
+}
+
 export interface CreateInvoiceOptions {
   /** Defaults to today in South Africa; injectable so documents stay testable. */
   issueDate?: ISODate;
@@ -120,9 +144,9 @@ export function createInvoiceFromQuote(
         estimate.months[monthIndex]
       )}`,
       quantity: 1,
-      unitAmount: line.amounts[monthIndex],
+      unitAmount: cents(line.amounts[monthIndex]),
       taxType: line.vatable ? 'OUTPUT2' : 'NONE',
-      lineAmount: line.amounts[monthIndex],
+      lineAmount: cents(line.amounts[monthIndex]),
     }));
 
   const totals = reconcileInvoice(lineItems, INVOICE_TAX_RATE);
