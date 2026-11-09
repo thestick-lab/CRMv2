@@ -97,7 +97,9 @@ export function settingsPaneLabel(pane: SettingsPaneKey): string {
     const child = item.children?.find((entry) => entry.pane === pane);
     if (child) return `${item.label} · ${child.label}`;
   }
-  return 'Settings';
+  // `SettingsPaneKey` is derived from this same nav map, so an unmapped pane is
+  // a programming error — fail loudly rather than shipping a generic label.
+  throw new Error(`Unmapped settings pane: ${pane}`);
 }
 
 export function isAdminPane(pane: SettingsPaneKey): boolean {

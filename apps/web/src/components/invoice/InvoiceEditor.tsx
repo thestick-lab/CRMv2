@@ -22,10 +22,10 @@ import {
   type XeroSyncResult,
 } from '@/lib/integrations/xero';
 import { cn } from '@/lib/utils';
+import { southAfricaDay } from '@/lib/dates';
 import { can } from '@/lib/permissions';
 import {
   billingMonthRange,
-  entryDay,
   formatHours,
   releasedTimeEntries,
   timeInvoiceFeed,
@@ -981,7 +981,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                       >
                         <span className="min-w-0">
                           <span className="font-mono text-[10px] text-muted-foreground">
-                            {formatDate(entryDay(entry.startedAt))}
+                            {formatDate(southAfricaDay(entry.startedAt))}
                           </span>
                           <span className="mx-1.5 text-muted-foreground/50">·</span>
                           <span className="truncate text-foreground">{entry.description}</span>

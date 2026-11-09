@@ -274,6 +274,31 @@ describe('computeAnalytics', () => {
     expect(result.filingsSubmitted.deltaPct).toBe(100);
   });
 
+  it('attributes a UTC timestamp to its South African calendar day at the boundary', () => {
+    // 00:30 on 1 September in Johannesburg is 22:30 on 31 August UTC — it
+    // belongs to the first day of the window, not the day before it.
+    const atStart = entry({
+      id: 'time-start-boundary',
+      startedAt: '2026-08-31T22:30:00.000Z',
+      roundedMinutes: 60,
+    });
+    // 00:30 on 1 December SAST is 30 November 22:30 UTC — the last UTC day of
+    // the window, but the first day *after* it.
+    const afterEnd = entry({
+      id: 'time-end-boundary',
+      startedAt: '2026-11-30T22:30:00.000Z',
+      roundedMinutes: 120,
+    });
+
+    const result = computeAnalytics(
+      store({ timeEntries: [atStart, afterEnd] }),
+      RANGE,
+      COMPARE
+    );
+
+    expect(result.billableHours.value).toBe(1);
+  });
+
   it('sums billable hours only and leaves non-billable entries out', () => {
     const result = computeAnalytics(
       store({

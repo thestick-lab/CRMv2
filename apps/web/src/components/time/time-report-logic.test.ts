@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { TimeEntry } from '@/context/PracticeStoreContext';
+import { southAfricaDay } from '@/lib/dates';
 import {
   buildTimeReport,
-  localDay,
   resolvePresetRange,
   TIME_REPORT_PRESETS,
   type TimeReportRange,
@@ -135,7 +135,7 @@ describe('buildTimeReport', () => {
       startedAt: '2026-10-01T00:30:00+02:00',
       roundedMinutes: 45,
     });
-    expect(localDay(boundary.startedAt)).toBe('2026-10-01');
+    expect(southAfricaDay(boundary.startedAt)).toBe('2026-10-01');
 
     const report = buildTimeReport([boundary], RANGE);
     expect(report.kpis.total).toBe(45);

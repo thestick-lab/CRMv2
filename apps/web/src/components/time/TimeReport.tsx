@@ -177,7 +177,10 @@ export function TimeReport() {
       .sort((a, b) => b.total - a.total || a.clientCode.localeCompare(b.clientCode));
   }, [report.byPersonTask]);
 
-  const empty = report.kpis.total === null;
+  // Narrowing on `total` narrows the whole KPI object: a non-empty period
+  // carries numbers, so the populated branch needs no zero fallbacks.
+  const kpis = report.kpis;
+  const empty = kpis.total === null;
   const label = rangeLabel(appliedRange);
 
   const toggleGroup = (clientCode: string) => {
@@ -202,7 +205,7 @@ export function TimeReport() {
     setCollapsed(new Set());
   };
 
-  const billablePct = report.kpis.billablePct;
+  const billablePct = kpis.billablePct;
   const splitSlices =
     report.billableSplit.billable !== null && report.billableSplit.nonBillable !== null && billablePct !== null
       ? [
@@ -321,7 +324,7 @@ export function TimeReport() {
         <ReportKpi
           testId="report-kpi-total"
           label="Total (rounded)"
-          value={report.kpis.total === null ? null : formatHours(report.kpis.total)}
+          value={empty ? null : formatHours(kpis.total)}
           basis={`${report.entryCount} ${report.entryCount === 1 ? 'entry' : 'entries'} in ${label}.`}
           emptyCopy={`No time entries between ${label}.`}
           icon={Hourglass}
@@ -329,7 +332,7 @@ export function TimeReport() {
         <ReportKpi
           testId="report-kpi-billable"
           label="Billable"
-          value={report.kpis.billable === null ? null : formatHours(report.kpis.billable)}
+          value={empty ? null : formatHours(kpis.billable)}
           basis="Rounded time flagged billable on each entry."
           emptyCopy="Nothing billable logged in this range."
           icon={Clock}
@@ -338,7 +341,7 @@ export function TimeReport() {
         <ReportKpi
           testId="report-kpi-nonbillable"
           label="Non-billable"
-          value={report.kpis.nonBillable === null ? null : formatHours(report.kpis.nonBillable)}
+          value={empty ? null : formatHours(kpis.nonBillable)}
           basis="Training, admin and write-offs logged against clients."
           emptyCopy="No non-billable time in this range."
           icon={Users}
@@ -461,13 +464,13 @@ export function TimeReport() {
                 <tr data-testid="report-totals">
                   <td className="px-4 py-2.5 uppercase tracking-wide text-muted-foreground">Total</td>
                   <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-foreground">
-                    {formatHours(report.kpis.billable ?? 0)}
+                    {formatHours(kpis.billable)}
                   </td>
                   <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-foreground">
-                    {formatHours(report.kpis.nonBillable ?? 0)}
+                    {formatHours(kpis.nonBillable)}
                   </td>
                   <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-foreground">
-                    {formatHours(report.kpis.total ?? 0)}
+                    {formatHours(kpis.total)}
                   </td>
                 </tr>
               </tfoot>
@@ -508,7 +511,7 @@ export function TimeReport() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-foreground">Billable vs non-billable</h2>
           </div>
-          {splitSlices.length === 0 ? (
+          {empty ? (
             <EmptyStateCard
               icon={PieChart}
               title="No split to show"
@@ -518,7 +521,7 @@ export function TimeReport() {
           ) : (
             <DonutChart
               slices={splitSlices}
-              centerValue={formatHours(report.kpis.total ?? 0)}
+              centerValue={formatHours(kpis.total)}
               centerLabel="Total"
             />
           )}

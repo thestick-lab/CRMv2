@@ -272,7 +272,7 @@ function FragmentGroup({
       ))}
       <tr className="border-b border-border/60 bg-muted/10">
         <td className="px-2 py-1 text-right font-mono text-[9px] uppercase text-muted-foreground">
-          {group} subtotal
+          {group} subtotal {vatInclusive ? '(incl. VAT)' : '(excl. VAT)'}
         </td>
         <td className="px-2 py-1 text-right font-mono text-[10px] font-medium tabular-nums text-foreground">
           {formatZar(total)}

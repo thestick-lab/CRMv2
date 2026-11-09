@@ -121,7 +121,7 @@ export function AiPracticeAssistantDrawer({
                     className={cn(
                       'text-[10px] font-mono px-1 py-0 h-4',
                       activeProvider.active
-                        ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                        ? 'border-[#c4161c]/30 bg-[#c4161c]/5 text-[#c4161c] dark:text-[#f87171]'
                         : 'border-border text-muted-foreground'
                     )}
                   >

@@ -1,6 +1,7 @@
 import { cents, formatMonthShort } from 'fdoncall-practice/domain/estimate';
 import { endOfMonth, iso, type ISODate } from 'fdoncall-practice/domain/dates';
 import type { Invoice, InvoiceLine, TimeEntry } from '@/context/PracticeStoreContext';
+import { southAfricaDay } from './dates';
 
 /**
  * Time-entry arithmetic for the practice.
@@ -144,16 +145,6 @@ export interface MonthRange {
   end: ISODate;
 }
 
-/** The calendar month an entry belongs to, from its start timestamp. */
-const SA_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' });
-
-/** The South African calendar day an entry started on, `YYYY-MM-DD`. */
-export function entryDay(iso: string): string {
-  const time = Date.parse(iso);
-  if (Number.isNaN(time)) return '';
-  return SA_DAY.format(new Date(time));
-}
-
 /** `2026-11` → `{ start: '2026-11-01', end: '2026-11-30' }`. */
 export function billingMonthRange(month: string): MonthRange {
   const [year, monthNumber] = month.split('-').map(Number);
@@ -205,7 +196,7 @@ export function timeInvoiceFeed(
 ): TimeInvoiceFeed {
   const unbilled = entries.filter((entry) => {
     if (entry.clientCode !== clientCode || !entry.billable || entry.invoiceId) return false;
-    const day = entryDay(entry.startedAt);
+    const day = southAfricaDay(entry.startedAt);
     return day !== '' && day >= monthRange.start && day <= monthRange.end;
   });
 
@@ -278,7 +269,7 @@ export function releasedTimeEntries(
   const lineIds = new Set(invoice.lineItems.map((line) => line.id));
   return entries.filter((entry) => {
     if (entry.invoiceId !== invoice.id) return false;
-    const day = entryDay(entry.startedAt);
+    const day = southAfricaDay(entry.startedAt);
     if (day === '') return false;
     return !lineIds.has(timeLineId(entry.clientCode, day.slice(0, 7)));
   });

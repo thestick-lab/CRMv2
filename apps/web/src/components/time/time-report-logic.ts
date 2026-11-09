@@ -1,6 +1,7 @@
 import { SERVICE_TYPES } from 'fdoncall-practice/domain/catalogue';
 import { addDays, endOfMonth, parts, shiftMonth } from 'fdoncall-practice/domain/dates';
 import type { TimeEntry } from '@/context/PracticeStoreContext';
+import { southAfricaDay } from '@/lib/dates';
 
 /* ---------------------------------------------------------------------------
  * Time report derivation (time-tracking-report anatomy).
@@ -36,12 +37,14 @@ export const TIME_REPORT_PRESETS: ReadonlyArray<{ id: TimeReportPreset; label: s
 ];
 
 /** Minutes by which the four KPI cards and the split are stated. */
-export interface TimeReportKpis {
-  total: number | null;
-  billable: number | null;
-  nonBillable: number | null;
-  billablePct: number | null;
-}
+/**
+ * A period either has entries — every figure is a number — or it has none, and
+ * every figure is `null` so the view shows its named empty states. The union
+ * lets consumers narrow on `total` instead of falling back to zero.
+ */
+export type TimeReportKpis =
+  | { total: null; billable: null; nonBillable: null; billablePct: null }
+  | { total: number; billable: number; nonBillable: number; billablePct: number | null };
 
 export interface ClientTimeRow {
   clientCode: string;
@@ -72,25 +75,12 @@ export interface TimeReport {
 
 const SERVICE_SHORT = new Map(SERVICE_TYPES.map((service) => [service.code, service.short]));
 
-const SA_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' });
-
 /**
- * The South African calendar day (`YYYY-MM-DD`) an ISO timestamp falls on.
- *
- * Entries are stored as UTC instants; a 00:30 Johannesburg entry is still the
- * previous day in UTC, so the report must bucket by SAST or the month boundary
- * would move. An unreadable timestamp sorts into no day at all.
+ * Inclusive day-range tests; an entry belongs to the South African calendar day
+ * it started on, so a 00:30 SAST entry still lands inside its month.
  */
-export function localDay(iso: string | undefined): string {
-  if (!iso) return '';
-  const time = Date.parse(iso);
-  if (Number.isNaN(time)) return '';
-  return SA_DAY.format(new Date(time));
-}
-
-/** Inclusive day-range tests; an entry belongs to the day it started. */
 function inRange(entry: TimeEntry, range: TimeReportRange): boolean {
-  const day = localDay(entry.startedAt);
+  const day = southAfricaDay(entry.startedAt);
   if (!day) return false;
   return day >= range.start && day <= range.end;
 }

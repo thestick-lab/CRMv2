@@ -137,7 +137,7 @@ export function VaultTab({ client }: { client: Client }) {
         {folders.map((folder) => (
           <div
             key={folder.path}
-            className="border border-border/80 rounded-lg bg-card/60 overflow-hidden shadow-xs"
+            className="overflow-hidden rounded-xl border border-border bg-card"
           >
             <div className="px-4 py-2.5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
               <div className="flex items-center gap-2 font-mono text-xs font-semibold text-foreground">
@@ -183,7 +183,13 @@ export function VaultTab({ client }: { client: Client }) {
 
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <Badge
-                      variant={file.status === 'Signed & Executed' ? 'success' : file.status === 'Pending Signature' ? 'warning' : 'outline'}
+                      variant={
+                        file.status === 'Signed & Executed'
+                          ? 'crimsonSubdued'
+                          : file.status === 'Pending Signature'
+                            ? 'warning'
+                            : 'outline'
+                      }
                       className="text-[10px] py-0 px-1.5 gap-1 font-mono"
                     >
                       {file.status === 'Pending Signature' ? (

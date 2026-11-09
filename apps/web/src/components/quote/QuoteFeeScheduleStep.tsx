@@ -30,6 +30,8 @@ export interface QuoteFeeScheduleStepProps {
   vatInclusive: boolean;
   onVatInclusive: (inclusive: boolean) => void;
   onResetToBands: () => void;
+  /** Practice Rules fees — the IRP6 labels show what the engine actually charges. */
+  serviceFees: Record<string, number>;
 }
 
 const monthOptions = MONTHS.map((month, index) => ({
@@ -53,6 +55,7 @@ export function QuoteFeeScheduleStep({
   vatInclusive,
   onVatInclusive,
   onResetToBands,
+  serviceFees,
 }: QuoteFeeScheduleStepProps) {
   const selection = { ...suggestedSelection(input), ...input.selected };
 
@@ -131,8 +134,10 @@ export function QuoteFeeScheduleStep({
               }
               className={FIELD_INPUT_CLASS}
             >
-              <option value="payable">Tax payable (R 650 a return)</option>
-              <option value="nil">Nil return (R 575 a return)</option>
+              <option value="payable">
+                Tax payable ({formatZar(serviceFees.IRP6_PAYABLE, 0)} a return)
+              </option>
+              <option value="nil">Nil return ({formatZar(serviceFees.IRP6_NIL, 0)} a return)</option>
             </select>
           </label>
 

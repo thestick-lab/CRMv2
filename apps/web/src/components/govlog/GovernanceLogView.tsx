@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { AvatarChip, EmptyStateCard } from '@/components/ui/list-primitives';
 import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
+import { initialsFor } from '@/lib/initials';
 import { can } from '@/lib/permissions';
 import { NoAccessView } from '@/components/layout/NoAccessView';
 import {
@@ -18,15 +19,6 @@ import {
 
 const FILTER_SELECT_CLASS =
   'h-8 min-w-0 rounded-md border border-border bg-card px-2 text-xs text-foreground outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#c4161c]';
-
-function initialsFor(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
-}
 
 function actionTone(action: string): 'crimson' | 'amber' | 'muted' {
   if (

@@ -738,6 +738,7 @@ export function QuoteBuilderView({
                   setForm((previous) => ({ ...previous, vatInclusive }))
                 }
                 onResetToBands={handleResetToBands}
+                serviceFees={rates.serviceFees}
               />
             )}
 
@@ -808,7 +809,7 @@ export function QuoteBuilderView({
               'mb-2 flex items-center gap-1.5 text-[11px]',
               feedback.tone === 'error'
                 ? 'text-[#c4161c] dark:text-[#f87171]'
-                : 'text-emerald-700 dark:text-emerald-400'
+                : 'text-foreground'
             )}
           >
             {feedback.tone === 'error' ? (

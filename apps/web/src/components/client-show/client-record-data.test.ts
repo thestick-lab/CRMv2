@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { CLIENTS } from 'fdoncall-practice/data/seed';
 import type { ActivityEvent } from '@/context/PracticeStoreContext';
+import { initialsFor } from '@/lib/initials';
 import {
   buildClientTimeline,
   buildMissingInformation,
   clientTags,
-  initialsFor,
   nextOpenTask,
 } from './client-record-data';
 

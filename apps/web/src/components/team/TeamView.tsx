@@ -4,10 +4,9 @@ import { usePracticeStore } from '@/context/PracticeStoreContext';
 import { cn } from '@/lib/utils';
 import { can } from '@/lib/permissions';
 import { PageHeader } from '@/components/ui/page-header';
-import { EmptyStateCard } from '@/components/ui/list-primitives';
+import { CardHeaderWithLink, EmptyStateCard } from '@/components/ui/list-primitives';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CardHeaderWithLink } from '@/components/ui/list-primitives';
 import {
   ContactProfileLayout,
   type TabConfig,

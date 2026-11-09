@@ -18,7 +18,7 @@ export function NextActionPanel({ task, onComplete, onViewAll }: NextActionPanel
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <CardHeaderWithLink title="Next action" />
         <div className="flex items-center gap-2 px-4 py-6 text-xs text-muted-foreground">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <CheckCircle2 className="h-4 w-4 text-[#c4161c] dark:text-[#f87171]" />
           No open statutory tasks for this client.
         </div>
       </section>

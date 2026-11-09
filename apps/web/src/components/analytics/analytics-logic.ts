@@ -8,6 +8,7 @@ import {
   type TaskStatusOverride,
   type TimeEntry,
 } from '@/context/PracticeStoreContext';
+import { southAfricaDay } from '@/lib/dates';
 
 /* ---------------------------------------------------------------------------
  * Analytics (analytics-overview) derivation.
@@ -81,9 +82,14 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+/**
+ * Range boundaries are South African calendar days; timestamps are UTC
+ * instants, so the comparison happens on the SA day key. A 00:30 SAST record
+ * therefore belongs to its own day, not the previous UTC one.
+ */
 function inRange(date: string | undefined, range: DateRange): boolean {
-  if (!date) return false;
-  const day = date.slice(0, 10);
+  const day = southAfricaDay(date);
+  if (!day) return false;
   return day >= range.start && day <= range.end;
 }
 

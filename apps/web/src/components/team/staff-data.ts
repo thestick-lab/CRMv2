@@ -1,6 +1,7 @@
 import type { StaffMember } from 'fdoncall-practice/domain/types';
 import type { ISODate } from 'fdoncall-practice/domain/dates';
 import type { PracticeUser } from '@/context/PracticeStoreContext';
+import { initialsFor } from '@/lib/initials';
 
 /* ---------------------------------------------------------------------------
  * Staff register data (Team view): a dense, HR-style view of the practice
@@ -24,13 +25,6 @@ function roleFor(member: StaffMember): PracticeUser['role'] {
   return PRACTICE_ROLES.includes(member.role as PracticeUser['role'])
     ? (member.role as PracticeUser['role'])
     : 'Team member';
-}
-
-function initialsFor(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '—';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 export interface StaffRow {
@@ -91,7 +85,7 @@ export function staffRows(staff: StaffMember[], users: PracticeUser[]): StaffRow
       id: member.id,
       name: member.name,
       initials: initialsFor(member.name),
-      role: member.role,
+      role: user?.role ?? member.role,
       kind: member.kind,
       email: user?.email,
       phone: contract?.phone,

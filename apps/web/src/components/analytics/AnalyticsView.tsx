@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {
-  Activity,
   ArrowDownRight,
   ArrowUpRight,
   CalendarDays,
@@ -340,39 +339,30 @@ export function AnalyticsView() {
             Latest
           </span>
         </div>
-        {analytics.activity.length === 0 ? (
-          <div className="p-4">
-            <EmptyStateCard
-              icon={Activity}
-              title="No practice activity yet"
-              subtitle="Status changes, submissions, quotes and time entries appear here as they happen."
-              dashed
-            />
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {analytics.activity.map((event) => (
-              <li key={event.id} className="flex items-start gap-3 px-4 py-3">
-                <AvatarChip initials={event.actorInitials} tint={event.tint} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] leading-snug text-foreground">
-                    <span className="font-medium">{event.actorName}</span>{' '}
-                    <span className="text-muted-foreground">{event.text}</span>
-                  </p>
-                  <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
-                    {event.subline}
-                  </p>
-                </div>
-                <time
-                  dateTime={event.at}
-                  className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground"
-                >
-                  {relativeTime(event.at, today)}
-                </time>
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* The trail merges live events with the seeded engagement history, so it
+            always has rows — no empty state to guard. */}
+        <ul className="divide-y divide-border">
+          {analytics.activity.map((event) => (
+            <li key={event.id} className="flex items-start gap-3 px-4 py-3">
+              <AvatarChip initials={event.actorInitials} tint={event.tint} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] leading-snug text-foreground">
+                  <span className="font-medium">{event.actorName}</span>{' '}
+                  <span className="text-muted-foreground">{event.text}</span>
+                </p>
+                <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+                  {event.subline}
+                </p>
+              </div>
+              <time
+                dateTime={event.at}
+                className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground"
+              >
+                {relativeTime(event.at, today)}
+              </time>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

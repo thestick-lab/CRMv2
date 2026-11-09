@@ -59,7 +59,7 @@ export function DeadlinesTab({ client, asOfDate }: { client: Client; asOfDate: s
       </div>
 
       {/* Deadlines Table */}
-      <div className="border border-border/80 rounded-lg bg-card/60 overflow-hidden shadow-xs">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[10px] border-b border-border font-mono">
@@ -97,7 +97,7 @@ export function DeadlinesTab({ client, asOfDate }: { client: Client; asOfDate: s
                       {item.due ? (
                         <div className="flex items-center gap-1 text-foreground">
                           <span>{item.due}</span>
-                          <span className="text-emerald-500 font-sans text-[11px]" title="South African holiday rollback applied">
+                          <span className="font-sans text-[11px] text-[#c4161c] dark:text-[#f87171]" title="South African holiday rollback applied">
                             ↩
                           </span>
                         </div>

@@ -14,7 +14,7 @@ export function MissingInformationPanel({ items, onAdd }: MissingInformationPane
 
       {items.length === 0 ? (
         <div className="flex items-center gap-2 px-4 py-4 text-xs text-muted-foreground">
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <CheckCircle2 className="h-3.5 w-3.5 text-[#c4161c] dark:text-[#f87171]" />
           Every contact and statutory field is on file.
         </div>
       ) : (

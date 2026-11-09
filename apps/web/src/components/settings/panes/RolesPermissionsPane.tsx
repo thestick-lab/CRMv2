@@ -207,8 +207,10 @@ interface PendingChange {
 }
 
 const CELL_TONE: Record<StorableCell, string> = {
-  Allowed: 'text-emerald-600 dark:text-emerald-400',
-  Limited: 'text-foreground/70',
+  // The palette carries no green: an allowance is solid foreground, a
+  // narrowing (Limited) is the amber warning, and a refusal recedes.
+  Allowed: 'text-foreground',
+  Limited: 'text-amber-600 dark:text-amber-400',
   'Not allowed': 'text-muted-foreground/50',
 };
 

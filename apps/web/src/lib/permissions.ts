@@ -56,14 +56,6 @@ export type PermissionCell =
   | 'Inherited'
   | 'Custom';
 
-export const PERMISSION_CELLS: readonly PermissionCell[] = [
-  'Allowed',
-  'Not allowed',
-  'Limited',
-  'Inherited',
-  'Custom',
-];
-
 /**
  * What the matrix may persist. `Inherited` is the absence of an override and
  * `Custom` is a badge the matrix UI derives from a stored value that differs
@@ -322,10 +314,6 @@ export const DEFAULT_PERMISSION_MATRIX: PermissionMatrix = ROLES.reduce(
 
 /** The partner sign-off row is practice rule and never matrix-overridable. */
 export const SIGN_OFF_LOCKED = true;
-
-export const LOCKED_PERMISSION_ROWS: readonly string[] = PERMISSION_ROWS.filter(
-  (row) => row.locked
-).map((row) => row.id);
 
 export type PermissionGroupInput = PermissionGroup | PermissionSection;
 

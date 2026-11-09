@@ -194,7 +194,9 @@ export function DeadlinesDashboard({
       <PageHeader
         eyebrow="Deadlines"
         title="Deadlines"
-        subtitle={`${displayedTasks.length} statutory tasks · ${displayedAdhocTasks.length} ad-hoc task${
+        subtitle={`${displayedTasks.length} statutory task${
+          displayedTasks.length === 1 ? '' : 's'
+        } · ${displayedAdhocTasks.length} ad-hoc task${
           displayedAdhocTasks.length === 1 ? '' : 's'
         } in view. Six workflow lanes from preparation through partner sign-off to SARS submission.`}
         actions={

@@ -9,7 +9,8 @@ import { EmptyStateCard } from '@/components/ui/list-primitives';
 import { cn } from '@/lib/utils';
 import { can } from '@/lib/permissions';
 import { Clock, Pencil, Plus } from 'lucide-react';
-import { localDay, resolvePresetRange, TIME_REPORT_PRESETS } from './time-report-logic';
+import { southAfricaDay } from '@/lib/dates';
+import { resolvePresetRange, TIME_REPORT_PRESETS } from './time-report-logic';
 
 /* ---------------------------------------------------------------------------
  * Log tab — the practice timesheet.
@@ -59,7 +60,7 @@ export function Timesheet() {
           // Without `Time — view all`, the sheet shows only the user's own
           // entries — a limited subcontractor never reads other people's time.
           if (!canViewAllEntries && entry.staffUserId !== currentUser.id) return false;
-          const day = localDay(entry.startedAt);
+          const day = southAfricaDay(entry.startedAt);
           return day !== '' && day >= range.start && day <= range.end;
         })
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
@@ -175,7 +176,7 @@ export function Timesheet() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.map((entry) => {
-                  const day = localDay(entry.startedAt);
+                  const day = southAfricaDay(entry.startedAt);
                   return (
                     <tr
                       key={entry.id}

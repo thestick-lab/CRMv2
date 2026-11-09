@@ -3,7 +3,7 @@ import type { ClientContact } from 'fdoncall-practice/domain/types';
 import { Building2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CardHeaderWithLink } from '@/components/ui/list-primitives';
-import { initialsFor } from '../client-record-data';
+import { initialsFor } from '@/lib/initials';
 
 export interface OrganizationPanelProps {
   entityType: string;

@@ -15,19 +15,6 @@ import { buildClientAuditEntries } from '@/components/govlog/audit-log';
  * stay presentational.
  * ------------------------------------------------------------------------- */
 
-/** Avatar initials: first letters of up to two letter-bearing words. */
-export function initialsFor(name: string): string {
-  const words = name
-    .split(/\s+/)
-    .map((word) => word.replace(/[^A-Za-z]/g, ''))
-    .filter((word) => word.length > 0);
-  if (words.length === 0) return '—';
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]!.toUpperCase())
-    .join('');
-}
-
 export type MissingInformationKind = 'contact' | 'statutory' | 'organization';
 
 export interface MissingInformationItem {
