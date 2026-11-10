@@ -3,357 +3,319 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Database Schema &amp; Deployment Architecture</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Shipped practice data model — one store, ten entities</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --color-paper: #f6f5f3;
-      --color-paper-2: #efedea;
+      --color-paper-2: #ffffff;
       --color-ink: #1b1817;
+      --color-ink-strong: #111111;
       --color-muted: #5c5652;
-      --color-soft: #6e6762;
+      --color-soft: #6f6964;
       --color-rule: rgba(27,24,23,0.12);
-      --color-rule-solid: #cbc5c0;
+      --color-rule-solid: #d6d3cf;
       --color-accent: #c4161c;
       --color-accent-tint: rgba(196,22,28,0.08);
-      --color-link: #2c5a85;
+      --color-link: #2563eb;
       --font-sans: 'Geist', system-ui, sans-serif;
-      --font-serif: 'Instrument Serif', serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
       --font-mono: 'Geist Mono', ui-monospace, monospace;
     }
-    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
-    .container { max-width: 1240px; margin: 0 auto; }
-    .header { margin-bottom: 2.5rem; }
-    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
-    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
-    .subtitle { font-size: 0.9375rem; line-height: 1.6; color: var(--color-muted); max-width: 68ch; }
-    .diagram-container { background: var(--color-paper); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
-    svg { width: 100%; min-width: 1100px; display: block; }
-    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.75rem; border-top: 1px solid var(--color-rule); padding-top: 1.75rem; }
-    .card h2 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; }
-    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.6; }
-    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-rule); font-family: var(--font-mono); font-size: 0.66rem; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1280px; width: 100%; min-width: 0; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--color-muted);
+      max-width: 76ch;
+      margin-bottom: 1.75rem;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      letter-spacing: 0.01em;
+      color: var(--color-ink);
+    }
+
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    svg { width: 100%; min-width: 1280px; display: block; }
+
+    .footer {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--color-rule);
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      color: var(--color-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <p class="header-eyebrow">Database Schema &amp; Infrastructure · Diagram Design</p>
-      <h1>Relational Schema &amp; Dual-Target Deployment</h1>
-      <p class="subtitle">Physical Drizzle ORM schema with column-to-column foreign key anchors, cascading compliance task rules, and zero-drift deployment across Cloudflare D1 (Free Demo) and Node.js + PostgreSQL (Production).</p>
-    </div>
+  <div class="frame">
+    <p class="eyebrow">ER · Data model · Shipped</p>
+    <h1>Shipped practice data model — one store, ten entities</h1>
+    <p class="subtitle">Everything the product persists lives in one reducer state serialised to <code>crmv2_practice_state</code>. Overdue, the fee schedule, governance entries and the statutory task list are computed on read, never written.</p>
 
     <div class="diagram-container">
-      <svg viewBox="0 0 1140 680" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="db-schema-title db-schema-desc">
-        <title id="db-schema-title">FD on Call Relational Database Schema and Deployment Architecture</title>
-        <desc id="db-schema-desc">Physical SQL database schema illustrating five tables: clients, people, client_people_roles, compliance_tasks, and fee_estimates, with column-anchored foreign key connectors and a dual-target deployment section.</desc>
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="schema06-title schema06-desc">
+        <title id="schema06-title">Shipped practice data model — one store, ten entities</title>
+        <desc id="schema06-desc">Entity-relationship diagram of the persisted CRM store: one client owning contacts, quotes, invoices with embedded lines, time entries and task status overrides, alongside the permission matrix, activity log and store settings.</desc>
         <defs>
-          <marker id="db-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
-          <marker id="db-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c4161c"/></marker>
+          <marker id="schema06-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
+          <marker id="schema06-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c4161c"/></marker>
+          <marker id="schema06-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563eb"/></marker>
         </defs>
 
         <rect width="100%" height="100%" fill="#f6f5f3"/>
 
-        <!-- SCHEMA ENCLOSURE -->
-        <rect x="24" y="24" width="1092" height="428" rx="8" fill="rgba(27,24,23,0.015)" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-        <text x="36" y="44" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">PART A · PHYSICAL RELATIONAL SCHEMA (SQL DDL)</text>
+        <!-- ============ RELATIONSHIPS (behind the boxes) ============ -->
+        <!-- Client -> Quote -->
+        <path d="M 280 264 H 288 Q 296 264 296 256 V 128 Q 296 120 304 120 H 340" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#schema06-arrow)"/>
+        <!-- Client -> TimeEntry -->
+        <line x1="280" y1="296" x2="340" y2="296" stroke="#5c5652" stroke-width="1.2" marker-end="url(#schema06-arrow)"/>
+        <!-- Client -> TaskStatusOverride -->
+        <path d="M 280 328 H 312 Q 320 328 320 336 V 496 Q 320 504 328 504 H 340" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#schema06-arrow)"/>
+        <!-- Client -> ClientContact -->
+        <line x1="160" y1="360" x2="160" y2="424" stroke="#5c5652" stroke-width="1.2" marker-end="url(#schema06-arrow)"/>
+        <!-- Quote -> Invoice -->
+        <line x1="580" y1="120" x2="640" y2="120" stroke="#5c5652" stroke-width="1.2" marker-end="url(#schema06-arrow)"/>
+        <!-- ActivityEvent -> TaskStatusOverride (derived fold) -->
+        <line x1="640" y1="480" x2="580" y2="480" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#schema06-arrow)"/>
 
-        <!-- FK CONNECTORS (Drawn behind boxes) -->
-        <!-- FK 1: client_people_roles.client_code -> clients.code · ON DELETE CASCADE -->
-        <path d="M 400 136 H 360 Q 352 136 352 128 V 96 Q 352 88 344 88 H 280" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
-        
-        <!-- FK 2: client_people_roles.person_id -> people.id · ON DELETE CASCADE -->
-        <path d="M 640 160 H 680 Q 688 160 688 152 V 96 Q 688 88 696 88 H 740" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
+        <!-- ============ RELATIONSHIP LABELS ============ -->
+        <rect x="304" y="102" width="32" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="320" y="111" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">1 : N</text>
 
-        <!-- FK 3: compliance_tasks.client_code -> clients.code · ON DELETE CASCADE (FOCAL) -->
-        <path d="M 400 320 H 340 Q 332 320 332 200 Q 332 88 300 88 H 280" fill="none" stroke="#b8142c" stroke-width="1.2" marker-end="url(#db-arrow-accent)"/>
+        <rect x="292" y="278" width="32" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="308" y="287" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">1 : N</text>
 
-        <!-- FK 4: fee_estimates.client_code -> clients.code · ON DELETE SET NULL -->
-        <path d="M 740 320 H 680 Q 672 320 672 200 Q 672 88 320 88 H 280" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
+        <rect x="328" y="398" width="36" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="332" y="407" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.06em">1 : N</text>
 
-        <!-- FK LABELS (Masked) -->
-        <rect x="330" y="68" width="88" height="12" rx="2" fill="#f6f5f3"/>
-        <text x="374" y="77" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">CASCADE</text>
+        <rect x="168" y="378" width="32" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="184" y="387" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">1 : N</text>
 
-        <rect x="660" y="68" width="88" height="12" rx="2" fill="#f6f5f3"/>
-        <text x="704" y="77" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">CASCADE</text>
+        <rect x="592" y="102" width="32" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="608" y="111" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">1 : N</text>
 
-        <rect x="320" y="240" width="108" height="12" rx="2" fill="#f6f5f3"/>
-        <text x="374" y="249" fill="#b8142c" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">ON DELETE CASCADE</text>
+        <rect x="584" y="462" width="52" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="610" y="471" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">DERIVED</text>
 
-        <rect x="630" y="240" width="108" height="12" rx="2" fill="#f6f5f3"/>
-        <text x="684" y="249" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">ON DELETE SET NULL</text>
+        <!-- ============ CALLOUT LEADERS ============ -->
+        <path d="M 104 160 Q 132 196 155 222" fill="none" stroke="rgba(27,24,23,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <circle cx="158" cy="226" r="2" fill="#1b1817"/>
 
-                <!-- FK 5: document_attachments.client_code -> clients.code · ON DELETE CASCADE -->
-        <path d="M 160 272 V 260" fill="none" stroke="#5c5652" stroke-width="1" marker-end="url(#db-arrow)"/>
-        <!-- TABLE 1: clients -->
-        <g transform="translate(40 64)">
-          <rect width="240" height="196" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
-          <!-- Header -->
-          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
-          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
-          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">clients</text>
-          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
-          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
-          
-          <!-- Rows (24px height) -->
-          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">code</text>
-          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
-          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <path d="M 700 244 V 192" fill="none" stroke="rgba(27,24,23,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <circle cx="700" cy="188" r="2" fill="#1b1817"/>
 
-          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">name</text>
-          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <!-- ============ ENTITIES ============ -->
 
-          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">entity_type</text>
-          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <!-- Client (aggregate root, focal) -->
+        <rect x="40" y="232" width="240" height="128" rx="6" fill="#f6f5f3"/>
+        <rect x="40" y="232" width="240" height="128" rx="6" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2"/>
+        <rect x="40" y="232" width="240" height="40" rx="6" fill="rgba(196,22,28,0.12)"/>
+        <rect x="40" y="264" width="240" height="8" fill="rgba(196,22,28,0.12)"/>
+        <line x1="40" y1="272" x2="280" y2="272" stroke="rgba(196,22,28,0.40)" stroke-width="1"/>
+        <text x="52" y="247" fill="#c4161c" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY · ROOT</text>
+        <text x="52" y="263" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">Client</text>
+        <text x="52" y="290" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace"># code</text>
+        <text x="52" y="305" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">entityType</text>
+        <text x="52" y="320" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">vatCategory · yearEnd</text>
+        <text x="52" y="335" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">services[]</text>
+        <text x="52" y="350" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">contacts[]</text>
 
-          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">year_end_month</text>
-          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">integer</text>
+        <!-- ClientContact -->
+        <rect x="40" y="424" width="240" height="112" rx="6" fill="#f6f5f3"/>
+        <rect x="40" y="424" width="240" height="112" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <rect x="40" y="424" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="40" y="456" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="40" y1="464" x2="280" y2="464" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="52" y="439" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY · EMBEDDED</text>
+        <text x="52" y="455" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">ClientContact</text>
+        <text x="52" y="482" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace"># id</text>
+        <text x="52" y="497" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">name · role</text>
+        <text x="52" y="512" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">email · phone</text>
 
-          <rect y="124" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="140" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">turnover_cents</text>
-          <text x="228" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+        <!-- Quote -->
+        <rect x="340" y="56" width="240" height="128" rx="6" fill="#f6f5f3"/>
+        <rect x="340" y="56" width="240" height="128" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <rect x="340" y="56" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="340" y="88" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="340" y1="96" x2="580" y2="96" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="352" y="71" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY</text>
+        <text x="352" y="87" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">Quote</text>
+        <text x="352" y="114" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace"># number  Q-&lt;seq&gt;</text>
+        <text x="352" y="129" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">estimateInput</text>
+        <text x="352" y="144" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">stage · stageChangedAt</text>
+        <text x="352" y="159" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">documensoEnvelopeId</text>
+        <text x="352" y="176" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">fee schedule derived</text>
 
-          <text x="12" y="164" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">status</text>
-          <rect x="140" y="154" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="163" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="164" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <!-- Invoice -->
+        <rect x="640" y="56" width="240" height="128" rx="6" fill="#f6f5f3"/>
+        <rect x="640" y="56" width="240" height="128" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <rect x="640" y="56" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="640" y="88" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="640" y1="96" x2="880" y2="96" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="652" y="71" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY</text>
+        <text x="652" y="87" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">Invoice</text>
+        <text x="652" y="114" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace"># number  INV-&lt;seq&gt;</text>
+        <text x="652" y="129" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">→ quoteId · clientCode</text>
+        <text x="652" y="144" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">billingMonth · taxRate</text>
+        <text x="652" y="159" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">status · total</text>
+        <text x="652" y="176" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">lineItems[] · Overdue derived</text>
 
-          <text x="12" y="186" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ 14 more columns</text>
-        </g>
+        <!-- PermissionState -->
+        <rect x="940" y="56" width="240" height="112" rx="6" fill="#f6f5f3"/>
+        <rect x="940" y="56" width="240" height="112" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <rect x="940" y="56" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="940" y="88" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="940" y1="96" x2="1180" y2="96" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="952" y="71" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY</text>
+        <text x="952" y="87" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">PermissionState</text>
+        <text x="952" y="114" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">matrix[role][row]</text>
+        <text x="952" y="129" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">Allowed · Limited</text>
+        <text x="952" y="144" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">lastEditedBy</text>
+        <text x="952" y="161" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">6 roles · 6 groups · 18 rows</text>
 
-        <!-- TABLE 2: client_people_roles (Junction) -->
-        <g transform="translate(400 88)">
-          <rect width="240" height="148" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
-          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
-          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
-          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">client_people_roles</text>
-          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
-          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+        <!-- TimeEntry -->
+        <rect x="340" y="248" width="240" height="128" rx="6" fill="#f6f5f3"/>
+        <rect x="340" y="248" width="240" height="128" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <rect x="340" y="248" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="340" y="280" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="340" y1="288" x2="580" y2="288" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="352" y="263" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY</text>
+        <text x="352" y="279" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">TimeEntry</text>
+        <text x="352" y="306" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace"># id</text>
+        <text x="352" y="321" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">→ clientCode · taskId</text>
+        <text x="352" y="336" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">roundedMinutes</text>
+        <text x="352" y="351" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">billable</text>
+        <text x="352" y="366" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">→ invoiceId</text>
 
-          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
-          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
-          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+        <!-- Store settings -->
+        <rect x="940" y="440" width="240" height="128" rx="6" fill="#f6f5f3"/>
+        <rect x="940" y="440" width="240" height="128" rx="6" fill="rgba(27,24,23,0.05)" stroke="#5c5652" stroke-width="1"/>
+        <rect x="940" y="440" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="940" y="472" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="940" y1="480" x2="1180" y2="480" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="952" y="455" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">VALUE OBJECTS</text>
+        <text x="952" y="471" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">Store settings</text>
+        <text x="952" y="498" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">sequences { quote, invoice }</text>
+        <text x="952" y="513" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">integrationConfig</text>
+        <text x="952" y="528" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">staffProfiles.contract</text>
+        <text x="952" y="543" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">savedEstimates</text>
 
-          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
-          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
-          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <!-- TaskStatusOverride -->
+        <rect x="340" y="440" width="240" height="128" rx="6" fill="#f6f5f3"/>
+        <rect x="340" y="440" width="240" height="128" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <rect x="340" y="440" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="340" y="472" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="340" y1="480" x2="580" y2="480" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="352" y="455" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY · OVERRIDE</text>
+        <text x="352" y="471" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">TaskStatusOverride</text>
+        <text x="352" y="498" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace"># client|service|period</text>
+        <text x="352" y="513" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">status · sarsReference</text>
+        <text x="352" y="528" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">partnerSignOff · approvedBy</text>
+        <text x="352" y="543" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">submissionDate</text>
+        <text x="352" y="560" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">+ AdHocTask · same lanes</text>
 
-          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">person_id</text>
-          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
-          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+        <!-- ActivityEvent (compact) -->
+        <rect x="640" y="440" width="240" height="88" rx="6" fill="#f6f5f3"/>
+        <rect x="640" y="440" width="240" height="88" rx="6" fill="rgba(27,24,23,0.05)" stroke="#5c5652" stroke-width="1"/>
+        <rect x="640" y="440" width="240" height="40" rx="6" fill="rgba(27,24,23,0.04)"/>
+        <rect x="640" y="472" width="240" height="8" fill="rgba(27,24,23,0.04)"/>
+        <line x1="640" y1="480" x2="880" y2="480" stroke="rgba(27,24,23,0.22)" stroke-width="1"/>
+        <text x="652" y="455" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ENTITY · APPEND</text>
+        <text x="652" y="471" fill="#1b1817" font-size="14" font-weight="600" font-family="'Geist', system-ui, sans-serif">ActivityEvent</text>
+        <text x="652" y="498" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace">type · actor · at</text>
+        <text x="652" y="513" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">joins taskId · quoteId · invoiceId</text>
 
-          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">role</text>
-          <rect x="140" y="106" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="115" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <!-- ============ CALLOUTS ============ -->
+        <text x="40" y="74" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">RULE 01 · LOAD</text>
+        <text x="40" y="100" fill="#1b1817" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Merged on load, idempotent</text>
+        <text x="40" y="122" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Defaults filled, leads become quotes,</text>
+        <text x="40" y="144" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">statuses normalised, fields backfilled.</text>
 
-          <text x="12" y="138" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ ownership_pct, is_tax_incl</text>
-        </g>
+        <text x="640" y="262" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">RULE 02 · READ</text>
+        <text x="640" y="288" fill="#1b1817" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Derived, never stored</text>
+        <text x="640" y="310" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Overdue, the fee schedule, governance</text>
+        <text x="640" y="332" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">entries and statutory tasks.</text>
 
-        <!-- TABLE 3: people -->
-        <g transform="translate(740 64)">
-          <rect width="240" height="148" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
-          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
-          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
-          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">people</text>
-          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
-          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+        <!-- ============ LEGEND ============ -->
+        <line x1="40" y1="640" x2="1240" y2="640" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+        <text x="40" y="656" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
 
-          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
-          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
-          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+        <rect x="120" y="648" width="14" height="10" rx="2" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1"/>
+        <text x="142" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Aggregate root</text>
 
-          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">first_name</text>
-          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <rect x="268" y="648" width="14" height="10" rx="2" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="290" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Stored entity</text>
 
-          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">last_name</text>
-          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <rect x="396" y="648" width="14" height="10" rx="2" fill="rgba(27,24,23,0.05)" stroke="#5c5652" stroke-width="1"/>
+        <text x="418" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Embedded / value objects</text>
 
-          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">email</text>
-          <rect x="140" y="106" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="115" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">UQ</text>
-          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <line x1="612" y1="653" x2="636" y2="653" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4"/>
+        <text x="644" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Derived reference</text>
 
-          <text x="12" y="138" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ phone, linked_individual_code</text>
-        </g>
+        <text x="790" y="657" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace" font-weight="600">#</text>
+        <text x="806" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Key</text>
 
-        <!-- TABLE 4: compliance_tasks (Focal Cascaded Table) -->
-        <g transform="translate(400 272)">
-          <rect width="240" height="172" rx="6" fill="#ffffff" stroke="#b8142c" stroke-width="1.2"/>
-          <rect width="240" height="28" rx="6" fill="rgba(184,20,44,0.08)"/>
-          <line x1="0" y1="28" x2="240" y2="28" stroke="#b8142c" stroke-width="1"/>
-          <text x="12" y="18" fill="#b8142c" font-size="11" font-weight="600" font-family="'Geist', sans-serif">compliance_tasks</text>
-          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(184,20,44,0.4)" stroke-width="0.8"/>
-          <text x="208" y="17" fill="#b8142c" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
+        <text x="856" y="657" fill="#1b1817" font-size="10" font-family="'Geist Mono', ui-monospace, monospace" font-weight="600">→</text>
+        <text x="874" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Reference</text>
 
-          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
-          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
-          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
-          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(184,20,44,0.4)" stroke-width="0.8"/>
-          <text x="150" y="67" fill="#b8142c" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
-          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">service_code</text>
-          <rect x="140" y="82" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="91" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">due_date</text>
-          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <rect y="124" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="140" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">status</text>
-          <rect x="140" y="130" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="139" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <text x="12" y="162" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ review_rule, assignee, sars_ref</text>
-        </g>
-
-                <!-- TABLE 6: document_attachments (Historical Documents & KYC) -->
-        <g transform="translate(40 272)">
-          <rect width="240" height="172" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
-          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
-          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
-          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">document_attachments</text>
-          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
-          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
-
-          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
-          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
-          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
-
-          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
-          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
-          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">task_id</text>
-          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">category</text>
-          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <rect y="124" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="140" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">file_name</text>
-          <text x="228" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <text x="12" y="162" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ file_url, uploaded_at</text>
-        </g>
-
-        <!-- TABLE 5: fee_estimates -->
-        <g transform="translate(740 272)">
-          <rect width="240" height="148" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
-          <rect width="240" height="28" rx="6" fill="rgba(27,24,23,0.04)"/>
-          <line x1="0" y1="28" x2="240" y2="28" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
-          <text x="12" y="18" fill="#1b1817" font-size="11" font-weight="600" font-family="'Geist', sans-serif">fee_estimates</text>
-          <rect x="188" y="8" width="40" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.3)" stroke-width="0.8"/>
-          <text x="208" y="17" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">TABLE</text>
-
-          <rect y="28" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="44" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">id</text>
-          <rect x="140" y="34" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="43" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">PK</text>
-          <text x="228" y="44" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
-
-          <text x="12" y="68" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">client_code</text>
-          <rect x="140" y="58" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="67" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">FK</text>
-          <text x="228" y="68" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <rect y="76" width="240" height="24" fill="rgba(27,24,23,0.02)"/>
-          <text x="12" y="92" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">avg_monthly_cents</text>
-          <text x="228" y="92" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
-
-          <text x="12" y="116" fill="#1b1817" font-size="11" font-family="'Geist', sans-serif">status</text>
-          <rect x="140" y="106" width="20" height="12" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
-          <text x="150" y="115" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NN</text>
-          <text x="228" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-
-          <text x="12" y="138" fill="#6e6762" font-size="8" font-family="'Geist Mono', monospace">+ input_json, computed_json</text>
-        </g>
-
-        <!-- PART B: DUAL-TARGET DEPLOYMENT ARCHITECTURE STRIP -->
-        <g transform="translate(24 472)">
-          <rect width="1092" height="196" rx="8" fill="rgba(27,24,23,0.015)" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-          <text x="12" y="20" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">PART B · DUAL-TARGET DEPLOYMENT ARCHITECTURE (ZERO DRIFT)</text>
-
-          <!-- Shared Codebase Core Box -->
-          <rect x="40" y="44" width="300" height="128" rx="6" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
-          <text x="56" y="68" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Shared TypeScript Monorepo</text>
-          <text x="56" y="86" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">apps/web: React 19 + Twenty UI Shell</text>
-          <text x="56" y="104" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">apps/api: Hono Web Standards Router</text>
-          <text x="56" y="122" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">packages/domain: Pure SARS / CIPC Rules</text>
-          <text x="56" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">packages/db: Drizzle Schema (inc. sars_tax_brackets)</text>
-
-          <!-- Branch to Target A (Cloudflare Free Tier) -->
-          <path d="M 340 88 H 430" fill="none" stroke="#b8142c" stroke-width="1.2" marker-end="url(#db-arrow-accent)"/>
-          <rect x="440" y="44" width="300" height="128" rx="6" fill="rgba(184,20,44,0.08)" stroke="#b8142c" stroke-width="1.2"/>
-          <text x="456" y="68" fill="#b8142c" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Target A · Free Cloud Demo ($0/mo)</text>
-          <text x="456" y="86" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Host: Cloudflare Pages + Workers</text>
-          <text x="456" y="104" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Database: Cloudflare D1 (Serverless SQLite)</text>
-          <text x="456" y="122" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Instant global URL for Erik &amp; Wouter</text>
-          <text x="456" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Seeded with 13 clients &amp; 9 team members</text>
-
-          <!-- Branch to Target B (Dedicated Production) -->
-          <path d="M 340 148 H 770" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#db-arrow)"/>
-          <rect x="780" y="44" width="280" height="128" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
-          <text x="796" y="68" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Target B · Production Server</text>
-          <text x="796" y="86" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Host: Node.js (@hono/node-server)</text>
-          <text x="796" y="104" fill="#1b1817" font-size="8.5" font-family="'Geist Mono', monospace">Database: PostgreSQL 16 (or SQLite)</text>
-          <text x="796" y="122" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Self-hosted Docker / VPS deployment</text>
-          <text x="796" y="140" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Zero route or business logic rewriting</text>
-        </g>
+        <text x="960" y="657" fill="#5c5652" font-size="10" font-family="'Geist Mono', ui-monospace, monospace" font-weight="600">1 : N</text>
+        <text x="992" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Cardinality</text>
       </svg>
     </div>
 
-    <div class="cards">
-      <div class="card">
-        <h2>01 · Column-Level Integrity</h2>
-        <p>Foreign keys enforce explicit referential integrity, such as cascading task deletion when a client is purged, and preserving orphan-safe estimates.</p>
-      </div>
-      <div class="card">
-        <h2>02 · Person ↔ Entity Model</h2>
-        <p>The `client_people_roles` junction decouples directors, trustees, and primary contacts from corporate entities, allowing individuals to hold multiple roles.</p>
-      </div>
-      <div class="card">
-        <h2>03 · Zero-Lockin Dual Target</h2>
-        <p>Hono's Web Standard Request/Response model allows the exact same code to run serverless on Cloudflare D1 for demos or on Node.js + PostgreSQL for production.</p>
-      </div>
-    </div>
-
     <footer class="footer">
-      <span>FD ON CALL PRACTICE LEDGER · DATABASE &amp; CLOUD ARCHITECTURE</span>
-      <span>VALIDATED VIA DIAGRAM-DESIGN SELF-CHECK</span>
+      <span>FD ON CALL · PRACTICE LEDGER · PERSISTED MODEL</span>
+      <span>LOCALSTORAGE · crmv2_practice_state</span>
     </footer>
   </div>
 </body>

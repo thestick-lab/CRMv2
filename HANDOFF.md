@@ -58,16 +58,16 @@ Every requirement in this repository is structured according to the 4-layer spec
 │   ├── 05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md # The Master UI Spec
 │   ├── design.md                         # Color Tokens, Typography, WCAG AA/AAA
 │   ├── spec-handbook.html                # Interactive Handbook & Live Test Suite
-│   └── diagrams/                         # 9 Publication-Grade Editorial HTML+SVG Diagrams
-│       ├── 01-architecture-delta-twenty-to-fdoncall.html
-│       ├── 02-practice-data-flow.html
-│       ├── 03-compliance-rule-flowchart.html
-│       ├── 04-client-onboarding-and-compliance-journey.html
-│       ├── 05-task-and-lead-state-machines.html
-│       ├── 06-database-schema-and-cloud-architecture.html
-│       ├── 07-as-is-vs-to-be-workflow.html
-│       ├── 08-api-plugin-integrations.html
-│       └── 09-ui-information-architecture-and-screen-flows.html # Master IA Flow
+│   └── diagrams/                         # 9 self-contained HTML+SVG diagrams (FD on Call skin, 2026-11-10)
+│       ├── 01-architecture-delta-twenty-to-fdoncall.html   # Twenty monorepo → shipped CRMv2
+│       ├── 02-practice-data-flow.html                      # facts → store + engine → artifacts
+│       ├── 03-compliance-rule-flowchart.html               # obligation rule flow, date rollback, gates
+│       ├── 04-client-onboarding-and-compliance-journey.html # prospect → first retainer year
+│       ├── 05-task-and-lead-state-machines.html            # deadline task machine, six lanes (leads: removed)
+│       ├── 06-database-schema-and-cloud-architecture.html  # shipped ER model (no SQL schema deployed)
+│       ├── 07-as-is-vs-to-be-workflow.html                 # quote → cash lifecycle, stage gates
+│       ├── 08-api-plugin-integrations.html                 # auth/integration trust boundary
+│       └── 09-ui-information-architecture-and-screen-flows.html # 11 views, 7-tab record
 ├── assets/                               # Official FD on Call Logos & Badges
 │   ├── fd-on-call-logo.png
 │   ├── fd-on-call-footer-logo.png

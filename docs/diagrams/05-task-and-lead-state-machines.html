@@ -3,227 +3,253 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task &amp; Lead State Machines · Lifecycle Phase Map</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Deadline task state machine — six lanes, two guards</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --color-paper: #f6f5f3;
-      --color-paper-2: #efedea;
+      --color-paper-2: #ffffff;
       --color-ink: #1b1817;
+      --color-ink-strong: #111111;
       --color-muted: #5c5652;
-      --color-soft: #6e6762;
+      --color-soft: #6f6964;
       --color-rule: rgba(27,24,23,0.12);
-      --color-rule-solid: #cbc5c0;
+      --color-rule-solid: #d6d3cf;
       --color-accent: #c4161c;
       --color-accent-tint: rgba(196,22,28,0.08);
-      --color-link: #2c5a85;
+      --color-link: #2563eb;
       --font-sans: 'Geist', system-ui, sans-serif;
-      --font-serif: 'Instrument Serif', serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
       --font-mono: 'Geist Mono', ui-monospace, monospace;
     }
-    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
-    .container { max-width: 1200px; margin: 0 auto; }
-    .header { margin-bottom: 2.5rem; }
-    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
-    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
-    .subtitle { font-size: 0.9375rem; line-height: 1.6; color: var(--color-muted); max-width: 68ch; }
-    .diagram-container { background: var(--color-paper); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
-    svg { width: 100%; min-width: 960px; display: block; }
-    svg text { font-family: 'Geist', sans-serif; }
-    .band { fill: rgba(92,86,82,0.035); stroke: rgba(27,24,23,0.12); }
-    .flow { fill: none; stroke: #5c5652; stroke-width: 1.2; }
-    .flow.dashed { stroke-dasharray: 5 4; }
-    .flow.accent { stroke: #c4161c; stroke-width: 1.4; }
-    .mask { fill: #f6f5f3; }
-    .phase { fill: #fff; stroke: #1b1817; }
-    .support { fill: #f6f5f3; stroke: #5c5652; stroke-dasharray: 5 4; }
-    .terminal { fill: rgba(27,24,23,0.04); stroke: #5c5652; }
-    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.75rem; border-top: 1px solid var(--color-rule); padding-top: 1.75rem; }
-    .card h2 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; }
-    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.6; }
-    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-rule); font-family: var(--font-mono); font-size: 0.66rem; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1280px; width: 100%; min-width: 0; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--color-muted);
+      max-width: 76ch;
+      margin-bottom: 1.75rem;
+    }
+
+    .subtitle strong { font-weight: 600; color: var(--color-ink); }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      letter-spacing: 0.01em;
+      color: var(--color-ink);
+    }
+
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    svg { width: 100%; min-width: 1280px; display: block; }
+
+    .footer {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--color-rule);
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      color: var(--color-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <p class="header-eyebrow">State Machine · Lifecycle Phase Map</p>
-      <h1>Compliance Task &amp; Onboarding State Machines</h1>
-      <p class="subtitle">Complete transition logic for statutory compliance tasks—including the guarded partner review gate—alongside the client onboarding lifecycle.</p>
-    </div>
+  <div class="frame">
+    <p class="eyebrow">State machine · Deadlines</p>
+    <h1>Deadline task state machine — six lanes, two guards</h1>
+    <p class="subtitle"><strong>Note on the old filename:</strong> the lead machine is gone — <code>leads</code> became <code>Quote</code> in the 2026-11 redesign. What remains is one task machine, six lanes, and the partner sign-off gate.</p>
 
     <div class="diagram-container">
-      <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="state-title state-desc">
-        <title id="state-title">Compliance Task and Lead Lifecycle State Machine</title>
-        <desc id="state-desc">State transitions showing Not started, In progress, In review, Submitted, and Done along the primary rail, with Awaiting Client in the wait band, guarded partner review gates, and overdue exception handling.</desc>
-
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="state05-title state05-desc">
+        <title id="state05-title">Deadline task state machine — six lanes, two guards</title>
+        <desc id="state05-desc">State machine over six deadline lanes: not started, in progress, awaiting client, partner review gate for gated services, approved ready to lodge after partner sign-off, then submitted with a SARS reference and submit permission.</desc>
         <defs>
-          <pattern id="state-dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(27,24,23,0.08)"/></pattern>
-          <marker id="state-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
-          <marker id="state-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b8142c"/></marker>
+          <marker id="state05-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
+          <marker id="state05-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c4161c"/></marker>
+          <marker id="state05-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563eb"/></marker>
         </defs>
 
         <rect width="100%" height="100%" fill="#f6f5f3"/>
-        <rect width="100%" height="100%" fill="url(#state-dots)"/>
 
-        <!-- Support Band (Top) & Terminal Band (Bottom) -->
-        <rect class="band" x="24" y="44" width="952" height="116" rx="8"/>
-        <rect class="band" x="24" y="400" width="952" height="128" rx="8"/>
+        <!-- ============ TRANSITIONS ============ -->
+        <!-- start -> Not Started -->
+        <line x1="160" y1="102" x2="160" y2="136" stroke="#5c5652" stroke-width="1.2" marker-end="url(#state05-arrow)"/>
+        <!-- Not Started -> In Progress -->
+        <line x1="280" y1="208" x2="340" y2="208" stroke="#5c5652" stroke-width="1.2" marker-end="url(#state05-arrow)"/>
+        <!-- In Progress -> Awaiting Client -->
+        <line x1="580" y1="208" x2="640" y2="208" stroke="#5c5652" stroke-width="1.2" marker-end="url(#state05-arrow)"/>
+        <!-- Awaiting Client -> Partner Review Gate -->
+        <line x1="760" y1="280" x2="760" y2="376" stroke="#c4161c" stroke-width="1.2" marker-end="url(#state05-arrow-accent)"/>
+        <!-- Partner Review Gate -> Approved -->
+        <line x1="640" y1="448" x2="580" y2="448" stroke="#5c5652" stroke-width="1.2" marker-end="url(#state05-arrow)"/>
+        <!-- Approved -> Submitted -->
+        <line x1="340" y1="448" x2="280" y2="448" stroke="#5c5652" stroke-width="1.2" marker-end="url(#state05-arrow)"/>
+        <!-- Submitted -> end -->
+        <line x1="160" y1="520" x2="160" y2="556" stroke="#5c5652" stroke-width="1.2" marker-end="url(#state05-arrow)"/>
+        <!-- Approved -> In Progress (move back) -->
+        <line x1="460" y1="376" x2="460" y2="280" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#state05-arrow)"/>
 
-        <!-- Band Labels -->
-        <g fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">
-          <text x="40" y="64">WAIT / CLIENT BLOCKS</text>
-          <text x="40" y="200">PRIMARY COMPLIANCE RAIL</text>
-          <text x="40" y="420">LEAD ONBOARDING PIPELINE &amp; EXCEPTION SIGNALS</text>
-        </g>
+        <!-- ============ TRANSITION LABELS ============ -->
+        <rect x="286" y="190" width="48" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="310" y="199" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">FREE MOVE</text>
 
-        <!-- Primary Rail Connectors -->
-        <!-- Start dot -> Not started -->
-        <line class="flow" x1="44" y1="256" x2="68" y2="256" marker-end="url(#state-arrow)"/>
-        <!-- Not started -> In progress -->
-        <line class="flow" x1="218" y1="256" x2="248" y2="256" marker-end="url(#state-arrow)"/>
-        <!-- In progress -> Wait (Awaiting client) -->
-        <path class="flow dashed" d="M 323 220 V 176 H 373 V 140" marker-end="url(#state-arrow)"/>
-        <!-- Awaiting client -> In progress (return) -->
-        <path class="flow dashed" d="M 453 140 V 176 H 399 V 220" marker-end="url(#state-arrow)"/>
-        <!-- In progress -> In review (guarded) -->
-        <line class="flow accent" x1="398" y1="256" x2="428" y2="256" marker-end="url(#state-arrow-accent)"/>
-        <!-- In review -> In progress (rejected/feedback) -->
-        <path class="flow dashed" d="M 503 292 V 330 H 323 V 292" marker-end="url(#state-arrow)"/>
-        <!-- In review -> Submitted (partner approved) -->
-        <line class="flow" x1="578" y1="256" x2="608" y2="256" marker-end="url(#state-arrow)"/>
-        <!-- Direct bypass: In progress -> Submitted (when review === 'never' or nil IRP6) -->
-        <path class="flow" d="M 323 292 V 350 H 683 V 292" marker-end="url(#state-arrow)"/>
-        <!-- Submitted -> Done -->
-        <line class="flow accent" x1="758" y1="256" x2="800" y2="256" marker-end="url(#state-arrow-accent)"/>
+        <rect x="586" y="190" width="48" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="610" y="199" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">FREE MOVE</text>
 
-        <!-- In progress -> Overdue signal (bottom) -->
-        <path class="flow" d="M 323 292 V 420" marker-end="url(#state-arrow)"/>
+        <rect x="768" y="322" width="56" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="772" y="331" fill="#c4161c" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.06em">IF GATED</text>
 
-        <!-- Transition Masks & Labels -->
-        <g font-family="'Geist Mono', monospace" font-size="7" text-anchor="middle" letter-spacing="0.08em" fill="#5c5652">
-          <rect class="mask" x="217" y="244" width="30" height="12" rx="2"/><text x="232" y="253">START</text>
-          <rect class="mask" x="328" y="160" width="56" height="12" rx="2"/><text x="356" y="169">NEED INFO</text>
-          <rect class="mask" x="408" y="174" width="56" height="12" rx="2"/><text x="436" y="183">RECEIVED</text>
-          <rect class="mask" x="398" y="244" width="30" height="12" rx="2"/><text x="413" y="253" fill="#b8142c">REVIEW</text>
-          <rect class="mask" x="388" y="324" width="50" height="12" rx="2"/><text x="413" y="333">REJECT</text>
-          <rect class="mask" x="578" y="244" width="30" height="12" rx="2"/><text x="593" y="253">APPROVE</text>
-          <rect class="mask" x="460" y="344" width="90" height="12" rx="2"/><text x="505" y="353">BYPASS [review == 'never']</text>
-          <rect class="mask" x="760" y="244" width="36" height="12" rx="2"/><text x="778" y="253" fill="#b8142c">CONFIRM</text>
-          <rect class="mask" x="280" y="380" width="86" height="12" rx="2"/><text x="323" y="389">now &gt; due_date</text>
-        </g>
+        <rect x="584" y="430" width="52" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="610" y="439" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">SIGN-OFF</text>
 
-        <!-- Start Dot -->
-        <circle cx="38" cy="256" r="6" fill="#1b1817"/>
+        <rect x="284" y="430" width="52" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="310" y="439" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">SUBMIT</text>
 
-        <!-- Primary Rail States -->
-        <g text-anchor="middle" font-family="'Geist', sans-serif">
-          <!-- State 1: Not started -->
-          <g>
-            <rect class="phase" x="68" y="220" width="150" height="72" rx="8"/>
-            <text x="143" y="250" fill="#1b1817" font-size="12" font-weight="600">Not started</text>
-            <text x="143" y="268" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">scheduled in queue</text>
-          </g>
+        <rect x="468" y="314" width="80" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="472" y="323" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.06em">BACK / CLEARS</text>
 
-          <!-- State 2: In progress -->
-          <g>
-            <rect class="phase" x="248" y="220" width="150" height="72" rx="8"/>
-            <text x="323" y="250" fill="#1b1817" font-size="12" font-weight="600">In progress</text>
-            <text x="323" y="268" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">assigned to staff</text>
-          </g>
+        <!-- ============ CALLOUT LEADERS ============ -->
+        <path d="M 936 186 Q 910 192 888 200" fill="none" stroke="rgba(27,24,23,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <circle cx="886" cy="201" r="2" fill="#1b1817"/>
 
-          <!-- State 3: In review (Focal Guarded State) -->
-          <g>
-            <rect x="428" y="220" width="150" height="72" rx="8" fill="rgba(184,20,44,0.08)" stroke="#b8142c" stroke-width="1.2"/>
-            <text x="503" y="248" fill="#b8142c" font-size="12" font-weight="600">In review</text>
-            <text x="503" y="264" fill="#1b1817" font-size="7.5" font-family="'Geist Mono', monospace">[always &#124;&#124; IRP6 payable]</text>
-            <text x="503" y="278" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">Erik / Wouter sign-off</text>
-          </g>
+        <path d="M 936 448 H 890" fill="none" stroke="rgba(27,24,23,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <circle cx="886" cy="448" r="2" fill="#1b1817"/>
 
-          <!-- State 4: Submitted -->
-          <g>
-            <rect class="phase" x="608" y="220" width="150" height="72" rx="8"/>
-            <text x="683" y="250" fill="#1b1817" font-size="12" font-weight="600">Submitted</text>
-            <text x="683" y="268" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">SARS / CIPC filed</text>
-          </g>
+        <!-- ============ STATES ============ -->
 
-          <!-- State 5: Done (Terminal) -->
-          <g>
-            <rect x="800" y="220" width="150" height="72" rx="8" fill="rgba(184,20,44,0.08)" stroke="#b8142c"/>
-            <circle cx="824" cy="244" r="7" fill="none" stroke="#b8142c"/>
-            <circle cx="824" cy="244" r="4" fill="#b8142c"/>
-            <text x="885" y="250" fill="#1b1817" font-size="12" font-weight="600">Done</text>
-            <text x="885" y="268" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">Xero bill drafted</text>
-          </g>
-        </g>
+        <!-- Not Started -->
+        <rect x="40" y="136" width="240" height="144" rx="8" fill="#f6f5f3"/>
+        <rect x="40" y="136" width="240" height="144" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="160" y="196" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Not Started</text>
+        <text x="160" y="220" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">derived task id</text>
+        <text x="160" y="236" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">client|service|period</text>
 
-        <!-- Support Band States (Top) -->
-        <g text-anchor="middle">
-          <g>
-            <rect class="support" x="338" y="68" width="160" height="72" rx="8"/>
-            <rect x="348" y="78" width="56" height="12" rx="2" fill="none" stroke="rgba(92,86,82,0.45)"/>
-            <text x="376" y="87" fill="#5c5652" font-size="7" font-family="'Geist Mono', monospace">CLIENT WAIT</text>
-            <text x="418" y="111" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Awaiting client</text>
-            <text x="418" y="126" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">bank stmts / docs</text>
-          </g>
-          
-          <g>
-            <rect class="support" x="608" y="68" width="160" height="72" rx="8"/>
-            <rect x="618" y="78" width="56" height="12" rx="2" fill="none" stroke="rgba(184,20,44,0.5)"/>
-            <text x="646" y="87" fill="#b8142c" font-size="7" font-family="'Geist Mono', monospace">SIGNAL</text>
-            <text x="688" y="111" fill="#b8142c" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Missing a date</text>
-            <text x="688" y="126" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">blocks CIPC AR</text>
-          </g>
-        </g>
+        <!-- In Progress -->
+        <rect x="340" y="136" width="240" height="144" rx="8" fill="#f6f5f3"/>
+        <rect x="340" y="136" width="240" height="144" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="460" y="196" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">In Progress</text>
+        <text x="460" y="220" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">status on the override</text>
+        <text x="460" y="236" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">one record per task</text>
 
-        <!-- Bottom Band: Overdue + Lead Pipeline -->
-        <g text-anchor="middle">
-          <!-- Overdue Exception Box -->
-          <g>
-            <rect class="terminal" x="248" y="420" width="150" height="72" rx="8" stroke="#b8142c" stroke-width="1.2"/>
-            <rect x="258" y="430" width="54" height="12" rx="2" fill="rgba(184,20,44,0.12)"/>
-            <text x="285" y="439" fill="#b8142c" font-size="7" font-family="'Geist Mono', monospace">EXCEPTION</text>
-            <text x="323" y="462" fill="#b8142c" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Overdue Alert</text>
-            <text x="323" y="478" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">red badge &amp; escalation</text>
-          </g>
+        <!-- Awaiting Client -->
+        <rect x="640" y="136" width="240" height="144" rx="8" fill="#f6f5f3"/>
+        <rect x="640" y="136" width="240" height="144" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="760" y="196" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Awaiting Client</text>
+        <text x="760" y="220" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">blocked on client documents</text>
+        <text x="760" y="236" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">same override record</text>
 
-          <!-- Lead Onboarding Rail (Right Side of Bottom Band) -->
-          <g font-family="'Geist', sans-serif">
-            <line x1="440" y1="456" x2="940" y2="456" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="3 3"/>
-            <circle cx="470" cy="456" r="4" fill="#5c5652"/>
-            <text x="470" y="476" fill="#1b1817" font-size="10" font-weight="600">Lead</text>
-            <circle cx="580" cy="456" r="4" fill="#5c5652"/>
-            <text x="580" y="476" fill="#1b1817" font-size="10" font-weight="600">Discovery</text>
-            <circle cx="690" cy="456" r="4" fill="#5c5652"/>
-            <text x="690" y="476" fill="#1b1817" font-size="10" font-weight="600">Estimate Sent</text>
-            <circle cx="810" cy="456" r="4" fill="#b8142c"/>
-            <text x="810" y="476" fill="#b8142c" font-size="10" font-weight="600">KYC &amp; eFiling</text>
-            <circle cx="920" cy="456" r="6" fill="#1b1817"/>
-            <text x="920" y="476" fill="#1b1817" font-size="10" font-weight="600">Active Client</text>
-          </g>
-        </g>
+        <!-- Partner Review Gate (focal) -->
+        <rect x="640" y="376" width="240" height="144" rx="8" fill="#f6f5f3"/>
+        <rect x="640" y="376" width="240" height="144" rx="8" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2"/>
+        <text x="760" y="428" fill="#c4161c" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Partner Review Gate</text>
+        <text x="760" y="452" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">AFS · ITR14 · ITR12 · ITR12T</text>
+        <text x="760" y="468" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">EMP501 · IRP6 if payable</text>
+        <text x="760" y="492" fill="#c4161c" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">canSignOff · role Partner</text>
+
+        <!-- Approved (Ready to Lodge) -->
+        <rect x="340" y="376" width="240" height="144" rx="8" fill="#f6f5f3"/>
+        <rect x="340" y="376" width="240" height="144" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="460" y="412" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Approved</text>
+        <text x="460" y="428" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">(Ready to Lodge)</text>
+        <text x="460" y="452" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">partnerSignOff · approvedBy</text>
+        <text x="460" y="468" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">cleared on any move back</text>
+
+        <!-- Submitted -->
+        <rect x="40" y="376" width="240" height="144" rx="8" fill="#f6f5f3"/>
+        <rect x="40" y="376" width="240" height="144" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="160" y="436" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Submitted</text>
+        <text x="160" y="460" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">sarsReference required</text>
+        <text x="160" y="476" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">+ submit permission</text>
+
+        <!-- Start / end markers -->
+        <circle cx="160" cy="96" r="6" fill="#1b1817"/>
+        <circle cx="160" cy="566" r="8" fill="none" stroke="#1b1817" stroke-width="1.2"/>
+        <circle cx="160" cy="566" r="5" fill="#1b1817"/>
+
+        <!-- ============ CALLOUTS ============ -->
+        <text x="940" y="152" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">GATE GUARD</text>
+        <text x="940" y="178" fill="#1b1817" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Only gated services stop here;</text>
+        <text x="940" y="200" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">everything else moves straight on</text>
+        <text x="940" y="222" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">from Awaiting Client.</text>
+
+        <text x="940" y="412" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">ONE CHECK</text>
+        <text x="940" y="438" fill="#1b1817" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Drag, hover menu and keyboard</text>
+        <text x="940" y="460" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">all call canMoveStatus; a refused</text>
+        <text x="940" y="482" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">move snaps back with feedback.</text>
+
+        <!-- ============ LEGEND ============ -->
+        <line x1="40" y1="640" x2="1240" y2="640" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+        <text x="40" y="656" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+
+        <rect x="120" y="648" width="14" height="10" rx="2" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="142" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Lane</text>
+
+        <rect x="212" y="648" width="14" height="10" rx="2" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1"/>
+        <text x="234" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Guarded lane</text>
+
+        <line x1="340" y1="653" x2="372" y2="653" stroke="#5c5652" stroke-width="1.2"/>
+        <text x="380" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Forward move, no guard</text>
+
+        <line x1="544" y1="653" x2="576" y2="653" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4"/>
+        <text x="584" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Move back, clears sign-off</text>
+
+        <circle cx="752" cy="653" r="5" fill="#1b1817"/>
+        <text x="764" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Start</text>
+
+        <circle cx="836" cy="653" r="6" fill="none" stroke="#1b1817" stroke-width="1.2"/>
+        <circle cx="836" cy="653" r="3.5" fill="#1b1817"/>
+        <text x="850" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">End of lane</text>
       </svg>
     </div>
 
-    <div class="cards">
-      <div class="card">
-        <h2>01 · Partner Review Guard</h2>
-        <p>The `'In review'` state is strictly guarded: high-risk returns (AFS, ITR14, ITR12, EMP501) and payable IRP6 returns require partner sign-off before submission.</p>
-      </div>
-      <div class="card">
-        <h2>02 · Wait &amp; Signal Handling</h2>
-        <p>Awaiting client documents pauses operational deadlines without losing context, while the `'Missing a date'` signal holds tasks until master profile gaps are resolved.</p>
-      </div>
-      <div class="card">
-        <h2>03 · Lead Onboarding Alignment</h2>
-        <p>The 5-stage onboarding funnel transitions seamlessly into the active compliance rail upon acceptance, immediately generating statutory tasks in `'Not started'`.</p>
-      </div>
-    </div>
-
     <footer class="footer">
-      <span>FD ON CALL PRACTICE LEDGER · STATE MACHINE</span>
-      <span>VALIDATED VIA DIAGRAM-DESIGN SELF-CHECK</span>
+      <span>FD ON CALL · PRACTICE LEDGER · DEADLINE BOARD</span>
+      <span>SIX LANES · ONE canMoveStatus CHECK</span>
     </footer>
   </div>
 </body>

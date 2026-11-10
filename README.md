@@ -13,7 +13,7 @@ Combines Twenty CRM's modern dark/light UI aesthetic with South African statutor
 * **Master UI Screen & Information Architecture Spec:** [`docs/05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md`](docs/05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md)
 * **Architecture & Data Model Spec:** [`docs/03-ARCHITECTURE-AND-DATABASE-SPEC.md`](docs/03-ARCHITECTURE-AND-DATABASE-SPEC.md)
 * **Interactive Specification Handbook:** Open [`docs/spec-handbook.html`](docs/spec-handbook.html) in your browser.
-* **Interactive SVG Diagrams (9 total):** Located under [`docs/diagrams/`](docs/diagrams/) — `09` (UI IA) and `06` (schema/cloud architecture) predate the 2026-11 redesign and need regenerating.
+* **Interactive diagrams (9, self-contained HTML+SVG):** [`docs/diagrams/`](docs/diagrams/) — architecture delta (`01`), practice data flow (`02`), statutory rule flow (`03`), engagement journey (`04`), deadline task state machine (`05`), shipped data model (`06`), quote-to-cash lifecycle (`07`), integration/auth boundary (`08`), UI information architecture (`09`). All redrawn 2026-11-10 in the FD on Call diagram skin.
 * **Pure TypeScript Domain Engine:** Ready-to-use in [`packages/domain/src/domain/`](packages/domain/src/domain/)
   * `dates.ts`: Easter Sunday Computus & South African public holiday rollbacks
   * `sars.ts`: Filing seasons for IRP6, ITR14, ITR12, VAT201, EMP201, EMP501

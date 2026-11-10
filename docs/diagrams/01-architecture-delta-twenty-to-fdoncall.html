@@ -3,250 +3,244 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Twenty CRM to FD on Call Practice CRM · Architecture Delta</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Architecture delta · Twenty monorepo to the shipped CRMv2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --color-paper: #f6f5f3;
       --color-paper-2: #ffffff;
       --color-ink: #1b1817;
+      --color-ink-strong: #111111;
       --color-muted: #5c5652;
-      --color-soft: #6e6762;
+      --color-soft: #6f6964;
       --color-rule: rgba(27,24,23,0.12);
-      --color-rule-solid: #d8d6d2;
+      --color-rule-solid: #d6d3cf;
       --color-accent: #c4161c;
       --color-accent-tint: rgba(196,22,28,0.08);
-      --color-link: #2c5a85;
+      --color-link: #2563eb;
       --font-sans: 'Geist', system-ui, sans-serif;
       --font-serif: 'Instrument Serif', serif;
       --font-mono: 'Geist Mono', ui-monospace, monospace;
     }
-    body { font-family: var(--font-sans); color: var(--color-ink); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; }
-    .frame { width: 100%; max-width: 1240px; min-width: 0; margin: 0 auto; }
-    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
-    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); line-height: 1.1; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
-    .subtitle { max-width: 76ch; font-size: 0.9375rem; line-height: 1.6; color: var(--color-muted); margin-bottom: 2rem; }
-    .diagram-container { width: 100%; background: var(--color-paper); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
-    svg { display: block; width: 100%; min-width: 1120px; }
-    .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; border-top: 1px solid var(--color-rule); padding-top: 1.75rem; margin-top: 2rem; }
-    .notes h2 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.625rem; }
-    .notes p { font-size: 0.8125rem; line-height: 1.6; color: var(--color-muted); }
-    .footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-top: 2rem; font-family: var(--font-mono); font-size: 0.66rem; color: var(--color-muted); }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1280px; width: 100%; margin: 0 auto; min-width: 0; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.6rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 2.2vw + 1rem, 2.3rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.12;
+      color: var(--color-ink);
+      margin-bottom: 0.7rem;
+    }
+    .subtitle {
+      max-width: 78ch;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--color-muted);
+      margin-bottom: 1.75rem;
+    }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+    .panel-title { font-family: var(--font-sans); font-size: 14px; font-weight: 600; fill: var(--color-ink); }
+    .panel-sub { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em; fill: var(--color-soft); text-transform: uppercase; }
+    .zone-label { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.14em; fill: var(--color-soft); text-transform: uppercase; }
+    .tag-text { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.08em; fill: var(--color-muted); text-transform: uppercase; }
+    .status-text { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.08em; fill: var(--color-soft); text-transform: uppercase; }
+    .node-name { font-family: var(--font-sans); font-size: 12px; font-weight: 600; fill: var(--color-ink); }
+    .node-sub { font-family: var(--font-mono); font-size: 9px; fill: var(--color-muted); }
+    .node-sub-sm { font-family: var(--font-mono); font-size: 8.5px; fill: var(--color-muted); }
+    .ledger-status { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.08em; fill: var(--color-soft); text-transform: uppercase; }
+    .ledger-line { font-family: var(--font-sans); font-size: 11px; fill: var(--color-ink); }
+    .ledger-detail { font-family: var(--font-mono); font-size: 9px; fill: var(--color-muted); }
+    .ledger-num { font-family: var(--font-mono); font-size: 9px; fill: var(--color-soft); }
+    .callout { font-family: var(--font-serif); font-style: italic; font-size: 14px; fill: var(--color-ink); }
+    .legend-text { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.06em; fill: var(--color-muted); }
+    .legend-key { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; fill: var(--color-soft); }
   </style>
 </head>
 <body>
-  <main class="frame">
-    <p class="eyebrow">Architecture Delta · FD on Call Practice Ledger</p>
-    <h1>Twenty CRM to FD on Call Practice CRM, before and after</h1>
-    <p class="subtitle">Transforming the generic open-source Twenty CRM monorepo into FD on Call's specialized practice operating system by pruning generic sales surfaces, integrating the South African statutory compliance engine, adding Documenso digital signing, and linking SharePoint vaults & Xero billing.</p>
-    
-    <div class="diagram-container" role="region" aria-label="Before, changes, and after architecture comparison" tabindex="0">
-      <svg viewBox="0 0 1200 680" xmlns="http://www.w3.org/2000/svg" data-diagram="architecture-delta" role="img" aria-labelledby="architecture-delta-title architecture-delta-desc">
-        <title id="architecture-delta-title">Twenty CRM to FD on Call Practice CRM Architecture Delta</title>
-        <desc id="architecture-delta-desc">Before shows base Twenty CRM with generic sales pipelines alongside disconnected in-memory Client_CRM prototype. After shows the unified FD on Call Twenty Extended CRM with native object extensions, Documenso e-signatures, SharePoint vault daemons, and Xero sync.</desc>
+  <div class="frame">
+    <p class="eyebrow">Architecture delta · FD on Call practice ledger</p>
+    <h1>Architecture delta — Twenty monorepo to the shipped CRMv2</h1>
+    <p class="subtitle">The v1 route forked Twenty's frontend and server for every custom field, and failed on cost. The shipped app keeps the editorial shell, lifts the statutory logic into a tested package, and reduces the server to one Pages Function over D1.</p>
+
+    <div class="diagram-container" role="region" aria-label="Before, changes, and after architecture comparison; scroll horizontally on narrow screens" tabindex="0">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" data-diagram="architecture-delta" role="img" aria-labelledby="arch-delta-title arch-delta-desc">
+        <title id="arch-delta-title">Architecture delta, Twenty monorepo to CRMv2</title>
+        <desc id="arch-delta-desc">Before, the Twenty monorepo forks its frontend and NestJS server over PostgreSQL with MikroORM and GraphQL codegen. After, a React 19 single-page app shares one localStorage-backed store with a tested domain package, and a single Cloudflare Pages Function with an auth guard fronts D1.</desc>
         <defs>
-          <marker id="delta-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
-          <marker id="delta-arrow-accent" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 8 3, 0 6" fill="#c4161c"/></marker>
+          <marker id="arch-delta-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
         </defs>
-        
-        <rect width="1200" height="680" fill="#f6f5f3"/>
-        
-        <!-- ==================== BEFORE REGION (Left) ==================== -->
-        <g id="before-topology">
-          <text x="48" y="32" fill="#5c5652" font-size="10" font-family="'Geist Mono', monospace" letter-spacing="0.12em" font-weight="600">BEFORE · BASE TWENTY &amp; PROTOTYPE</text>
-          <line x1="48" y1="44" x2="352" y2="44" stroke="#d8d6d2" stroke-width="1"/>
 
-          <!-- Connectors Before -->
-          <path d="M 200 128 V 176" fill="none" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#delta-arrow)"/>
-          <path d="M 200 240 V 288" fill="none" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#delta-arrow)"/>
-          <path d="M 200 352 V 400" fill="none" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#delta-arrow)"/>
+        <rect width="1280" height="720" fill="#f6f5f3"/>
 
-          <!-- Label Masks -->
-          <rect x="156" y="144" width="88" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="200" y="156" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">GENERIC B2B</text>
+        <!-- Panel headers -->
+        <text x="40" y="56" class="panel-title">Before</text>
+        <text x="40" y="76" class="panel-sub">twenty monorepo · v1 approach</text>
+        <text x="408" y="56" class="panel-title">Changes</text>
+        <text x="408" y="76" class="panel-sub">four objects · one cut</text>
+        <text x="904" y="56" class="panel-title">After</text>
+        <text x="904" y="76" class="panel-sub">shipped CRMv2 · one function</text>
+        <line x1="388" y1="40" x2="388" y2="608" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
+        <line x1="886" y1="40" x2="886" y2="608" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
 
-          <rect x="152" y="256" width="96" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="200" y="268" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">NO SA RULES</text>
+        <!-- ================= BEFORE ================= -->
+        <g data-snapshot="before" data-grid="336 512 4" transform="translate(40 96)">
+          <rect x="8" y="8" width="320" height="112" rx="8" fill="rgba(27,24,23,0.02)" stroke="rgba(27,24,23,0.10)" stroke-width="0.8"/>
+          <text x="20" y="24" class="zone-label">Browser · one tab</text>
 
-          <rect x="146" y="368" width="108" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="200" y="380" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">DISCONNECTED</text>
+          <path data-kind="relationship" data-object-id="r1" data-status="unchanged" data-signature="http;request" data-from="ui" data-to="server" d="M 86 96 V 152" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#arch-delta-arrow)"/>
+          <path data-kind="relationship" data-object-id="r2" data-status="unchanged" data-signature="sql;read-write" data-from="server" data-to="data" d="M 168 224 V 256" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#arch-delta-arrow)"/>
 
-          <!-- Component: Twenty UI (Generic) -->
-          <g>
-            <rect x="64" y="64" width="272" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="76" y="80" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">~ twenty_front · GENERIC</text>
-            <text x="76" y="100" fill="#1b1817" font-size="12" font-weight="600">Twenty CRM Shell</text>
-            <text x="76" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Standard B2B sales pipelines &amp; deals</text>
+          <g data-kind="component" data-object-id="ui" data-status="changed" data-signature="frontend:twenty-front;router=metadata">
+            <rect data-role="bounds" x="16" y="32" width="140" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
+            <path d="M 17 44 V 84" fill="none" stroke="#5c5652" stroke-width="2.5"/>
+            <text x="28" y="48" class="status-text">Front · Δ</text>
+            <text x="28" y="74" class="node-name">Twenty frontend</text>
+            <text x="28" y="90" class="node-sub-sm">twenty-front</text>
           </g>
 
-          <!-- Component: Twenty Server Core -->
-          <g>
-            <rect x="64" y="176" width="272" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="76" y="192" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">~ twenty_server · CORE</text>
-            <text x="76" y="212" fill="#1b1817" font-size="12" font-weight="600">NestJS / PostgreSQL 16</text>
-            <text x="76" y="228" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Core metadata without statutory fields</text>
+          <g data-kind="component" data-object-id="server" data-status="changed" data-signature="server:twenty-server;orm=mikro;api=graphql;codegen=yes">
+            <rect data-role="bounds" x="48" y="152" width="240" height="72" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
+            <path d="M 49 164 V 212" fill="none" stroke="#5c5652" stroke-width="2.5"/>
+            <rect x="60" y="158" width="64" height="14" rx="2" fill="none" stroke="rgba(92,86,82,0.40)" stroke-width="0.8"/>
+            <text x="92" y="168" class="tag-text" text-anchor="middle">Server</text>
+            <text x="278" y="168" class="status-text" text-anchor="end">Δ changed</text>
+            <text x="60" y="192" class="node-name">Twenty server</text>
+            <text x="60" y="210" class="node-sub">packages/twenty-server · MikroORM</text>
           </g>
 
-          <!-- Component: Generic SaaS Billing (Removed) -->
-          <g>
-            <rect x="64" y="288" width="272" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4"/>
-            <text x="76" y="304" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">− saas_billing · PRUNED</text>
-            <text x="76" y="324" fill="#1b1817" font-size="12" font-weight="600">Stripe Billing &amp; ARR Metrics</text>
-            <text x="76" y="340" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Unused SaaS subscription features</text>
+          <g data-kind="component" data-object-id="data" data-status="changed" data-signature="db:postgres16;orm=mikro">
+            <rect data-role="bounds" x="48" y="256" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
+            <path d="M 49 268 V 308" fill="none" stroke="#5c5652" stroke-width="2.5"/>
+            <rect x="60" y="262" width="52" height="14" rx="2" fill="none" stroke="rgba(92,86,82,0.40)" stroke-width="0.8"/>
+            <text x="86" y="272" class="tag-text" text-anchor="middle">Data</text>
+            <text x="278" y="272" class="status-text" text-anchor="end">Δ changed</text>
+            <text x="60" y="294" class="node-name">PostgreSQL 16</text>
+            <text x="60" y="312" class="node-sub">custom fields → schema + codegen</text>
           </g>
 
-          <!-- Component: Client_CRM (In-Memory) -->
-          <g>
-            <rect x="64" y="400" width="272" height="64" rx="6" fill="rgba(196,22,28,0.06)" stroke="#c4161c" stroke-width="1.2"/>
-            <path d="M 65 412 V 452" fill="none" stroke="#c4161c" stroke-width="3"/>
-            <text x="76" y="416" fill="#c4161c" font-size="7.5" font-family="'Geist Mono', monospace">~ client_crm · PROTOTYPE</text>
-            <text x="76" y="436" fill="#1b1817" font-size="12" font-weight="600">Client_CRM Prototype v0.9.2</text>
-            <text x="76" y="452" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Ephemeral state resets on reload</text>
-          </g>
+          <text x="16" y="392" class="zone-label">Cost of every field</text>
+          <text x="16" y="416" class="callout">A custom field cost days:</text>
+          <text x="16" y="436" class="callout">schema, codegen, client rebuild, redeploy.</text>
         </g>
 
-        <!-- ==================== CHANGES LEDGER (Middle) ==================== -->
-        <g id="changes-ledger">
-          <text x="424" y="32" fill="#5c5652" font-size="10" font-family="'Geist Mono', monospace" letter-spacing="0.12em" font-weight="600">CHANGES LEDGER · ARCHITECTURAL CUT</text>
-          <line x1="424" y1="44" x2="776" y2="44" stroke="#d8d6d2" stroke-width="1"/>
+        <!-- ================= LEDGER ================= -->
+        <g aria-label="Changes ledger">
+          <text x="408" y="128" class="ledger-num">01</text>
+          <text data-change="CHANGED" data-target="ui" x="440" y="126" class="ledger-status">CHANGED · UI</text>
+          <text x="440" y="148" class="ledger-line">Twenty frontend → React 19 SPA</text>
+          <text x="440" y="168" class="ledger-detail">ViewKey stays in memory; one localStorage-backed</text>
+          <text x="440" y="184" class="ledger-detail">store holds every practice record.</text>
+          <line x1="408" y1="204" x2="872" y2="204" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-          <!-- Item 1 -->
-          <text x="424" y="80" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">01</text>
-          <text x="456" y="78" fill="#c4161c" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">+ ADDED · SA STATUTORY ENGINE</text>
-          <text x="456" y="100" fill="#1b1817" font-size="12" font-weight="600">Pure SARS / CIPC Compliance Rules</text>
-          <text x="456" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">10 statutory returns, Computus holidays, rollbacks</text>
-          <line x1="456" y1="128" x2="776" y2="128" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
+          <text x="408" y="232" class="ledger-num">02</text>
+          <text data-change="CHANGED" data-target="data" x="440" y="230" class="ledger-status">CHANGED · DATA</text>
+          <text x="440" y="252" class="ledger-line">PostgreSQL 16 → D1 crmv2-auth</text>
+          <text x="440" y="272" class="ledger-detail">Data moves behind the function; ten accounts are</text>
+          <text x="440" y="288" class="ledger-detail">seeded server-side, sign-up refused at the guard.</text>
+          <line x1="408" y1="308" x2="872" y2="308" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-          <!-- Item 2 -->
-          <text x="424" y="150" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">02</text>
-          <text x="456" y="148" fill="#2c5a85" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">~ CHANGED · TWENTY METADATA</text>
-          <text x="456" y="170" fill="#1b1817" font-size="12" font-weight="600">Extend Company &amp; Task Entities</text>
-          <text x="456" y="186" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Add FYE, turnover, VAT cat, review gates</text>
-          <line x1="456" y1="198" x2="776" y2="198" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
+          <text x="408" y="336" class="ledger-num">03</text>
+          <text data-change="ADDED" data-target="domain" x="440" y="334" class="ledger-status">ADDED · DOMAIN</text>
+          <text x="440" y="356" class="ledger-line">Statutory logic gets its own package</text>
+          <text x="440" y="376" class="ledger-detail">7 rule and 6 export modules leave twenty-server;</text>
+          <text x="440" y="392" class="ledger-detail">52 tests now guard the rules.</text>
+          <line x1="408" y1="412" x2="872" y2="412" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-          <!-- Item 3 -->
-          <text x="424" y="220" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">03</text>
-          <text x="456" y="218" fill="#c4161c" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">+ ADDED · DOCUMENSO E-SIGN</text>
-          <text x="456" y="240" fill="#1b1817" font-size="12" font-weight="600">Dual-Sign Proposal Acceptance</text>
-          <text x="456" y="256" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Client + Partner sign ECTA s13 compliant SLAs</text>
-          <line x1="456" y1="268" x2="776" y2="268" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
+          <text x="408" y="440" class="ledger-num">04</text>
+          <text data-change="CHANGED" data-target="server" x="440" y="438" class="ledger-status">CHANGED · SERVER</text>
+          <text x="440" y="460" class="ledger-line">twenty-server → one Pages Function</text>
+          <text x="440" y="480" class="ledger-detail">Hono + better-auth: auth-guard strips role, staffId</text>
+          <text x="440" y="496" class="ledger-detail">and kind from auth POSTs; every sign-up is 403.</text>
 
-          <!-- Item 4 -->
-          <text x="424" y="290" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">04</text>
-          <text x="456" y="288" fill="#c4161c" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">+ ADDED · SHAREPOINT VAULT</text>
-          <text x="456" y="310" fill="#1b1817" font-size="12" font-weight="600">MS Graph API Client Storage</text>
-          <text x="456" y="326" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Automated /Clients/{Code}/ directory hierarchy</text>
-          <line x1="456" y1="338" x2="776" y2="338" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
-
-          <!-- Item 5 -->
-          <text x="424" y="360" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">05</text>
-          <text x="456" y="358" fill="#c4161c" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">+ ADDED · XERO SA VAT SYNC</text>
-          <text x="456" y="380" fill="#1b1817" font-size="12" font-weight="600">Timekeeping &amp; Draft Invoicing</text>
-          <text x="456" y="396" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Retainer hours depletion &amp; 15% VAT OUTPUT2</text>
-          <line x1="456" y1="408" x2="776" y2="408" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
-
-          <!-- Item 6 -->
-          <text x="424" y="430" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">06</text>
-          <text x="456" y="428" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">− PRUNED · GENERIC B2B SALES</text>
-          <text x="456" y="450" fill="#1b1817" font-size="12" font-weight="600">Navigation &amp; Permission Pruning</text>
-          <text x="456" y="466" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Hide deals, products, price books, Stripe billing</text>
+          <text x="408" y="560" class="panel-sub">Net · three kept, one added</text>
+          <text x="408" y="580" class="panel-sub">no fork to rebase · no codegen wait</text>
         </g>
 
-        <!-- ==================== AFTER REGION (Right) ==================== -->
-        <g id="after-topology">
-          <text x="848" y="32" fill="#5c5652" font-size="10" font-family="'Geist Mono', monospace" letter-spacing="0.12em" font-weight="600">AFTER · FD ON CALL TWENTY CRM</text>
-          <line x1="848" y1="44" x2="1152" y2="44" stroke="#d8d6d2" stroke-width="1"/>
+        <!-- ================= AFTER ================= -->
+        <g data-snapshot="after" data-grid="336 512 4" transform="translate(904 96)">
+          <rect x="8" y="8" width="320" height="112" rx="8" fill="rgba(27,24,23,0.02)" stroke="rgba(27,24,23,0.10)" stroke-width="0.8"/>
+          <text x="20" y="24" class="zone-label">Browser · one tab</text>
 
-          <!-- Connectors After -->
-          <path d="M 1000 128 V 176" fill="none" stroke="#c4161c" stroke-width="1.2" marker-end="url(#delta-arrow-accent)"/>
-          <path d="M 1000 240 V 288" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#delta-arrow)"/>
-          <path d="M 1000 352 V 400" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#delta-arrow)"/>
+          <path data-kind="relationship" data-object-id="r1" data-status="unchanged" data-signature="http;request" data-from="ui" data-to="server" d="M 86 96 V 152" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#arch-delta-arrow)"/>
+          <path data-kind="relationship" data-object-id="r2" data-status="unchanged" data-signature="sql;read-write" data-from="server" data-to="data" d="M 168 224 V 256" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#arch-delta-arrow)"/>
 
-          <!-- Label Masks -->
-          <rect x="946" y="144" width="108" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="1000" y="156" fill="#c4161c" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CUSTOM MODULES</text>
-
-          <rect x="946" y="256" width="108" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="1000" y="268" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">METADATA SYNC</text>
-
-          <rect x="940" y="368" width="120" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="1000" y="380" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">PLUGINS &amp; VAULT</text>
-
-          <!-- Component: Twenty Front (Customized) -->
-          <g>
-            <rect x="864" y="64" width="272" height="64" rx="6" fill="#ffffff" stroke="#c4161c" stroke-width="1.2"/>
-            <path d="M 865 76 V 116" fill="none" stroke="#c4161c" stroke-width="3"/>
-            <text x="876" y="80" fill="#c4161c" font-size="7.5" font-family="'Geist Mono', monospace">~ twenty_front · BRANDED</text>
-            <text x="876" y="100" fill="#1b1817" font-size="12" font-weight="600">FD on Call Practice UI</text>
-            <text x="876" y="116" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Deadlines, 12-Mo Estimator, Kanban</text>
+          <g data-kind="component" data-object-id="ui" data-status="changed" data-signature="frontend:react19;viewkey=memory;store=localStorage">
+            <rect data-role="bounds" x="16" y="32" width="140" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
+            <path d="M 17 44 V 84" fill="none" stroke="#5c5652" stroke-width="2.5"/>
+            <text x="28" y="48" class="status-text">Front · Δ</text>
+            <text x="28" y="74" class="node-name">apps/web SPA</text>
+            <text x="28" y="90" class="node-sub-sm">React 19 · ViewKey</text>
           </g>
 
-          <!-- Component: Twenty Server Extended -->
-          <g>
-            <rect x="864" y="176" width="272" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="876" y="192" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">~ twenty_server · EXTENDED</text>
-            <text x="876" y="212" fill="#1b1817" font-size="12" font-weight="600">NestJS &amp; Partner Review Gate</text>
-            <text x="876" y="228" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Enforces Erik/Wouter sign-off on AFS/IRP6</text>
+          <g data-kind="component" data-object-id="domain" data-status="added" data-signature="domain:packages;rules=7;exports=6;tests=52">
+            <rect data-role="bounds" x="180" y="32" width="140" height="80" rx="6" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2"/>
+            <text x="192" y="48" class="status-text" fill="#c4161c">Domain · +</text>
+            <text x="192" y="74" class="node-name">packages/domain</text>
+            <text x="192" y="90" class="node-sub-sm">7 rule + 6 exports</text>
+            <text x="192" y="104" class="node-sub-sm">52 tests</text>
           </g>
 
-          <!-- Component: Pure Domain Engine -->
-          <g>
-            <rect x="864" y="288" width="272" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="876" y="304" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">+ twenty_shared · DOMAIN</text>
-            <text x="876" y="324" fill="#1b1817" font-size="12" font-weight="600">@fdoncall/domain Engine</text>
-            <text x="876" y="340" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Pure calculations in twenty-shared</text>
+          <g data-kind="component" data-object-id="server" data-status="changed" data-signature="server:pages-function;hono;better-auth;guard=yes">
+            <rect data-role="bounds" x="48" y="152" width="240" height="72" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
+            <path d="M 49 164 V 212" fill="none" stroke="#5c5652" stroke-width="2.5"/>
+            <rect x="60" y="158" width="64" height="14" rx="2" fill="none" stroke="rgba(92,86,82,0.40)" stroke-width="0.8"/>
+            <text x="92" y="168" class="tag-text" text-anchor="middle">Server</text>
+            <text x="278" y="168" class="status-text" text-anchor="end">Δ changed</text>
+            <text x="60" y="192" class="node-name">Pages Function</text>
+            <text x="60" y="210" class="node-sub">Hono · better-auth · guard → 403</text>
           </g>
 
-          <!-- Component: External Connectors -->
-          <g>
-            <rect x="864" y="400" width="272" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="876" y="416" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">+ connectors · INTEGRATED</text>
-            <text x="876" y="436" fill="#1b1817" font-size="12" font-weight="600">Documenso, Graph &amp; Xero</text>
-            <text x="876" y="452" fill="#5c5652" font-size="8.5" font-family="'Geist Mono', monospace">Digital signing, client vaults &amp; 15% VAT</text>
+          <g data-kind="component" data-object-id="data" data-status="changed" data-signature="db:d1;name=crmv2-auth;seed=server">
+            <rect data-role="bounds" x="48" y="256" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
+            <path d="M 49 268 V 308" fill="none" stroke="#5c5652" stroke-width="2.5"/>
+            <rect x="60" y="262" width="52" height="14" rx="2" fill="none" stroke="rgba(92,86,82,0.40)" stroke-width="0.8"/>
+            <text x="86" y="272" class="tag-text" text-anchor="middle">Data</text>
+            <text x="278" y="272" class="status-text" text-anchor="end">Δ changed</text>
+            <text x="60" y="294" class="node-name">D1 crmv2-auth</text>
+            <text x="60" y="312" class="node-sub">SQLite · 10 seeded accounts</text>
           </g>
+
+          <text x="16" y="392" class="zone-label">Practice runtime</text>
+          <text x="16" y="416" class="callout">One reducer, one store key,</text>
+          <text x="16" y="436" class="callout">52 tests where the rules live.</text>
         </g>
 
         <!-- Legend -->
-        <g id="legend" transform="translate(48, 540)">
-          <rect x="0" y="0" width="1104" height="40" rx="4" fill="#ffffff" stroke="#d8d6d2" stroke-width="0.8"/>
-          <circle cx="24" cy="20" r="4" fill="#c4161c"/>
-          <text x="36" y="24" fill="#1b1817" font-size="9" font-family="'Geist Mono', monospace">Focal Practice Enhancement</text>
-
-          <rect x="250" y="14" width="12" height="12" rx="2" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
-          <text x="270" y="24" fill="#1b1817" font-size="9" font-family="'Geist Mono', monospace">Core Twenty Infrastructure</text>
-
-          <rect x="490" y="14" width="12" height="12" rx="2" fill="#ffffff" stroke="#5c5652" stroke-width="1" stroke-dasharray="3 3"/>
-          <text x="510" y="24" fill="#1b1817" font-size="9" font-family="'Geist Mono', monospace">Pruned Generic Surface</text>
-
-          <line x1="710" y1="20" x2="740" y2="20" stroke="#c4161c" stroke-width="1.2" marker-end="url(#delta-arrow-accent)"/>
-          <text x="750" y="24" fill="#1b1817" font-size="9" font-family="'Geist Mono', monospace">Primary Automated Flow</text>
-
-          <line x1="930" y1="20" x2="960" y2="20" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#delta-arrow)"/>
-          <text x="970" y="24" fill="#1b1817" font-size="9" font-family="'Geist Mono', monospace">Unlinked Prototype Boundary</text>
-        </g>
+        <line x1="40" y1="644" x2="1240" y2="644" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+        <text x="40" y="670" class="legend-key">Legend</text>
+        <path d="M 136 654 V 674" fill="none" stroke="#5c5652" stroke-width="2.5"/>
+        <text x="148" y="669" class="legend-text">Changed · inset rule + Δ</text>
+        <rect x="392" y="656" width="18" height="14" rx="2" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1"/>
+        <text x="420" y="669" class="legend-text">Added · accent outline + +</text>
+        <rect x="668" y="656" width="18" height="14" rx="2" fill="#ffffff" stroke="#5c5652" stroke-width="1"/>
+        <text x="696" y="669" class="legend-text">Unchanged · plain outline</text>
+        <line x1="944" y1="662" x2="976" y2="662" stroke="#5c5652" stroke-width="1.2" marker-end="url(#arch-delta-arrow)"/>
+        <text x="988" y="669" class="legend-text">Surviving relationship</text>
       </svg>
     </div>
-
-    <section class="notes">
-      <div>
-        <h2>01 · Zero UI Re-Invention</h2>
-        <p>By keeping Twenty CRM as our active base, we avoid re-building client registers, task queues, activity timelines, command palettes, and custom databases from scratch.</p>
-      </div>
-      <div>
-        <h2>02 · Configuration Pruning</h2>
-        <p>Generic B2B sales pipelines and ARR customer success features are pruned via Navigation Drawer config and permissions, keeping Twenty clean and focused purely on practice accounting.</p>
-      </div>
-      <div>
-        <h2>03 · Automated Engagement Lifecycle</h2>
-        <p>12-month fee proposals flow directly to self-hosted Documenso for legally binding dual-signature acceptance, auto-activating won leads and creating SharePoint client vaults.</p>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <span>FD on Call Practice CRM · Architecture Specification Baseline</span>
-      <span>Diagram 01 of 07 · diagram-design profile: fdoncall</span>
-    </footer>
-  </main>
+  </div>
 </body>
 </html>

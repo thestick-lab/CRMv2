@@ -1,7 +1,7 @@
 # FD on Call CRM — UI Information Architecture & Screen Flow Specification
 
 **Document Reference:** `docs/05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md`  
-**Diagram Reference:** `docs/diagrams/09-ui-information-architecture-and-screen-flows.html` (superseded — see §7)  
+**Diagram Reference:** `docs/diagrams/09-ui-information-architecture-and-screen-flows.html` (regenerated 2026-11-10 to the shipped 11-view shell)  
 **Target Application:** Standalone Modern CRM (`/home/hein/Projects/CRMv2`)  
 **Design System Base:** Twenty CRM Dark/Light Component Geometry with FD on Call Brand Identity  
 **Status:** Screen specification reconciled to the shipped application, 2026-11-10. Superseded blueprint material is retained and labelled, not deleted.  
@@ -25,7 +25,7 @@ This document serves as the **BABOK-grade Information Architecture (IA) and Scre
 
 ### 2.1 Superseded: original workspace map (pre-implementation)
 
-> **Status: superseded by §2.2.** This map was drawn before implementation and does not match the shipped navigation. It is retained to show the intended geometry: persistent 44px topbar, ~236px sidebar, Twenty-style dense registers, and a four-layer shell. The `/dashboard`, `/reports`, `/people`, `/quotes/new` routes and the "New Quote Calculator" sidebar item no longer exist; navigation is in-memory and quoting happens in the Sales Pipeline quote builder. `docs/diagrams/09-ui-information-architecture-and-screen-flows.html` was drawn against this map and must be regenerated (§7).
+> **Status: superseded by §2.2.** This map was drawn before implementation and does not match the shipped navigation. It is retained to show the intended geometry: persistent 44px topbar, ~236px sidebar, Twenty-style dense registers, and a four-layer shell. The `/dashboard`, `/reports`, `/people`, `/quotes/new` routes and the "New Quote Calculator" sidebar item no longer exist; navigation is in-memory and quoting happens in the Sales Pipeline quote builder. `docs/diagrams/09-ui-information-architecture-and-screen-flows.html` has been regenerated (2026-11-10) against §2.2, not against this map.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -414,7 +414,7 @@ This transfer is **done**, not pending: the pure TypeScript modules now live in 
 
 ### 6.3 Twenty CRM visual shell extraction
 
-The styling tokens and layout are captured in `docs/diagrams/09-ui-information-architecture-and-screen-flows.html` and the Brainstorming Visual Companion. The tokens are still current even though the diagram's navigation is not:
+The styling tokens and layout are captured in `docs/diagrams/09-ui-information-architecture-and-screen-flows.html` (regenerated 2026-11-10) and the Brainstorming Visual Companion. The tokens below remain current:
 * Canvas background: `#141414` (dark) / `#f6f5f3` (light).
 * Sidebar & Header: `#171717` (dark) / `#ffffff` (light).
 * Hairline borders: `#262626` (dark) / `#d6d3cf` (light).
@@ -426,5 +426,5 @@ The styling tokens and layout are captured in `docs/diagrams/09-ui-information-a
 
 1. **Information Architecture re-verified against the code (2026-11-10):** the 11-view navigation, 7 client tabs, 6×18 permission matrix and the kanban/stage contracts above match `apps/web` at `fe075f1`.
 2. **Superseded:** the old workspace map in §2.1, the People / Estimator / Onboarding Pipeline sidebar entries, the `/quotes/new` screen, the 4-tab client record and the `/clients/:code` route notation. The old entries are retained here and visibly labelled; they are not current behaviour.
-3. **Regenerate needed:** `docs/diagrams/09-ui-information-architecture-and-screen-flows.html` (navigation map, client-record tabs, quote/invoice screens) and any screenshots showing the old sidebar, the 4-tab record, or the New Quote Calculator. `docs/diagrams/06-database-schema-and-cloud-architecture.html` and `08-api-plugin-integrations.html` also depict planned, not shipped, architecture.
+3. **Diagrams regenerated (2026-11-10):** all nine files in `docs/diagrams/` were redrawn to the shipped system in the FD on Call diagram skin — `01` architecture delta (Twenty → CRMv2), `02` practice data flow, `03` statutory rule flow, `04` engagement journey, `05` deadline task state machine, `06` shipped data model (ER, replacing the never-deployed PostgreSQL schema), `07` quote-to-cash lifecycle, `08` integration/auth boundary, `09` this view map. Screenshots showing the old sidebar, the 4-tab record or the New Quote Calculator should still be retaken.
 4. **Open product items affecting these screens** (do not present as delivered): fee visibility for Team member vs `view-billing`; `Mark Paid` permitted from `Draft`; audit dedupe collapsing genuine re-submissions; sign-off milestone folded into the submission row; document dates from `issueDate` while billing uses `billingMonth`; running timer not persisted; partner-only sign-off (PRD Q2.5 unanswered); Documenso/Xero not wired to live instances; `Add Action → New Quote` offered where the role cannot use it; a new client assumes prior filing history.

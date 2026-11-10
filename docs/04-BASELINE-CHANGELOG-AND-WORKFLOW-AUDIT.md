@@ -145,3 +145,21 @@ The load-time merge is idempotent: persisted values win, fields added later fall
 - **Tests:** `npm test` — 464 web tests across 48 files plus 52 domain tests, all passing.
 - **Types/build:** `npm run typecheck` and `npm run build` clean from the repo root.
 - **Smoke checks:** all 11 views render on a cleared store; quote → sign → invoice produces `INV-1` at **R7 200 + R1 080 VAT**; create-client flow; PDF export; ⌘K palette; AI assistant drawer; division switcher; holiday rollback tags on deadline cards; and `POST /api/auth/sign-up/email` with `role: "Partner"` returns **403**.
+
+### 6.6 2026-11-10 — Diagram suite rebuilt
+
+All nine diagrams in `docs/diagrams/` were redrawn from scratch against the shipped code (the previous set described the pre-redesign prototype and a PostgreSQL schema that was never deployed). Each is one self-contained HTML file with inline SVG, built with the `diagram-design` skill and its FD on Call profile (`.diagram-design` → `fd-on-call`; paper `#f6f5f3`, ink `#1b1817`, crimson `#c4161c`, Instrument Serif / Geist / Geist Mono), `doc-wide` 1280×720, light variant, no JavaScript.
+
+| File | Subject |
+|---|---|
+| `01` | Architecture delta — Twenty monorepo → React SPA + one Pages Function + `packages/domain`, with a four-line changes ledger |
+| `02` | Practice data flow — client facts, rates and time → the reducer store + domain engine → deadlines, quotes, invoices, governance trail; Subcontractor scoping and the billing gate as the two role boundaries |
+| `03` | Statutory obligation rule flow — entity type/scope → VAT and payroll branches → obligation set → due date → weekend/holiday rollback → sign-off gate → lane |
+| `04` | Client engagement journey — prospect → quote → signed → converted → first retainer year, with the conversion dip (a retainer-only quote has no statutory scope until services are ticked) |
+| `05` | Deadline task state machine — six lanes, gated entry to Partner Review Gate, sign-off before Approved/Submitted, approval metadata cleared on any backward move |
+| `06` | Shipped data model (ER) — Client, ClientContact, task override (+ ad-hoc), Quote, Invoice (+ lines), TimeEntry, PermissionState, ActivityEvent, store settings; derived-vs-stored and load-merge rules as callouts |
+| `07` | Quote-to-cash lifecycle — five quote stages with their gates, the invoice chain Draft → Sent → Paid, and `Overdue` drawn as a derived state |
+| `08` | Integration and auth boundary — browser seams vs the Cloudflare zone (guard → better-auth → D1), trust boundary marked, unwired externals dashed |
+| `09` | UI information architecture — shell, three nav groups with ten views, the 7-tab client record, the shared board contract and the `NoAccess` card |
+
+Verified with `python3 .agents/skills/diagram-design/scripts/self_check.py` (all nine `OK`), rendered in Chromium at 1440px with zero console errors, and each passes the skill's §9 checklist (orthogonal `r=8` connectors, masked labels with a 6–10px gap, distinct attach points, ≤2 accents, bottom legend, accessible `role="img"` + prefixed `<title>`/`<desc>`).

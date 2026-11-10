@@ -3,318 +3,237 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FD on Call CRM · UI Information Architecture & Screen Flow Diagram</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>UI information architecture · 11 views, three groups</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --color-paper: #f6f5f3;
       --color-paper-2: #ffffff;
       --color-ink: #1b1817;
+      --color-ink-strong: #111111;
       --color-muted: #5c5652;
-      --color-soft: #76706b;
+      --color-soft: #6f6964;
       --color-rule: rgba(27,24,23,0.12);
       --color-rule-solid: #d6d3cf;
       --color-accent: #c4161c;
       --color-accent-tint: rgba(196,22,28,0.08);
       --color-link: #2563eb;
-      --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
-      --font-serif: 'Instrument Serif', Georgia, serif;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
       --font-mono: 'Geist Mono', ui-monospace, monospace;
     }
-    body { font-family: var(--font-sans); color: var(--color-ink); background: var(--color-paper); min-height: 100vh; padding: 2.5rem 1.5rem; }
-    .frame { width: 100%; max-width: 1240px; margin: 0 auto; }
-    .eyebrow { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
-    h1 { font-family: var(--font-serif); font-size: clamp(1.8rem, 3vw + 1rem, 2.6rem); line-height: 1.15; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 0.6rem; color: var(--color-ink); }
-    .subtitle { max-width: 85ch; font-size: 0.92rem; line-height: 1.6; color: var(--color-muted); margin-bottom: 1.75rem; }
-    .diagram-container { width: 100%; background: var(--color-paper-2); border-radius: 10px; border: 1px solid var(--color-rule-solid); padding: 1.25rem; overflow-x: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
-    svg { display: block; width: 100%; min-width: 1120px; }
-    .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; border-top: 1px solid var(--color-rule-solid); padding-top: 1.5rem; margin-top: 1.75rem; }
-    .notes h2 { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--color-ink); }
-    .notes p { font-size: 0.8rem; line-height: 1.55; color: var(--color-muted); }
-    .footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--color-muted); }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1280px; width: 100%; margin: 0 auto; min-width: 0; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.6rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 2.2vw + 1rem, 2.3rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.12;
+      color: var(--color-ink);
+      margin-bottom: 0.7rem;
+    }
+    .subtitle {
+      max-width: 80ch;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--color-muted);
+      margin-bottom: 1.75rem;
+    }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+    .zone-label { font-family: var(--font-mono); font-size: 7px; font-weight: 500; letter-spacing: 0.14em; fill: var(--color-soft); text-transform: uppercase; }
+    .group-label { font-family: var(--font-mono); font-size: 8px; font-weight: 500; letter-spacing: 0.14em; fill: var(--color-soft); text-transform: uppercase; }
+    .view { font-family: var(--font-sans); font-size: 11px; font-weight: 500; fill: var(--color-ink); }
+    .view-soft { font-family: var(--font-sans); font-size: 11px; font-weight: 400; fill: var(--color-muted); }
+    .brand { font-family: var(--font-sans); font-size: 12px; font-weight: 600; fill: var(--color-ink); }
+    .crumb { font-family: var(--font-mono); font-size: 9px; fill: var(--color-muted); }
+    .chip { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.04em; fill: var(--color-muted); }
+    .chip-accent { font-family: var(--font-mono); font-size: 8px; font-weight: 600; letter-spacing: 0.04em; fill: var(--color-accent); }
+    .chip-inverse { font-family: var(--font-mono); font-size: 8px; font-weight: 600; letter-spacing: 0.04em; fill: var(--color-paper); }
+    .tag-text { font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.08em; fill: var(--color-muted); text-transform: uppercase; }
+    .gate-text { font-family: var(--font-mono); font-size: 6.5px; letter-spacing: 0.06em; fill: var(--color-accent); text-transform: uppercase; }
+    .card-title { font-family: var(--font-sans); font-size: 14px; font-weight: 600; fill: var(--color-ink); }
+    .card-sub { font-family: var(--font-mono); font-size: 9px; fill: var(--color-muted); }
+    .tab-num { font-family: var(--font-mono); font-size: 8px; fill: var(--color-soft); }
+    .tab-name { font-family: var(--font-sans); font-size: 11px; font-weight: 500; fill: var(--color-ink); }
+    .body { font-family: var(--font-sans); font-size: 11px; fill: var(--color-muted); }
+    .key { font-family: var(--font-mono); font-size: 8.5px; fill: var(--color-soft); }
+    .foot { font-family: var(--font-mono); font-size: 8.5px; fill: var(--color-soft); }
+    .legend-key { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; fill: var(--color-soft); }
+    .legend-text { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.05em; fill: var(--color-muted); }
   </style>
 </head>
 <body>
-  <main class="frame">
-    <p class="eyebrow">BABOK Screen Architecture · FD on Call Practice CRM</p>
-    <h1>User Interface Information Architecture &amp; Screen Flows</h1>
-    <p class="subtitle">Complete hierarchical screen map translating the South African accounting practice requirements into an intuitive Twenty-style CRM layout: persistent shell navigation, master practice registers, 4-tab client record views, and external document/invoicing outputs.</p>
+  <div class="frame">
+    <p class="eyebrow">Architecture · containment · FD on Call practice ledger</p>
+    <h1>UI information architecture — 11 views, three groups, one command surface</h1>
+    <p class="subtitle">A persistent shell holds a collapsible sidebar and the content area. Ten views sit inside three nav groups; the eleventh is the client record, opened from Clients. Every board shares one interaction contract, and a blocked deep link resolves to a NoAccess card.</p>
 
-    <div class="diagram-container">
-      <svg role="img" aria-labelledby="ui-ia-title ui-ia-desc" viewBox="0 0 1140 680" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <title id="ui-ia-title">UI Information Architecture and Navigation Flow</title>
-        <desc id="ui-ia-desc">A four-layer information architecture diagram showing user navigation from persistent shell into master workspace views, four-tab client records, and downstream exports.</desc>
-
+    <div class="diagram-container" role="region" aria-label="UI information architecture with shell, sidebar groups, client record tabs and interaction notes; scroll horizontally on narrow screens" tabindex="0">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ui-ia-title ui-ia-desc">
+        <title id="ui-ia-title">UI information architecture, 11 views and three groups</title>
+        <desc id="ui-ia-desc">A persistent shell contains a topbar with breadcrumbs, command palette, new action, theme and avatar, plus a collapsible sidebar with Practice, Work and Admin groups. The client record card shows seven tabs, with Estimate billing-gated, beside notes on the shared board contract and the NoAccess blocked-link card.</desc>
         <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5c5652"/>
-          </marker>
-          <marker id="arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#c4161c"/>
-          </marker>
-          <marker id="arrow-link" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
-          </marker>
+          <marker id="ui-ia-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
         </defs>
 
-        <!-- Column Background Headers -->
-        <g id="layer-headers">
-          <text x="120" y="32" font-family="'Geist Mono', monospace" font-size="11" font-weight="600" fill="#76706b" text-anchor="middle" letter-spacing="0.08em">LAYER 1 · PERSISTENT SHELL</text>
-          <text x="390" y="32" font-family="'Geist Mono', monospace" font-size="11" font-weight="600" fill="#76706b" text-anchor="middle" letter-spacing="0.08em">LAYER 2 · MASTER VIEWS</text>
-          <text x="690" y="32" font-family="'Geist Mono', monospace" font-size="11" font-weight="600" fill="#76706b" text-anchor="middle" letter-spacing="0.08em">LAYER 3 · RECORD SHOW (4 TABS)</text>
-          <text x="990" y="32" font-family="'Geist Mono', monospace" font-size="11" font-weight="600" fill="#76706b" text-anchor="middle" letter-spacing="0.08em">LAYER 4 · OUTPUT &amp; INTEGRATION</text>
-          
-          <line x1="250" y1="20" x2="250" y2="620" stroke="rgba(27,24,23,0.08)" stroke-dasharray="4 4"/>
-          <line x1="530" y1="20" x2="530" y2="620" stroke="rgba(27,24,23,0.08)" stroke-dasharray="4 4"/>
-          <line x1="850" y1="20" x2="850" y2="620" stroke="rgba(27,24,23,0.08)" stroke-dasharray="4 4"/>
-        </g>
+        <rect width="1280" height="720" fill="#f6f5f3"/>
 
-        <!-- CONNECTORS (Drawn before nodes per §6) -->
-        <g id="connectors">
-          <!-- Nav to Clients Directory -->
-          <path d="M 210 170 L 290 170" stroke="#5c5652" stroke-width="1.5" marker-end="url(#arrow)"/>
-          
-          <!-- Nav to Deadlines Board -->
-          <path d="M 210 240 Q 255 240 255 310 T 290 310" stroke="#5c5652" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <!-- Shell containment -->
+        <rect x="40" y="48" width="1200" height="568" rx="8" fill="rgba(27,24,23,0.015)" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
+        <rect x="52" y="44" width="176" height="14" rx="2" fill="#f6f5f3"/>
+        <text x="56" y="55" class="zone-label">Shell · persistent chrome</text>
 
-          <!-- Nav to New Quote Calculator -->
-          <path d="M 210 400 Q 255 400 255 460 T 290 460" stroke="#5c5652" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <!-- Topbar -->
+        <rect x="56" y="80" width="1168" height="56" rx="6" fill="#ffffff" stroke="#d6d3cf" stroke-width="1"/>
+        <rect x="72" y="104" width="8" height="8" rx="2" fill="#1b1817"/>
+        <text x="88" y="114" class="brand">FD on call</text>
+        <text x="184" y="113" class="crumb">Practice / Clients / Record</text>
 
-          <!-- Clients Directory to Record Show View -->
-          <path d="M 490 170 L 570 170" stroke="#c4161c" stroke-width="2" marker-end="url(#arrow-accent)"/>
-          <!-- Label on path -->
-          <rect x="502" y="158" width="56" height="18" fill="#ffffff" rx="3"/>
-          <text x="530" y="171" font-family="'Geist Mono', monospace" font-size="9.5" font-weight="600" fill="#c4161c" text-anchor="middle">CLICK ROW</text>
+        <rect x="832" y="96" width="56" height="24" rx="6" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1"/>
+        <text x="860" y="111" class="chip-accent" text-anchor="middle">⌘K</text>
+        <rect x="900" y="96" width="76" height="24" rx="6" fill="#1b1817" stroke="#1b1817" stroke-width="1"/>
+        <text x="938" y="111" class="chip-inverse" text-anchor="middle">+ New</text>
+        <rect x="988" y="96" width="64" height="24" rx="6" fill="#ffffff" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="1020" y="111" class="chip" text-anchor="middle">Theme</text>
+        <circle cx="1184" cy="108" r="14" fill="rgba(27,24,23,0.08)" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="1184" y="111" class="chip" text-anchor="middle">E</text>
 
-          <!-- Record Show Tab 2 (Deadlines) to Review Gate Notice -->
-          <path d="M 810 230 Q 840 230 840 210 T 890 210" stroke="#5c5652" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <!-- Sidebar -->
+        <rect x="56" y="152" width="312" height="448" rx="8" fill="#ffffff" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="72" y="176" class="zone-label">Sidebar · collapsible</text>
+        <text x="352" y="176" class="zone-label" text-anchor="end">«</text>
 
-          <!-- Record Show Tab 3 (Fee Estimate) to Quote Exporter -->
-          <path d="M 810 320 Q 850 320 850 340 T 890 340" stroke="#c4161c" stroke-width="2" marker-end="url(#arrow-accent)"/>
-          <rect x="822" y="322" width="56" height="18" fill="#ffffff" rx="3"/>
-          <text x="850" y="335" font-family="'Geist Mono', monospace" font-size="9.5" font-weight="600" fill="#c4161c" text-anchor="middle">EXPORT</text>
+        <!-- Practice group -->
+        <rect x="72" y="192" width="280" height="100" rx="6" fill="#f6f5f3" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="84" y="212" class="group-label">Practice</text>
+        <text x="84" y="236" class="view">Home</text>
+        <text x="84" y="260" class="view">Analytics</text>
+        <text x="84" y="284" class="view">Inbox</text>
 
-          <!-- Onboarding / Quote to Documenso -->
-          <path d="M 490 460 Q 535 460 535 480 T 890 480" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-link)"/>
-          <rect x="670" y="471" width="70" height="18" fill="#ffffff" rx="3"/>
-          <text x="705" y="484" font-family="'Geist Mono', monospace" font-size="9.5" font-weight="600" fill="#2563eb" text-anchor="middle">E-SIGN SLA</text>
+        <!-- Work group -->
+        <rect x="72" y="304" width="280" height="148" rx="6" fill="#f6f5f3" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="84" y="324" class="group-label">Work</text>
+        <rect x="72" y="338" width="3" height="20" rx="1.5" fill="#1b1817"/>
+        <text x="84" y="348" class="view">Clients</text>
+        <text x="84" y="372" class="view-soft">Team</text>
+        <text x="84" y="396" class="view-soft">Deadlines</text>
+        <text x="84" y="420" class="view-soft">Sales Pipeline</text>
+        <text x="84" y="444" class="view-soft">Time</text>
 
-          <!-- Tab 4 (Docs) to SharePoint Vault -->
-          <path d="M 810 410 Q 850 410 850 540 T 890 540" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-link)"/>
-        </g>
+        <!-- Admin group -->
+        <rect x="72" y="464" width="280" height="76" rx="6" fill="#f6f5f3" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="84" y="484" class="group-label">Admin</text>
+        <text x="84" y="508" class="view-soft">Settings</text>
+        <text x="84" y="532" class="view-soft">Governance Log</text>
 
-        <!-- LAYER 1: PERSISTENT SHELL (Nodes) -->
-        <g id="layer-1">
-          <!-- Topbar Shell Node -->
-          <g transform="translate(30, 50)">
-            <rect width="180" height="64" rx="6" fill="#f6f5f3" stroke="#d6d3cf" stroke-width="1.2"/>
-            <rect x="8" y="8" width="52" height="16" rx="2" fill="#e5e5e5"/>
-            <text x="34" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#5c5652" text-anchor="middle">TOPBAR</text>
-            <text x="12" y="38" font-family="'Geist', sans-serif" font-size="12" font-weight="600" fill="#1b1817">Header &amp; Search</text>
-            <text x="12" y="52" font-family="'Geist Mono', monospace" font-size="10" fill="#76706b">FD Brand · ⌘K · Breadcrumbs</text>
-          </g>
+        <text x="72" y="572" class="key">⌘K — jump to any view</text>
 
-          <!-- Left Sidebar Node -->
-          <g transform="translate(30, 134)">
-            <rect width="180" height="310" rx="6" fill="#f6f5f3" stroke="#d6d3cf" stroke-width="1.2"/>
-            <rect x="8" y="8" width="58" height="16" rx="2" fill="#e5e5e5"/>
-            <text x="37" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#5c5652" text-anchor="middle">SIDEBAR</text>
-            <text x="12" y="40" font-family="'Geist', sans-serif" font-size="13" font-weight="600" fill="#1b1817">Practice Navigation</text>
-            
-            <!-- Sidebar Items -->
-            <rect x="8" y="54" width="164" height="26" rx="4" fill="#ffffff" stroke="#d6d3cf"/>
-            <text x="16" y="71" font-family="'Geist', sans-serif" font-size="11.5" font-weight="600" fill="#c4161c">🏢 Clients (13)</text>
+        <!-- Clients row opens the record -->
+        <path d="M 352 344 H 360 Q 368 344 368 336 V 268 Q 368 260 376 260 H 384" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#ui-ia-arrow)"/>
 
-            <rect x="8" y="86" width="164" height="26" rx="4" fill="#ffffff" stroke="#d6d3cf"/>
-            <text x="16" y="103" font-family="'Geist', sans-serif" font-size="11.5" font-weight="500" fill="#1b1817">📅 Statutory Deadlines (4)</text>
+        <!-- Client record detail card -->
+        <rect x="384" y="152" width="440" height="384" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1.2"/>
+        <rect x="400" y="166" width="80" height="14" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+        <text x="440" y="176" class="tag-text" text-anchor="middle">Detail card</text>
+        <text x="400" y="206" class="card-title">Client record</text>
+        <text x="400" y="226" class="card-sub">opened from Clients · seven tabs</text>
 
-            <rect x="8" y="118" width="164" height="26" rx="4" fill="#ffffff" stroke="#d6d3cf"/>
-            <text x="16" y="135" font-family="'Geist', sans-serif" font-size="11.5" font-weight="500" fill="#1b1817">🧮 New Quote Calculator</text>
+        <line x1="400" y1="240" x2="808" y2="240" stroke="#d6d3cf" stroke-width="0.8"/>
 
-            <rect x="8" y="150" width="164" height="26" rx="4" fill="#ffffff" stroke="#d6d3cf"/>
-            <text x="16" y="167" font-family="'Geist', sans-serif" font-size="11.5" font-weight="500" fill="#1b1817">🎯 Onboarding Pipeline (5)</text>
+        <text x="400" y="260" class="tab-num">01</text>
+        <text x="432" y="260" class="tab-name">Overview</text>
+        <line x1="400" y1="276" x2="808" y2="276" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-            <rect x="8" y="182" width="164" height="26" rx="4" fill="#ffffff" stroke="#d6d3cf"/>
-            <text x="16" y="199" font-family="'Geist', sans-serif" font-size="11.5" font-weight="500" fill="#1b1817">📊 Dashboard &amp; Reports</text>
+        <text x="400" y="296" class="tab-num">02</text>
+        <text x="432" y="296" class="tab-name">Organization</text>
+        <line x1="400" y1="312" x2="808" y2="312" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-            <rect x="8" y="214" width="164" height="26" rx="4" fill="#ffffff" stroke="#d6d3cf"/>
-            <text x="16" y="231" font-family="'Geist', sans-serif" font-size="11.5" font-weight="500" fill="#1b1817">⚙️ Practice Settings (2-Pane)</text>
+        <text x="400" y="332" class="tab-num">03</text>
+        <text x="432" y="332" class="tab-name">History</text>
+        <line x1="400" y1="348" x2="808" y2="348" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-            <line x1="8" y1="250" x2="172" y2="250" stroke="#d6d3cf"/>
-            <text x="12" y="270" font-family="'Geist Mono', monospace" font-size="10" fill="#76706b">Logged in: Erik (Partner)</text>
-            <text x="12" y="284" font-family="'Geist Mono', monospace" font-size="9" fill="#2563eb">Click ➔ Logout / Profile</text>
-          </g>
-        </g>
+        <text x="400" y="368" class="tab-num">04</text>
+        <text x="432" y="368" class="tab-name">Tasks</text>
+        <line x1="400" y1="384" x2="808" y2="384" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-        <!-- LAYER 2: MASTER WORKSPACE VIEWS -->
-        <g id="layer-2">
-          <!-- Clients Register Node (Focal Node) -->
-          <g transform="translate(290, 110)">
-            <rect width="200" height="110" rx="6" fill="#ffffff" stroke="#c4161c" stroke-width="1.8"/>
-            <rect x="8" y="8" width="62" height="16" rx="2" fill="rgba(196,22,28,0.1)"/>
-            <text x="39" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#c4161c" text-anchor="middle">REGISTER</text>
-            <text x="12" y="40" font-family="'Geist', sans-serif" font-size="13" font-weight="600" fill="#1b1817">Clients Directory (/clients)</text>
-            <text x="12" y="58" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Dedicated Client Code (MUS-875)</text>
-            <text x="12" y="72" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Year-End &amp; Assumed Feb* signals</text>
-            <text x="12" y="86" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Active Services &amp; Next Filing</text>
-            <text x="12" y="100" font-family="'Geist', sans-serif" font-size="9.5" font-style="italic" fill="#c4161c">Click row opens 4-tab Record Show</text>
-          </g>
+        <text x="400" y="404" class="tab-num">05</text>
+        <text x="432" y="404" class="tab-name">Estimate</text>
+        <rect x="704" y="392" width="104" height="16" rx="2" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="0.8"/>
+        <text x="756" y="403" class="gate-text" text-anchor="middle">Billing-gated</text>
+        <line x1="400" y1="420" x2="808" y2="420" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-          <!-- Deadlines Dashboard Node -->
-          <g transform="translate(290, 250)">
-            <rect width="200" height="110" rx="6" fill="#ffffff" stroke="#d6d3cf" stroke-width="1.2"/>
-            <rect x="8" y="8" width="56" height="16" rx="2" fill="#e5e5e5"/>
-            <text x="36" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#5c5652" text-anchor="middle">CALENDAR</text>
-            <text x="12" y="40" font-family="'Geist', sans-serif" font-size="13" font-weight="600" fill="#1b1817">Statutory Deadlines</text>
-            <text x="12" y="58" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• 4 KPI Tiles (Overdue, 7d, 30d, TBD)</text>
-            <text x="12" y="72" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Kanban &amp; Table dual mode</text>
-            <text x="12" y="86" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• SA Holiday rollback tags (↩)</text>
-            <text x="12" y="100" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Staff &amp; Service horizon filter</text>
-          </g>
+        <text x="400" y="440" class="tab-num">06</text>
+        <text x="432" y="440" class="tab-name">Vault</text>
+        <line x1="400" y1="456" x2="808" y2="456" stroke="rgba(27,24,23,0.08)" stroke-width="0.8"/>
 
-          <!-- New Quote Calculator Node -->
-          <g transform="translate(290, 390)">
-            <rect width="200" height="110" rx="6" fill="#ffffff" stroke="#d6d3cf" stroke-width="1.2"/>
-            <rect x="8" y="8" width="60" height="16" rx="2" fill="#e5e5e5"/>
-            <text x="38" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#5c5652" text-anchor="middle">ESTIMATOR</text>
-            <text x="12" y="40" font-family="'Geist', sans-serif" font-size="13" font-weight="600" fill="#1b1817">New Quote Calculator</text>
-            <text x="12" y="58" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• 21 Service Catalogue Items</text>
-            <text x="12" y="72" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Turnover &amp; Payroll Band hours</text>
-            <text x="12" y="86" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• March +6% price escalation</text>
-            <text x="12" y="100" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Smoothed monthly debit retainer</text>
-          </g>
-        </g>
+        <text x="400" y="476" class="tab-num">07</text>
+        <text x="432" y="476" class="tab-name">Notes</text>
 
-        <!-- LAYER 3: CLIENT RECORD SHOW (4 TABS) -->
-        <g id="layer-3">
-          <g transform="translate(570, 80)">
-            <!-- Container Box for Record Show View -->
-            <rect width="240" height="420" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1.5"/>
-            
-            <!-- Record Header -->
-            <rect x="0" y="0" width="240" height="50" rx="8" fill="#f6f5f3"/>
-            <line x1="0" y1="50" x2="240" y2="50" stroke="#d6d3cf"/>
-            <text x="12" y="24" font-family="'Geist', sans-serif" font-size="14" font-weight="600" fill="#1b1817">Client: Muse 1399</text>
-            <rect x="150" y="12" width="76" height="18" rx="3" fill="#242424"/>
-            <text x="188" y="25" font-family="'Geist Mono', monospace" font-size="9.5" font-weight="600" fill="#ffffff" text-anchor="middle">MUS-875</text>
-            <text x="12" y="42" font-family="'Geist Mono', monospace" font-size="9.5" fill="#76706b">← Back to Clients | Partner: Erik</text>
+        <text x="400" y="516" class="foot">Every client has seven tabs; only Estimate needs Clients — view billing.</text>
 
-            <!-- Tab 1: Overview & Statutory Profile -->
-            <g transform="translate(10, 62)">
-              <rect width="220" height="66" rx="4" fill="#f6f5f3" stroke="#d6d3cf"/>
-              <text x="10" y="18" font-family="'Geist', sans-serif" font-size="11.5" font-weight="600" fill="#1b1817">Tab 1: Statutory Profile</text>
-              <text x="10" y="34" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">Companies Act s30(1) FYE: Feb*</text>
-              <text x="10" y="46" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">CIPC Incorp Date &amp; Turnover Band</text>
-              <text x="10" y="58" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">VAT Category B &amp; eFiling Profile</text>
-            </g>
+        <!-- Interaction contract -->
+        <rect x="856" y="152" width="368" height="224" rx="8" fill="#ffffff" stroke="#d6d3cf" stroke-width="1"/>
+        <rect x="876" y="166" width="92" height="14" rx="2" fill="none" stroke="rgba(27,24,23,0.35)" stroke-width="0.8"/>
+        <text x="922" y="176" class="tag-text" text-anchor="middle">Shared contract</text>
+        <text x="876" y="206" class="card-title">One interaction contract</text>
+        <text x="876" y="234" class="body">Drag a card, use its menu, or move it with the</text>
+        <text x="876" y="252" class="body">keyboard. Illegal moves are refused: no silent</text>
+        <text x="876" y="270" class="body">status flip, no orphaned task.</text>
+        <text x="876" y="302" class="key">drag · menu · keyboard · Esc</text>
+        <text x="876" y="326" class="key">Boards: Deadlines · Sales Pipeline · Time</text>
+        <text x="876" y="352" class="foot">One contract, three boards, the same refusal.</text>
 
-            <!-- Tab 2: Deadlines & Tasks -->
-            <g transform="translate(10, 138)">
-              <rect width="220" height="66" rx="4" fill="#f6f5f3" stroke="#d6d3cf"/>
-              <text x="10" y="18" font-family="'Geist', sans-serif" font-size="11.5" font-weight="600" fill="#1b1817">Tab 2: Deadlines &amp; Tasks</text>
-              <text x="10" y="34" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">AFS FY26 (Overdue · Partner Review)</text>
-              <text x="10" y="46" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">VAT201 (Due Nov 30 · Direct)</text>
-              <text x="10" y="58" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">ITR14 &amp; IRP6 Provisional Tax</text>
-            </g>
+        <!-- Blocked deep link -->
+        <rect x="856" y="400" width="368" height="128" rx="8" fill="rgba(27,24,23,0.02)" stroke="rgba(27,24,23,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="876" y="424" class="tag-text">Blocked deep link</text>
+        <text x="876" y="452" class="card-title">NoAccess</text>
+        <text x="876" y="474" class="body">A URL for a view the role cannot open lands on the</text>
+        <text x="876" y="492" class="body">NoAccess card — never a blank page.</text>
+        <text x="876" y="514" class="key">blocked before render</text>
 
-            <!-- Tab 3: 12-Month Fee Estimate (Focal) -->
-            <g transform="translate(10, 214)">
-              <rect width="220" height="80" rx="4" fill="rgba(196,22,28,0.06)" stroke="#c4161c" stroke-width="1.4"/>
-              <text x="10" y="18" font-family="'Geist', sans-serif" font-size="11.5" font-weight="600" fill="#c4161c">Tab 3: 12-Month Fee Estimate</text>
-              <text x="10" y="34" font-family="'Geist Mono', monospace" font-size="9" fill="#1b1817">Services On Record: AFS, VAT, ITR</text>
-              <text x="10" y="46" font-family="'Geist Mono', monospace" font-size="9" fill="#1b1817">12-Mo Rolling Matrix (Cols Dec-Nov)</text>
-              <text x="10" y="58" font-family="'Geist Mono', monospace" font-size="9" font-weight="600" fill="#c4161c">Monthly Retainer: R 3,840 excl. VAT</text>
-              <text x="10" y="70" font-family="'Geist', sans-serif" font-size="9" fill="#76706b">Buttons: Download PDF / Save to Client</text>
-            </g>
+        <!-- Counts under the record card -->
+        <text x="384" y="568" class="foot">11 views = 10 in the three sidebar groups + this record.</text>
+        <text x="384" y="586" class="foot">The record is a view, not a modal; deep links resolve here.</text>
 
-            <!-- Tab 4: SharePoint Vault & SLAs -->
-            <g transform="translate(10, 304)">
-              <rect width="220" height="58" rx="4" fill="#f6f5f3" stroke="#d6d3cf"/>
-              <text x="10" y="18" font-family="'Geist', sans-serif" font-size="11.5" font-weight="600" fill="#1b1817">Tab 4: SharePoint Vault &amp; Docs</text>
-              <text x="10" y="34" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">/Clients/MUS-875/Contracts/ (SLA)</text>
-              <text x="10" y="46" font-family="'Geist Mono', monospace" font-size="9" fill="#5c5652">/Tax_Returns/ &amp; /Statutory_KYC/</text>
-            </g>
-
-            <rect x="10" y="374" width="220" height="34" rx="4" fill="#1b1817"/>
-            <text x="120" y="395" font-family="'Geist', sans-serif" font-size="11" font-weight="600" fill="#ffffff" text-anchor="middle">Direct Action: + Export Proposal</text>
-          </g>
-        </g>
-
-        <!-- LAYER 4: OUTPUT & DOWNSTREAM INTEGRATIONS -->
-        <g id="layer-4">
-          <!-- Partner Review Gate -->
-          <g transform="translate(890, 160)">
-            <rect width="210" height="84" rx="6" fill="#ffffff" stroke="#d6d3cf" stroke-width="1.2"/>
-            <rect x="8" y="8" width="80" height="16" rx="2" fill="#fef3c7"/>
-            <text x="48" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#92400e" text-anchor="middle">GOVERNANCE</text>
-            <text x="12" y="40" font-family="'Geist', sans-serif" font-size="13" font-weight="600" fill="#1b1817">Partner Review Gate</text>
-            <text x="12" y="56" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• AFS / ITR14: Always Partner sign-off</text>
-            <text x="12" y="70" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• IRP6: Only when tax payable</text>
-          </g>
-
-          <!-- Quote Exporter Node -->
-          <g transform="translate(890, 290)">
-            <rect width="210" height="100" rx="6" fill="#ffffff" stroke="#c4161c" stroke-width="1.6"/>
-            <rect x="8" y="8" width="70" height="16" rx="2" fill="rgba(196,22,28,0.1)"/>
-            <text x="43" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#c4161c" text-anchor="middle">EXPORTER</text>
-            <text x="12" y="40" font-family="'Geist', sans-serif" font-size="13" font-weight="600" fill="#1b1817">Streaming Quote Exporter</text>
-            <text x="12" y="58" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• A4 Landscape PDF with signatures</text>
-            <text x="12" y="72" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Live formula Excel workbook (.xlsx)</text>
-            <text x="12" y="86" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• 15% SA VAT &amp; March escalation</text>
-          </g>
-
-          <!-- Documenso & SharePoint Node -->
-          <g transform="translate(890, 440)">
-            <rect width="210" height="140" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1.2"/>
-            <rect x="8" y="8" width="78" height="16" rx="2" fill="#eff6ff"/>
-            <text x="47" y="19" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600" fill="#2563eb" text-anchor="middle">INTEGRATION</text>
-            <text x="12" y="40" font-family="'Geist', sans-serif" font-size="13" font-weight="600" fill="#1b1817">Cloud Integrations</text>
-            <text x="12" y="58" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Documenso REST API E-Sign</text>
-            <text x="12" y="72" font-family="'Geist Mono', monospace" font-size="9" fill="#76706b">  Dual signature (Client + Partner)</text>
-            <text x="12" y="90" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• MS Graph SharePoint Daemon</text>
-            <text x="12" y="104" font-family="'Geist Mono', monospace" font-size="9" fill="#76706b">  /Clients/{code} Vault auto-provision</text>
-            <text x="12" y="122" font-family="'Geist Mono', monospace" font-size="10" fill="#5c5652">• Xero 15% SA VAT Invoicing</text>
-          </g>
-        </g>
-
-        <!-- LEGEND (Bottom Strip per §6) -->
-        <g id="legend" transform="translate(30, 640)">
-          <rect width="1080" height="30" rx="4" fill="#f6f5f3" stroke="#d6d3cf"/>
-          <circle cx="24" cy="15" r="5" fill="#c4161c"/>
-          <text x="36" y="19" font-family="'Geist', sans-serif" font-size="11" fill="#1b1817">Focal Path (Clients Directory ➔ Record Show ➔ 12-Month Fee Estimate ➔ Quote Export)</text>
-          
-          <rect x="520" y="10" width="10" height="10" rx="2" fill="#f6f5f3" stroke="#d6d3cf"/>
-          <text x="536" y="19" font-family="'Geist', sans-serif" font-size="11" fill="#5c5652">Standard Workspace View</text>
-          
-          <line x1="710" y1="15" x2="735" y2="15" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 4"/>
-          <text x="744" y="19" font-family="'Geist', sans-serif" font-size="11" fill="#5c5652">External Integration Flow (Documenso / MS Graph / Xero)</text>
-
-          <text x="1000" y="19" font-family="'Geist Mono', monospace" font-size="10" fill="#76706b">FD on Call CRM v1.0</text>
-        </g>
+        <!-- Legend -->
+        <line x1="40" y1="644" x2="1240" y2="644" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+        <text x="40" y="672" class="legend-key">Legend</text>
+        <rect x="120" y="658" width="18" height="14" rx="2" fill="#ffffff" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="148" y="670" class="legend-text">Shell / zone</text>
+        <rect x="300" y="658" width="18" height="14" rx="2" fill="#f6f5f3" stroke="#d6d3cf" stroke-width="1"/>
+        <text x="328" y="670" class="legend-text">Nav group</text>
+        <circle cx="500" cy="665" r="3.5" fill="#1b1817"/>
+        <text x="516" y="670" class="legend-text">View label</text>
+        <line x1="656" y1="665" x2="684" y2="665" stroke="rgba(27,24,23,0.30)" stroke-width="0.8"/>
+        <text x="696" y="670" class="legend-text">Record tab</text>
+        <rect x="844" y="658" width="18" height="14" rx="2" fill="rgba(27,24,23,0.02)" stroke="#5c5652" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <text x="872" y="670" class="legend-text">Blocked state</text>
+        <rect x="1036" y="658" width="18" height="14" rx="2" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="0.8"/>
+        <text x="1064" y="670" class="legend-text">Permission gate</text>
       </svg>
     </div>
-
-    <!-- Architectural Insights -->
-    <div class="notes">
-      <div>
-        <h2>1. The Record Show Architecture</h2>
-        <p>In standard CRM UX, an existing client record is never kicked to an isolated page for estimation. Clicking a client row (<code>MUS-875</code>) in the master directory opens the <strong>4-Tab Record Show View</strong>, placing Statutory Profile, Deadlines, 12-Month Fee Matrix, and SharePoint Vault under a unified breadcrumb.</p>
-      </div>
-      <div>
-        <h2>2. Standalone vs Nested Quotes</h2>
-        <p>The sidebar link <strong>"New Quote Calculator"</strong> is dedicated to quoting prospective clients before they exist in the register. For existing clients, the estimate lives directly on <strong>Tab 3</strong> of their profile, with instant streaming A4 PDF and formula-driven Excel exports.</p>
-      </div>
-      <div>
-        <h2>3. Clean Separation of Concerns</h2>
-        <p>By defining this screen blueprint before writing code, every UI button, route, and state transition maps directly to the South African statutory requirements (Companies Act s30, Tax Administration Act s25) without guessing layout geometry.</p>
-      </div>
-    </div>
-
-    <div class="footer">
-      <span>FD on Call (Pty) Ltd · Chartered Accountants (SA)</span>
-      <span>Document: docs/diagrams/09-ui-information-architecture-and-screen-flows.html</span>
-    </div>
-  </main>
+  </div>
 </body>
 </html>

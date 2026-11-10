@@ -3,204 +3,293 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workflow Comparison: Prototype vs Production CRM · Architecture Delta</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Quote to cash lifecycle — stage gates from quote to paid invoice</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --color-paper: #f6f5f3;
-      --color-paper-2: #efedea;
+      --color-paper-2: #ffffff;
       --color-ink: #1b1817;
+      --color-ink-strong: #111111;
       --color-muted: #5c5652;
-      --color-soft: #6e6762;
+      --color-soft: #6f6964;
       --color-rule: rgba(27,24,23,0.12);
-      --color-rule-solid: #cbc5c0;
+      --color-rule-solid: #d6d3cf;
       --color-accent: #c4161c;
       --color-accent-tint: rgba(196,22,28,0.08);
-      --color-link: #2ea3f2;
+      --color-link: #2563eb;
       --font-sans: 'Geist', system-ui, sans-serif;
-      --font-serif: 'Instrument Serif', Georgia, serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
       --font-mono: 'Geist Mono', ui-monospace, monospace;
     }
-    body { font-family: var(--font-sans); color: var(--color-ink); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; }
-    .frame { width: 100%; max-width: 1240px; min-width: 0; margin: 0 auto; }
-    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-accent); margin-bottom: 0.75rem; }
-    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); line-height: 1.1; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
-    .subtitle { max-width: 70ch; font-size: 0.9375rem; line-height: 1.6; color: var(--color-muted); margin-bottom: 2rem; }
-    .diagram-container { width: 100%; background: var(--color-paper); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
-    svg { display: block; width: 100%; min-width: 1120px; }
-    .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; border-top: 1px solid var(--color-rule); padding-top: 1.75rem; margin-top: 2rem; }
-    .notes h2 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.625rem; }
-    .notes p { font-size: 0.8125rem; line-height: 1.6; color: var(--color-muted); }
-    .footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-top: 2rem; font-family: var(--font-mono); font-size: 0.66rem; color: var(--color-muted); }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1280px; width: 100%; min-width: 0; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--color-muted);
+      max-width: 76ch;
+      margin-bottom: 1.75rem;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      letter-spacing: 0.01em;
+      color: var(--color-ink);
+    }
+
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    svg { width: 100%; min-width: 1280px; display: block; }
+
+    .footer {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--color-rule);
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      color: var(--color-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
   </style>
 </head>
 <body>
-  <main class="frame">
-    <p class="eyebrow">Architecture Delta · Workflow Audit</p>
-    <h1>Practice Workflow Evolution: As-Is Prototype vs. To-Be CRM</h1>
-    <p class="subtitle">Side-by-side topology audit confirming zero domain calculation drift while resolving the fatal page-reload data loss, introducing Twenty CRM navigation, and automating Documenso e-sign proposal acceptance.</p>
-    
-    <div class="diagram-container" role="region" aria-label="As-is prototype vs to-be production CRM comparison" tabindex="0">
-      <svg viewBox="0 0 1200 680" xmlns="http://www.w3.org/2000/svg" data-diagram="architecture-delta" role="img" aria-labelledby="delta-07-title delta-07-desc">
-        <title id="delta-07-title">As-Is Prototype vs To-Be Production CRM Workflow Architecture Delta</title>
-        <desc id="delta-07-desc">Comparison showing As-Is single-file HTML prototype workflow with ephemeral state versus To-Be production CRM workflow with Drizzle SQL persistence, Twenty UX shell, Documenso signing, and partner review gates.</desc>
+  <div class="frame">
+    <p class="eyebrow">State machine · Quote to cash</p>
+    <h1>Quote to cash lifecycle — stage gates from quote to paid invoice</h1>
+    <p class="subtitle">A quote walks five stages, each gated by evidence the system can check. Conversion seeds the client's services; the invoice ledger then bills one month at a time, and <code>Overdue</code> is computed rather than stored.</p>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cash07-title cash07-desc">
+        <title id="cash07-title">Quote to cash lifecycle — stage gates from quote to paid invoice</title>
+        <desc id="cash07-desc">Two state chains: a quote moving from draft through sent, accepted and signed to an active client, with closed lost exits; and an invoice ledger moving from draft to sent to paid, with overdue shown as a derived state.</desc>
         <defs>
-          <marker id="d07-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
-          <marker id="d07-arrow-accent" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 8 3, 0 6" fill="#c4161c"/></marker>
+          <marker id="cash07-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5c5652"/></marker>
+          <marker id="cash07-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c4161c"/></marker>
+          <marker id="cash07-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563eb"/></marker>
         </defs>
-        
-        <rect width="1200" height="680" fill="#f6f5f3"/>
-        
-        <!-- Headers -->
-        <text x="24" y="28" fill="#1b1817" font-size="14" font-family="'Geist', sans-serif" font-weight="600">As-Is Baseline</text>
-        <text x="24" y="52" fill="#5c5652" font-size="10" font-family="'Geist', sans-serif">Single-File Client_CRM v0.9.2 (In-Memory)</text>
-        
-        <text x="424" y="28" fill="#1b1817" font-size="14" font-family="'Geist', sans-serif" font-weight="600">Audit Ledger</text>
-        <text x="424" y="52" fill="#5c5652" font-size="10" font-family="'Geist', sans-serif">Zero calculation drift · Solves core pain points</text>
-        
-        <text x="840" y="28" fill="#1b1817" font-size="14" font-family="'Geist', sans-serif" font-weight="600">To-Be Production</text>
-        <text x="840" y="52" fill="#5c5652" font-size="10" font-family="'Geist', sans-serif">Full-Stack Practice Ledger CRM</text>
-        
-        <!-- Dividing rules -->
-        <path d="M 392 8 V 640 M 808 8 V 640" stroke="rgba(27,24,23,0.12)" stroke-width="1"/>
-        
-        <!-- BEFORE SNAPSHOT -->
-        <g data-snapshot="before" transform="translate(24 96)" data-grid="336 520 4">
-          <!-- Relationships -->
-          <path data-kind="relationship" data-object-id="rel_wf_b1" data-status="removed" data-signature="state:ephemeral-reset" data-from="ui_shell" data-to="memory_store" d="M 168 64 V 112" fill="none" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#d07-arrow)"/>
-          <path data-kind="relationship" data-object-id="rel_wf_b2" data-status="unchanged" data-signature="calc:pure-dates-rules" data-from="ui_shell" data-to="domain_engine" d="M 168 64 V 200 Q 168 224 200 224 H 240 Q 248 224 248 232 V 336" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#d07-arrow)"/>
-          <path data-kind="relationship" data-object-id="rel_wf_b3" data-status="removed" data-signature="manual:email-pdf" data-from="ui_shell" data-to="manual_pdf" d="M 88 64 V 224" fill="none" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#d07-arrow)"/>
-          
-          <!-- Relationship Labels -->
-          <rect x="176" y="76" width="100" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="180" y="88" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">b1 · EPHEMERAL</text>
-          
-          <rect x="96" y="140" width="100" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="100" y="152" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">b3 · MANUAL SIGN</text>
-          
-          <!-- Components -->
-          <g data-kind="component" data-object-id="ui_shell" data-status="changed" data-signature="ui:top-hash-nav:v0.9.2">
-            <rect data-role="bounds" x="48" y="0" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="60" y="16" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">~ ui_shell · CHANGED</text>
-            <text x="60" y="36" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Top Hash Nav (#)</text>
-            <text x="60" y="52" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">4 Links · No Sidebar · No Cmd+K</text>
-          </g>
-          
-          <g data-kind="component" data-object-id="memory_store" data-status="removed" data-signature="store:in-memory-state:v0.9.2">
-            <rect data-role="bounds" x="48" y="112" width="240" height="64" rx="6" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2" stroke-dasharray="4 4"/>
-            <text x="60" y="128" fill="#c4161c" font-size="7.5" font-family="'Geist Mono', monospace">− memory_store · REMOVED</text>
-            <text x="60" y="148" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">In-Memory React State</text>
-            <text x="60" y="164" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">Edits wipe on page reload</text>
-          </g>
-          
-          <g data-kind="component" data-object-id="manual_pdf" data-status="removed" data-signature="flow:manual-contract-flow:v1">
-            <rect data-role="bounds" x="48" y="224" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="4 4"/>
-            <text x="60" y="240" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">− manual_pdf · REMOVED</text>
-            <text x="60" y="260" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Manual Print &amp; Email</text>
-            <text x="60" y="276" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">No digital signing pipeline</text>
-          </g>
-          
-          <g data-kind="component" data-object-id="domain_engine" data-status="unchanged" data-signature="domain:pure-sars-cipc-rules:v1">
-            <rect data-role="bounds" x="48" y="336" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="60" y="352" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">= domain_engine · UNCHANGED</text>
-            <text x="60" y="372" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Statutory Rule Engine</text>
-            <text x="60" y="388" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">0% Math Drift · Exact SARS/CIPC</text>
-          </g>
-        </g>
-        
-        <!-- CENTER CHANGES LEDGER -->
-        <text x="424" y="110" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">01</text>
-        <text x="456" y="108" data-change="REMOVED" data-target="memory_store" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">REMOVED · memory_store<tspan x="456" y="131" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" letter-spacing="0">Eliminate data loss on page refresh</tspan></text>
-        <path d="M 456 148 H 776" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-        
-        <text x="424" y="170" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">02</text>
-        <text x="456" y="168" data-change="REMOVED" data-target="manual_pdf" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">REMOVED · manual_pdf<tspan x="456" y="191" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" letter-spacing="0">Replace manual proposal scanning</tspan></text>
-        <path d="M 456 208 H 776" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-        
-        <text x="424" y="230" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">03</text>
-        <text x="456" y="228" data-change="CHANGED" data-target="ui_shell" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">CHANGED · ui_shell<tspan x="456" y="251" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" letter-spacing="0">Adopt Twenty UX shell + Dark/Light mode</tspan></text>
-        <path d="M 456 268 H 776" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-        
-        <text x="424" y="290" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">04</text>
-        <text x="456" y="288" data-change="ADDED" data-target="drizzle_sql" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">ADDED · drizzle_sql<tspan x="456" y="311" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" letter-spacing="0">Add 14-table Drizzle SQL persistence</tspan></text>
-        <path d="M 456 328 H 776" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-        
-        <text x="424" y="350" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">05</text>
-        <text x="456" y="348" data-change="ADDED" data-target="documenso_esign" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">ADDED · documenso_esign<tspan x="456" y="371" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" letter-spacing="0">Integrate self-hosted Documenso e-sign</tspan></text>
-        <path d="M 456 388 H 776" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-        
-        <text x="424" y="410" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">06</text>
-        <text x="456" y="408" data-change="ADDED" data-target="review_gate" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">ADDED · review_gate<tspan x="456" y="431" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" letter-spacing="0">Enforce Partner Review Gate (Erik &amp; Wouter)</tspan></text>
-        <path d="M 456 448 H 776" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
-        
-        <!-- AFTER SNAPSHOT -->
-        <g data-snapshot="after" transform="translate(840 96)" data-grid="336 520 4">
-          <!-- Relationships -->
-          <path data-kind="relationship" data-object-id="rel_wf_a1" data-status="added" data-signature="db:drizzle-persisted" data-from="ui_shell" data-to="drizzle_sql" d="M 168 64 V 112" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#d07-arrow)"/>
-          <path data-kind="relationship" data-object-id="rel_wf_a2" data-status="added" data-signature="flow:esign-auto-activate" data-from="ui_shell" data-to="documenso_esign" d="M 88 64 V 224" fill="none" stroke="#c4161c" stroke-width="1.2" marker-end="url(#d07-arrow-accent)"/>
-          <path data-kind="relationship" data-object-id="rel_wf_a3" data-status="unchanged" data-signature="calc:pure-dates-rules" data-from="ui_shell" data-to="domain_engine" d="M 168 64 V 200 Q 168 224 200 224 H 240 Q 248 224 248 232 V 336" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#d07-arrow)"/>
-          <path data-kind="relationship" data-object-id="rel_wf_a4" data-status="added" data-signature="gate:partner-enforced" data-from="drizzle_sql" data-to="review_gate" d="M 288 144 H 312 V 430 H 288" fill="none" stroke="#5c5652" stroke-width="1.2" marker-end="url(#d07-arrow)"/>
-          
-          <!-- Relationship Labels -->
-          <rect x="176" y="76" width="100" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="180" y="88" fill="#5c5652" font-size="8" font-family="'Geist Mono', monospace">a1 · SQL PERSISTED</text>
-          
-          <rect x="96" y="140" width="100" height="16" rx="2" fill="#f6f5f3"/>
-          <text x="100" y="152" fill="#c4161c" font-size="8" font-family="'Geist Mono', monospace">a2 · DOCUMENSO</text>
-          
-          <!-- Components -->
-          <g data-kind="component" data-object-id="ui_shell" data-status="changed" data-signature="ui:twenty-crm-shell:v1">
-            <rect data-role="bounds" x="48" y="0" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="60" y="16" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">~ ui_shell · CHANGED</text>
-            <text x="60" y="36" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Twenty CRM Shell</text>
-            <text x="60" y="52" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">Sidebar · Cmd+K · Dark/Light Mode</text>
-          </g>
-          
-          <g data-kind="component" data-object-id="drizzle_sql" data-status="added" data-signature="db:drizzle-14-tables:v1">
-            <rect data-role="bounds" x="48" y="112" width="240" height="64" rx="6" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2"/>
-            <path d="M 49 124 V 164" fill="none" stroke="#c4161c" stroke-width="3"/>
-            <text x="60" y="128" fill="#c4161c" font-size="7.5" font-family="'Geist Mono', monospace">+ drizzle_sql · ADDED</text>
-            <text x="60" y="148" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Drizzle SQL Database</text>
-            <text x="60" y="164" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">SQLite (D1) / PostgreSQL</text>
-          </g>
-          
-          <g data-kind="component" data-object-id="documenso_esign" data-status="added" data-signature="flow:documenso-webhook:v1">
-            <rect data-role="bounds" x="48" y="224" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="60" y="240" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">+ documenso_esign · ADDED</text>
-            <text x="60" y="260" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Documenso E-Sign</text>
-            <text x="60" y="276" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">Auto-converts won leads</text>
-          </g>
-          
-          <g data-kind="component" data-object-id="domain_engine" data-status="unchanged" data-signature="domain:pure-sars-cipc-rules:v1">
-            <rect data-role="bounds" x="48" y="336" width="240" height="64" rx="6" fill="#ffffff" stroke="#5c5652" stroke-width="1.2"/>
-            <text x="60" y="352" fill="#5c5652" font-size="7.5" font-family="'Geist Mono', monospace">= domain_engine · UNCHANGED</text>
-            <text x="60" y="372" fill="#1b1817" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Statutory Rule Engine</text>
-            <text x="60" y="388" fill="#5c5652" font-size="9" font-family="'Geist Mono', monospace">0% Math Drift · Exact SARS/CIPC</text>
-          </g>
-        </g>
+
+        <rect width="100%" height="100%" fill="#f6f5f3"/>
+
+        <!-- invoice ledger zone -->
+        <rect x="248" y="336" width="952" height="292" rx="8" fill="rgba(27,24,23,0.02)" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+        <text x="272" y="364" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">INVOICE LEDGER · ONE PER QUOTE + MONTH</text>
+
+        <!-- ============ TRANSITIONS ============ -->
+        <!-- quote chain -->
+        <line x1="200" y1="148" x2="280" y2="148" stroke="#5c5652" stroke-width="1.2" marker-end="url(#cash07-arrow)"/>
+        <line x1="440" y1="148" x2="520" y2="148" stroke="#5c5652" stroke-width="1.2" marker-end="url(#cash07-arrow)"/>
+        <line x1="680" y1="148" x2="760" y2="148" stroke="#5c5652" stroke-width="1.2" marker-end="url(#cash07-arrow)"/>
+        <line x1="920" y1="148" x2="1000" y2="148" stroke="#5c5652" stroke-width="1.2" marker-end="url(#cash07-arrow)"/>
+
+        <!-- draft -> closed lost -->
+        <line x1="100" y1="208" x2="100" y2="272" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#cash07-arrow)"/>
+
+        <!-- active client -> ledger -->
+        <line x1="1080" y1="208" x2="1080" y2="336" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#cash07-arrow)"/>
+
+        <!-- invoice chain -->
+        <line x1="448" y1="450" x2="528" y2="450" stroke="#5c5652" stroke-width="1.2" marker-end="url(#cash07-arrow)"/>
+        <line x1="688" y1="450" x2="768" y2="450" stroke="#5c5652" stroke-width="1.2" marker-end="url(#cash07-arrow)"/>
+        <line x1="608" y1="500" x2="608" y2="536" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#cash07-arrow)"/>
+
+        <!-- ============ TRANSITION LABELS ============ -->
+        <rect x="204" y="130" width="72" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="240" y="139" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">CLIENT + FEE</text>
+
+        <rect x="456" y="130" width="48" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="480" y="139" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ACCEPT</text>
+
+        <rect x="692" y="130" width="56" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="720" y="139" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ENVELOPE</text>
+
+        <rect x="932" y="130" width="56" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="960" y="139" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">CONVERT</text>
+
+        <rect x="108" y="234" width="56" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="112" y="243" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.06em">PRE-SIGN</text>
+
+        <rect x="1088" y="264" width="72" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="1092" y="273" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.06em">BILLS MONTH</text>
+
+        <rect x="464" y="432" width="48" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="488" y="441" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ISSUE</text>
+
+        <rect x="704" y="432" width="48" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="728" y="441" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PAID</text>
+
+        <rect x="616" y="508" width="64" height="12" rx="2" fill="#f6f5f3"/>
+        <text x="620" y="517" fill="#6f6964" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.06em">DUE PASSED</text>
+
+        <!-- ============ CALLOUT LEADERS ============ -->
+        <path d="M 850 246 V 212" fill="none" stroke="rgba(27,24,23,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <circle cx="850" cy="210" r="2" fill="#1b1817"/>
+
+        <path d="M 760 570 H 700" fill="none" stroke="rgba(27,24,23,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <circle cx="696" cy="570" r="2" fill="#1b1817"/>
+
+        <!-- ============ QUOTE CHAIN ============ -->
+
+        <!-- Draft Quote -->
+        <rect x="40" y="88" width="160" height="120" rx="8" fill="#f6f5f3"/>
+        <rect x="40" y="88" width="160" height="120" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="120" y="132" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Draft Quote</text>
+        <text x="120" y="156" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">estimateInput</text>
+        <text x="120" y="172" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">ownerStaffId</text>
+
+        <!-- Quote Sent -->
+        <rect x="280" y="88" width="160" height="120" rx="8" fill="#f6f5f3"/>
+        <rect x="280" y="88" width="160" height="120" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="360" y="132" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Quote Sent</text>
+        <text x="360" y="156" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">Q-&lt;seq&gt; · expiryDate</text>
+        <text x="360" y="172" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">stageChangedAt clock</text>
+
+        <!-- Accepted -->
+        <rect x="520" y="88" width="160" height="120" rx="8" fill="#f6f5f3"/>
+        <rect x="520" y="88" width="160" height="120" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="600" y="132" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Accepted</text>
+        <text x="600" y="156" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">clientCode set</text>
+        <text x="600" y="172" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">retainerHours · adHoc</text>
+
+        <!-- Signed -->
+        <rect x="760" y="88" width="160" height="120" rx="8" fill="#f6f5f3"/>
+        <rect x="760" y="88" width="160" height="120" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="840" y="132" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Signed</text>
+        <text x="840" y="156" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">documensoEnvelopeId</text>
+        <text x="840" y="172" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">signedBy · signedAt</text>
+
+        <!-- Active Client (focal) -->
+        <rect x="1000" y="88" width="160" height="120" rx="8" fill="#f6f5f3"/>
+        <rect x="1000" y="88" width="160" height="120" rx="8" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2"/>
+        <text x="1080" y="132" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Active Client</text>
+        <text x="1080" y="156" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">writes Client.services</text>
+        <text x="1080" y="172" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">statutory tasks start</text>
+
+        <!-- Closed Lost terminal -->
+        <circle cx="100" cy="282" r="8" fill="none" stroke="#1b1817" stroke-width="1.2"/>
+        <circle cx="100" cy="282" r="5" fill="#1b1817"/>
+        <text x="116" y="280" fill="#1b1817" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">CLOSED LOST</text>
+        <text x="116" y="296" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">from Draft · Sent · Accepted</text>
+
+        <!-- ============ INVOICE CHAIN ============ -->
+
+        <!-- Draft -->
+        <rect x="288" y="400" width="160" height="100" rx="8" fill="#f6f5f3"/>
+        <rect x="288" y="400" width="160" height="100" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="368" y="444" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Draft</text>
+        <text x="368" y="466" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">billingMonth YYYY-MM</text>
+        <text x="368" y="482" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">lineItems · 15% VAT</text>
+
+        <!-- Sent -->
+        <rect x="528" y="400" width="160" height="100" rx="8" fill="#f6f5f3"/>
+        <rect x="528" y="400" width="160" height="100" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="608" y="444" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Sent</text>
+        <text x="608" y="466" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">issued · read-only</text>
+        <text x="608" y="482" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">dueDate · paymentTerms</text>
+
+        <!-- Paid -->
+        <rect x="768" y="400" width="160" height="100" rx="8" fill="#f6f5f3"/>
+        <rect x="768" y="400" width="160" height="100" rx="8" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="848" y="444" fill="#1b1817" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Paid</text>
+        <text x="848" y="466" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">status = Paid</text>
+        <text x="848" y="482" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">xeroSync</text>
+
+        <!-- Overdue (derived, dashed) -->
+        <rect x="528" y="536" width="160" height="76" rx="8" fill="#f6f5f3"/>
+        <rect x="528" y="536" width="160" height="76" rx="8" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <text x="608" y="566" fill="#c4161c" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Overdue</text>
+        <text x="608" y="586" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">Sent + past due + unpaid</text>
+        <text x="608" y="600" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.04em">derived · never stored</text>
+
+        <!-- Billing rules note inside the ledger zone -->
+        <text x="976" y="412" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">BILLING RULES</text>
+        <text x="976" y="436" fill="#1b1817" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">one invoice per quote + month</text>
+        <text x="976" y="452" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">15% VAT computed per line</text>
+        <text x="976" y="468" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">retainer overage → one line</text>
+        <text x="976" y="484" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.04em">issued invoices read-only</text>
+
+        <!-- ============ CALLOUTS ============ -->
+        <text x="600" y="250" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">STAGE GUARDS</text>
+        <text x="600" y="276" fill="#1b1817" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Send needs a client and one fee line;</text>
+        <text x="600" y="298" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">signing needs a recorded envelope id.</text>
+
+        <text x="760" y="558" fill="#1b1817" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Derived, never stored:</text>
+        <text x="760" y="580" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">a Sent invoice past its due date</text>
+        <text x="760" y="602" fill="#5c5652" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">reads as Overdue, nothing is written.</text>
+
+        <!-- ============ LEGEND ============ -->
+        <line x1="40" y1="640" x2="1240" y2="640" stroke="rgba(27,24,23,0.12)" stroke-width="0.8"/>
+        <text x="40" y="656" fill="#5c5652" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+
+        <rect x="120" y="648" width="14" height="10" rx="2" fill="#ffffff" stroke="#1b1817" stroke-width="1"/>
+        <text x="142" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Stored stage</text>
+
+        <rect x="252" y="648" width="14" height="10" rx="2" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1"/>
+        <text x="274" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Completion</text>
+
+        <rect x="368" y="648" width="14" height="10" rx="2" fill="rgba(196,22,28,0.08)" stroke="#c4161c" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="390" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Derived state</text>
+
+        <line x1="504" y1="653" x2="536" y2="653" stroke="#5c5652" stroke-width="1.2"/>
+        <text x="544" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Stage gate</text>
+
+        <line x1="648" y1="653" x2="680" y2="653" stroke="#5c5652" stroke-width="1.2" stroke-dasharray="5,4"/>
+        <text x="688" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Derived / exit path</text>
+
+        <circle cx="828" cy="653" r="6" fill="none" stroke="#1b1817" stroke-width="1.2"/>
+        <circle cx="828" cy="653" r="3.5" fill="#1b1817"/>
+        <text x="842" y="657" fill="#5c5652" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Terminal</text>
+
       </svg>
     </div>
-    
-    <div class="notes">
-      <div>
-        <h2>01 · Zero Calculation Drift</h2>
-        <p>The pure mathematical engine (@fdoncall/domain) produces outputs identical to the prototype down to the cent, with 47 automated tests confirming full parity.</p>
-      </div>
-      <div>
-        <h2>02 · Solves Practice Pain Points</h2>
-        <p>Database persistence eliminates the fatal data wipe on browser reload, while Documenso e-signatures remove manual contract printing.</p>
-      </div>
-      <div>
-        <h2>03 · Twenty CRM Architecture</h2>
-        <p>The UI shell adopts Twenty CRM's exact ergonomics: collapsible sidebar, Cmd+K search, 3-pane detail layout, and full light/dark theme toggling.</p>
-      </div>
-    </div>
-    
+
     <footer class="footer">
-      <span>FD ON CALL PRACTICE LEDGER · WORKFLOW AUDIT &amp; CHANGELOG</span>
-      <span>VALIDATED VIA DIAGRAM-DESIGN SELF-CHECK</span>
+      <span>FD ON CALL · PRACTICE LEDGER · QUOTE TO CASH</span>
+      <span>STAGE + billingMonth + DERIVED OVERDUE</span>
     </footer>
-  </main>
+  </div>
 </body>
 </html>
