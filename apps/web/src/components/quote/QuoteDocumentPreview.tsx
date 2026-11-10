@@ -72,19 +72,19 @@ export function QuoteDocumentPreview({
           />
           <div>
             <p className="font-serif text-base leading-tight text-foreground">FD on Call</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Chartered Accountants (SA)
             </p>
           </div>
         </div>
         <div className="text-right">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
             Fee quote
           </p>
           <p className="font-mono text-sm font-semibold text-[#c4161c]">{number}</p>
           <span
             className={cn(
-              'mt-1 inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[9px]',
+              'mt-1 inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[11px]',
               stage === 'Closed Lost'
                 ? 'border-border bg-muted text-muted-foreground'
                 : 'border-[#c4161c]/25 bg-[#c4161c]/10 text-[#c4161c]'
@@ -97,18 +97,18 @@ export function QuoteDocumentPreview({
 
       <div className="grid grid-cols-2 gap-4 border-b border-border py-4">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Prepared for
           </p>
           <p className="mt-1 text-xs font-semibold text-foreground">{clientName || 'New prospect'}</p>
           {clientCode && (
-            <p className="font-mono text-[10px] text-muted-foreground">{clientCode}</p>
+            <p className="font-mono text-[11px] text-muted-foreground">{clientCode}</p>
           )}
           {preparedFor && preparedFor !== clientName && (
-            <p className="mt-0.5 text-[10px] text-muted-foreground">Attn: {preparedFor}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Attn: {preparedFor}</p>
           )}
         </div>
-        <dl className="space-y-1 text-right font-mono text-[10px] text-muted-foreground">
+        <dl className="space-y-1 text-right font-mono text-[11px] text-muted-foreground">
           <div className="flex items-center justify-between gap-3">
             <dt>Issue date</dt>
             <dd className="text-foreground">{formatDate(issueDate)}</dd>
@@ -135,7 +135,7 @@ export function QuoteDocumentPreview({
 
       <table className="w-full border-collapse text-left">
         <thead>
-          <tr className="border-y border-border bg-muted/40 font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <tr className="border-y border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             <th className="px-2 py-1.5">Service</th>
             <th className="px-2 py-1.5 text-right">12-month amount</th>
           </tr>
@@ -167,7 +167,7 @@ export function QuoteDocumentPreview({
           <span className="text-foreground">Total (incl. VAT)</span>
           <span className="tabular-nums text-[#c4161c]">{formatZar(estimate.annualInclVat)}</span>
         </div>
-        <p className="pt-1 text-[9px] leading-snug text-muted-foreground">
+        <p className="pt-1 text-[11px] leading-snug text-muted-foreground">
           CIPC fees paid on your behalf carry no VAT. Software recharges are passed on at cost.
           Line amounts {vatInclusive ? 'include' : 'exclude'} 15% VAT.
         </p>
@@ -175,20 +175,20 @@ export function QuoteDocumentPreview({
 
       <div className="mt-4 grid grid-cols-2 gap-4 border-t border-border py-3">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Payment terms
           </p>
           <p className="mt-0.5 text-foreground">{paymentTerms}</p>
         </div>
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Monthly retainer
           </p>
           <p className="mt-0.5 font-mono text-foreground">{formatZar(estimate.average)}</p>
         </div>
       </div>
 
-      <p className="border-t border-border py-3 text-[10px] leading-relaxed text-muted-foreground">
+      <p className="border-t border-border py-3 text-[11px] leading-relaxed text-muted-foreground">
         This is an estimate, not a fixed fee. Fees assume the scope selected above; work outside
         that scope is billed at the agreed hourly rate. Government fees are recharged at cost and
         may change without notice. Accepting the quote confirms the engagement terms.
@@ -207,7 +207,7 @@ export function QuoteDocumentPreview({
         />
       </div>
 
-      <footer className="mt-5 border-t border-border pt-3 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+      <footer className="mt-5 border-t border-border pt-3 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
         FD on Call · Chartered Accountants (SA) · fdoncall.co.za
       </footer>
     </article>
@@ -225,11 +225,11 @@ function SignatureBlock({
 }) {
   return (
     <div>
-      <p className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">{heading}</p>
+      <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{heading}</p>
       <p className="mt-4 border-b border-foreground/50 pb-1 text-xs text-foreground">
         {name || '—'}
       </p>
-      <p className="mt-1 font-mono text-[9px] text-muted-foreground">{detail}</p>
+      <p className="mt-1 font-mono text-[11px] text-muted-foreground">{detail}</p>
     </div>
   );
 }
@@ -250,7 +250,7 @@ function FragmentGroup({
       <tr>
         <td
           colSpan={2}
-          className="border-b border-border bg-muted/20 px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
+          className="border-b border-border bg-muted/20 px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
         >
           {group}
         </td>
@@ -260,7 +260,7 @@ function FragmentGroup({
           <td className="px-2 py-1.5">
             <span className="block text-foreground">{line.label}</span>
             {line.detail && (
-              <span className="mt-0.5 block font-mono text-[9px] leading-snug text-muted-foreground">
+              <span className="mt-0.5 block font-mono text-[11px] leading-snug text-muted-foreground">
                 {line.detail}
               </span>
             )}
@@ -271,10 +271,10 @@ function FragmentGroup({
         </tr>
       ))}
       <tr className="border-b border-border/60 bg-muted/10">
-        <td className="px-2 py-1 text-right font-mono text-[9px] uppercase text-muted-foreground">
+        <td className="px-2 py-1 text-right font-mono text-[11px] uppercase text-muted-foreground">
           {group} subtotal {vatInclusive ? '(incl. VAT)' : '(excl. VAT)'}
         </td>
-        <td className="px-2 py-1 text-right font-mono text-[10px] font-medium tabular-nums text-foreground">
+        <td className="px-2 py-1 text-right font-mono text-[11px] font-medium tabular-nums text-foreground">
           {formatZar(total)}
         </td>
       </tr>

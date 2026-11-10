@@ -46,7 +46,7 @@ export function RelationshipHistoryPanel({ entries, limit }: RelationshipHistory
               />
               <div className="min-w-0 flex-1">
                 <p className="text-xs leading-snug text-foreground">{entry.title}</p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 font-mono text-[10px] text-muted-foreground">
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-muted-foreground">
                   {entry.at && <span className="tabular-nums">{formatWhen(entry.at)}</span>}
                   {entry.at && <span aria-hidden="true">·</span>}
                   <span className="uppercase tracking-wider">{entry.action}</span>

@@ -89,7 +89,7 @@ export function LineAreaChart({ data, className }: LineAreaChartProps) {
       </svg>
 
       {data.length > 0 && (
-        <figcaption className="flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+        <figcaption className="flex items-center justify-between gap-2 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
           <span>{data[0].label}</span>
           {data.length > 2 && <span className="hidden sm:inline">{data[Math.floor(data.length / 2)].label}</span>}
           <span>{data[data.length - 1].label}</span>
@@ -165,7 +165,7 @@ export function DonutChart({ slices, centerValue, centerLabel, className }: Donu
           <span className="font-mono text-lg font-semibold leading-none tabular-nums text-foreground">
             {centerValue}
           </span>
-          <span className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+          <span className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
             {centerLabel}
           </span>
         </div>

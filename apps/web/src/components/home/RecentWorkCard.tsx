@@ -31,7 +31,7 @@ export function RecentWorkCard({ items, onViewAll }: RecentWorkCardProps) {
                 <p className="truncate text-[13px] font-medium text-foreground">{item.title}</p>
                 <p className="truncate font-mono text-[11px] text-muted-foreground">{item.subtitle}</p>
               </div>
-              <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{item.meta}</span>
+              <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{item.meta}</span>
             </li>
           ))}
         </ul>

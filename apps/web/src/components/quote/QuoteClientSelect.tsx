@@ -136,11 +136,11 @@ export function QuoteClientSelect({
                       >
                         <span className="min-w-0">
                           <span className="block truncate text-xs text-foreground">{client.name}</span>
-                          <span className="block font-mono text-[10px] text-muted-foreground">
+                          <span className="block font-mono text-[11px] text-muted-foreground">
                             {client.code} · {client.entityType}
                           </span>
                         </span>
-                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                           {client.vatCategory ? `VAT ${client.vatCategory}` : 'Non-VAT'}
                         </span>
                       </button>
@@ -155,7 +155,7 @@ export function QuoteClientSelect({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-foreground">{selectedClient.name}</p>
-                    <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                    <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
                       {selectedClient.code} · {selectedClient.entityType} · year end{' '}
                       {MONTHS_LONG[selectedClient.yearEndMonth - 1]}
                     </p>
@@ -165,7 +165,7 @@ export function QuoteClientSelect({
                     onClick={() => {
                       onModeChange('prospect');
                     }}
-                    className="shrink-0 text-[10px] font-medium text-[#c4161c] outline-none hover:underline focus-visible:ring-1 focus-visible:ring-[#c4161c]"
+                    className="shrink-0 text-[11px] font-medium text-[#c4161c] outline-none hover:underline focus-visible:ring-1 focus-visible:ring-[#c4161c]"
                   >
                     New prospect instead
                   </button>
@@ -306,7 +306,7 @@ export function QuoteClientSelect({
               />
               <span>
                 Runs payroll
-                <span className="mt-0.5 block font-normal text-[10px] text-muted-foreground">
+                <span className="mt-0.5 block font-normal text-[11px] text-muted-foreground">
                   PAYE, UIF and employer reconciliation
                 </span>
               </span>

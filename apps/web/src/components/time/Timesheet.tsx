@@ -89,7 +89,7 @@ export function Timesheet() {
       <section className="rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Period
             </span>
             <label className="flex items-center gap-1.5">
@@ -130,7 +130,7 @@ export function Timesheet() {
                     type="button"
                     onClick={() => setRange(presetRange)}
                     className={cn(
-                      'rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wide transition-colors',
+                      'rounded-md border px-2 py-1 font-mono text-[11px] uppercase tracking-wide transition-colors',
                       active
                         ? 'border-[#c4161c]/30 bg-[#c4161c]/10 text-[#c4161c] dark:text-[#f87171]'
                         : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -160,7 +160,7 @@ export function Timesheet() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <thead className="border-b border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Date</th>
                   <th className="px-3 py-2.5 font-medium">Client</th>
@@ -185,7 +185,7 @@ export function Timesheet() {
                     >
                       <td className="whitespace-nowrap px-4 py-2.5">
                         <p className="tabular-nums text-foreground">{formatDate(day)}</p>
-                        <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                        <p className="font-mono text-[11px] tabular-nums text-muted-foreground">
                           {timeLabel(entry.startedAt)}
                           {entry.endedAt ? `–${timeLabel(entry.endedAt)}` : ''}
                         </p>
@@ -194,7 +194,7 @@ export function Timesheet() {
                         <p className="max-w-[12rem] truncate text-foreground">
                           {clientName.get(entry.clientCode) ?? entry.clientCode}
                         </p>
-                        <p className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                           {entry.clientCode}
                         </p>
                       </td>
@@ -229,7 +229,7 @@ export function Timesheet() {
                           />
                           <span
                             className={cn(
-                              'font-mono text-[10px] uppercase tracking-wide',
+                              'font-mono text-[11px] uppercase tracking-wide',
                               entry.billable ? 'text-[#c4161c] dark:text-[#f87171]' : 'text-muted-foreground'
                             )}
                           >

@@ -75,7 +75,7 @@ export function Sidebar({
         {!collapsed && item.badge !== undefined && (
           <span
             className={cn(
-              'font-mono text-[10px] px-1.5 py-0.2 rounded-full shrink-0 font-normal',
+              'font-mono text-[11px] px-1.5 py-0.2 rounded-full shrink-0 font-normal',
               isActive
                 ? 'bg-[#c4161c]/20 text-[#c4161c] dark:text-[#f87171]'
                 : 'bg-muted text-muted-foreground'
@@ -132,7 +132,7 @@ export function Sidebar({
             return (
               <div key={section} className="space-y-1">
                 {!collapsed && (
-                  <div className="px-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                  <div className="px-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                     {section}
                   </div>
                 )}

@@ -393,7 +393,7 @@ export function StatutoryProfileTab({
               <Building2 className="h-3.5 w-3.5 text-[#c4161c]" />
               Statutory profile
             </h3>
-            <Badge variant="outline" className="font-mono text-[10px]">
+            <Badge variant="outline" className="font-mono text-[11px]">
               {client.code}
             </Badge>
           </div>
@@ -418,7 +418,7 @@ export function StatutoryProfileTab({
                 ))}
               </select>
               {client.yearEndAssumed && (
-                <span className="mt-0.5 block font-mono text-[10px] text-amber-500">
+                <span className="mt-0.5 block font-mono text-[11px] text-amber-500">
                   * Assumed February: unconfirmed by client CIPC incorporation papers
                 </span>
               )}
@@ -440,7 +440,7 @@ export function StatutoryProfileTab({
                   className="w-full rounded-lg border border-border bg-background px-3 py-1.5 font-mono text-foreground"
                 />
                 {!client.incorporationDate && (
-                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
                     Required to determine exact CIPC Annual Return statutory filing window
                   </span>
                 )}
@@ -467,7 +467,7 @@ export function StatutoryProfileTab({
                   className="w-full rounded-lg border border-border bg-background py-1.5 pl-8 pr-3 font-mono text-foreground"
                 />
               </div>
-              <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
+              <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
                 Determines CIPC filing fee band and accounting turnover tier
               </span>
             </div>
@@ -612,11 +612,11 @@ export function StatutoryProfileTab({
                     />
                     <label htmlFor={`svc-${svc.code}`} className="min-w-0 cursor-pointer select-none">
                       <span className="block truncate font-medium text-foreground">{svc.label}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">{svc.code}</span>
+                      <span className="font-mono text-[11px] text-muted-foreground">{svc.code}</span>
                     </label>
                   </div>
 
-                  <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                  <Badge variant="outline" className="shrink-0 font-mono text-[11px]">
                     {svc.fee}
                   </Badge>
                 </div>

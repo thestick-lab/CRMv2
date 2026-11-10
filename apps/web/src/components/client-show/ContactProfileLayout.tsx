@@ -98,7 +98,7 @@ export function ContactProfileLayout({
                   {identity.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-border bg-muted/50 px-2 py-0.5 font-mono text-[10px] leading-none text-muted-foreground"
+                      className="rounded-full border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] leading-none text-muted-foreground"
                     >
                       {tag}
                     </span>
@@ -114,7 +114,7 @@ export function ContactProfileLayout({
                 const value = meta[row.key];
                 return (
                   <div key={row.key} className="space-y-0.5">
-                    <dt className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+                    <dt className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                       {row.label}
                     </dt>
                     <dd

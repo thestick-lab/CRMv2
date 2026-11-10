@@ -62,7 +62,7 @@ export function DeadlinesTab({ client, asOfDate }: { client: Client; asOfDate: s
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[10px] border-b border-border font-mono">
+            <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[11px] border-b border-border font-mono">
               <tr>
                 <th className="py-2.5 px-3 font-medium">Return</th>
                 <th className="py-2.5 px-3 font-medium">Filing Period</th>
@@ -86,7 +86,7 @@ export function DeadlinesTab({ client, asOfDate }: { client: Client; asOfDate: s
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-foreground">{item.service}</span>
                         {item.part && (
-                          <span className="text-[10px] text-muted-foreground font-sans">({item.part})</span>
+                          <span className="text-[11px] text-muted-foreground font-sans">({item.part})</span>
                         )}
                       </div>
                     </td>
@@ -97,7 +97,11 @@ export function DeadlinesTab({ client, asOfDate }: { client: Client; asOfDate: s
                       {item.due ? (
                         <div className="flex items-center gap-1 text-foreground">
                           <span>{item.due}</span>
-                          <span className="font-sans text-[11px] text-[#c4161c] dark:text-[#f87171]" title="South African holiday rollback applied">
+                          <span
+                            className="font-sans text-[11px] text-[#c4161c] dark:text-[#f87171]"
+                            title={item.dueNote ?? 'Due date note'}
+                            aria-label={item.dueNote ?? 'Due date note'}
+                          >
                             ↩
                           </span>
                         </div>
@@ -110,7 +114,7 @@ export function DeadlinesTab({ client, asOfDate }: { client: Client; asOfDate: s
 
                     <td className="py-2.5 px-3 font-sans">
                       {item.needsPartnerReview ? (
-                        <Badge variant="crimsonSubdued" className="text-[10px] py-0 px-1.5 gap-1 font-mono">
+                        <Badge variant="crimsonSubdued" className="text-[11px] py-0 px-1.5 gap-1 font-mono">
                           <UserCheck className="h-3 w-3" /> Partner Gate
                         </Badge>
                       ) : (
@@ -129,7 +133,7 @@ export function DeadlinesTab({ client, asOfDate }: { client: Client; asOfDate: s
                             ? 'warning'
                             : 'outline'
                         }
-                        className="text-[10px] py-0 px-1.5 uppercase font-mono tracking-wider"
+                        className="text-[11px] py-0 px-1.5 uppercase font-mono tracking-wider"
                       >
                         {item.urgency}
                       </Badge>

@@ -28,7 +28,7 @@ export function StaffDirectory({ rows, onOpen }: StaffDirectoryProps) {
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
           {rows.length} {rows.length === 1 ? 'member' : 'members'} · {employeeCount} employed ·{' '}
           {subcontractorCount} subcontracted
         </p>
@@ -52,7 +52,7 @@ export function StaffDirectory({ rows, onOpen }: StaffDirectoryProps) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] border-collapse text-left text-xs">
           <thead>
-            <tr className="border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            <tr className="border-b border-border bg-muted/40 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
               <th scope="col" className="px-4 py-2.5 font-medium">
                 Name
               </th>
@@ -95,7 +95,7 @@ export function StaffDirectory({ rows, onOpen }: StaffDirectoryProps) {
                   <div className="flex items-center gap-2.5">
                     <span
                       aria-hidden="true"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-muted font-mono text-[10px] font-semibold text-foreground"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-muted font-mono text-[11px] font-semibold text-foreground"
                     >
                       {row.initials}
                     </span>
@@ -106,7 +106,7 @@ export function StaffDirectory({ rows, onOpen }: StaffDirectoryProps) {
                 <td className="px-4 py-2.5">
                   <Badge
                     variant={row.kind === 'subcontractor' ? 'crimsonSubdued' : 'outline'}
-                    className="font-mono text-[10px] capitalize"
+                    className="font-mono text-[11px] capitalize"
                   >
                     {row.kind}
                   </Badge>
@@ -114,7 +114,7 @@ export function StaffDirectory({ rows, onOpen }: StaffDirectoryProps) {
                 <td className="px-4 py-2.5">
                   <div className="space-y-0.5">
                     <p className="truncate text-foreground">{row.email || '—'}</p>
-                    {row.phone && <p className="font-mono text-[10px] text-muted-foreground">{row.phone}</p>}
+                    {row.phone && <p className="font-mono text-[11px] text-muted-foreground">{row.phone}</p>}
                   </div>
                 </td>
                 <td className="px-4 py-2.5 font-mono text-[11px] tabular-nums text-muted-foreground">
@@ -265,7 +265,7 @@ export function InviteMemberDialog({
                   ))}
                 </select>
                 {roleNote && (
-                  <p className="text-[10px] leading-relaxed text-muted-foreground">{roleNote}</p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">{roleNote}</p>
                 )}
               </label>
 
@@ -283,7 +283,7 @@ export function InviteMemberDialog({
             </div>
 
             {name.trim() && (
-              <p className="rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[10px] text-muted-foreground">
+              <p className="rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] text-muted-foreground">
                 Sign-in account · {signInEmailFor(name.trim())}
               </p>
             )}

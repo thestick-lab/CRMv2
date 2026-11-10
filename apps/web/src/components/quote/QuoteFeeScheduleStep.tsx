@@ -180,7 +180,7 @@ export function QuoteFeeScheduleStep({
             />
             <span>
               Provisional taxpayer
-              <span className="mt-0.5 block font-normal text-[10px] text-muted-foreground">
+              <span className="mt-0.5 block font-normal text-[11px] text-muted-foreground">
                 Adds IRP6 returns for individuals and trusts
               </span>
             </span>
@@ -252,7 +252,7 @@ export function QuoteFeeScheduleStep({
               <div key={key} className="grid grid-cols-1 gap-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end">
                 <div>
                   <p className="text-xs font-medium text-foreground">{REGULAR_LABELS[key]}</p>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {on ? `${formatZar(input.rate, 0)} an hour` : 'Not in scope'}
                   </p>
                 </div>
@@ -298,7 +298,7 @@ export function QuoteFeeScheduleStep({
 
                 {on && schedule.when === 'custom' && (
                   <div className="md:col-span-3">
-                    <p className="mb-1 text-[10px] font-medium text-muted-foreground">
+                    <p className="mb-1 text-[11px] font-medium text-muted-foreground">
                       Chosen months
                     </p>
                     <div className="flex flex-wrap gap-1">
@@ -316,7 +316,7 @@ export function QuoteFeeScheduleStep({
                               })
                             }
                             className={cn(
-                              'rounded-md border px-2 py-0.5 font-mono text-[10px] transition-colors focus-visible:ring-1 focus-visible:ring-[#c4161c]',
+                              'rounded-md border px-2 py-0.5 font-mono text-[11px] transition-colors focus-visible:ring-1 focus-visible:ring-[#c4161c]',
                               active
                                 ? 'border-[#c4161c]/40 bg-[#c4161c]/10 text-[#c4161c]'
                                 : 'border-border bg-background text-muted-foreground hover:text-foreground'
@@ -440,35 +440,35 @@ export function QuoteFeeScheduleStep({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-xs">
-          <p className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Smoothed monthly retainer
           </p>
           <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">
             {formatZar(estimate.average)}
           </p>
-          <p className="text-[10px] font-mono text-muted-foreground">
+          <p className="text-[11px] font-mono text-muted-foreground">
             {formatZar(estimate.averageInclVat)} incl. 15% VAT
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-xs">
-          <p className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             12-month value
           </p>
           <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-[#c4161c]">
             {formatZar(estimate.annual)}
           </p>
-          <p className="text-[10px] font-mono text-muted-foreground">
+          <p className="text-[11px] font-mono text-muted-foreground">
             {formatZar(estimate.annualInclVat)} incl. 15% VAT
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-xs">
-          <p className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Fee lines
           </p>
           <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">
             {estimate.lines.length}
           </p>
-          <p className="text-[10px] font-mono text-muted-foreground">
+          <p className="text-[11px] font-mono text-muted-foreground">
             {estimate.increaseApplied ? `March increase from ${estimate.increaseFrom}` : 'No March increase applied'}
           </p>
         </div>
@@ -477,13 +477,13 @@ export function QuoteFeeScheduleStep({
       <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
         <header className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold text-foreground">12-month fee schedule</h3>
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="font-mono text-[11px] text-muted-foreground">
             {estimate.months[0]} – {estimate.months[11]}
           </span>
         </header>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-left text-[11px] font-mono">
-            <thead className="border-b border-border bg-muted/40 text-[10px] uppercase text-muted-foreground">
+            <thead className="border-b border-border bg-muted/40 text-[11px] uppercase text-muted-foreground">
               <tr>
                 <th className="px-4 py-2">Month</th>
                 <th className="px-4 py-2 text-right">Excl. VAT</th>

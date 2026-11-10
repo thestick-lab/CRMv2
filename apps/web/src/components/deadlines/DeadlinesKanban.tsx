@@ -622,7 +622,7 @@ function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: s
             {card.serviceLabel}
           </span>
           {card.part && (
-            <span className="font-mono text-[9px] text-muted-foreground">({card.part})</span>
+            <span className="font-mono text-[11px] text-muted-foreground">({card.part})</span>
           )}
         </div>
         <PriorityPill level={card.priority} />
@@ -630,7 +630,7 @@ function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: s
 
       <p className="truncate text-xs font-medium text-foreground">{card.clientName}</p>
 
-      <p className="font-mono text-[10px] text-muted-foreground">
+      <p className="font-mono text-[11px] text-muted-foreground">
         {card.kind === 'statutory' ? (
           <>
             {card.clientCode}
@@ -650,20 +650,24 @@ function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: s
       )}
 
       {blocked && (
-        <div className="flex items-start gap-1 rounded-md border border-destructive/30 bg-destructive/5 px-1.5 py-1 text-[10px] leading-snug text-destructive">
+        <div className="flex items-start gap-1 rounded-md border border-destructive/30 bg-destructive/5 px-1.5 py-1 text-[11px] leading-snug text-destructive">
           <AlertCircle className="mt-px h-3 w-3 shrink-0" />
           <span>Blocked: {card.blockedReason}</span>
         </div>
       )}
 
       <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-1.5">
-        <span className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
           <Calendar className="h-3 w-3 shrink-0" />
           <span className={cn(overdue && 'font-semibold text-destructive')}>
             {card.due || 'No date'}
           </span>
           {card.dueNote && (
-            <span className="font-bold text-[#c4161c]" title={`Holiday rollback: ${card.dueNote}`}>
+            <span
+              className="font-bold text-[#c4161c]"
+              title={card.dueNote}
+              aria-label={card.dueNote}
+            >
               ↩
             </span>
           )}
@@ -683,7 +687,7 @@ function DeadlineBoardCard({ card, asOfDate }: { card: DeadlineCard; asOfDate: s
       </div>
 
       {card.needsPartnerReview && (
-        <Badge variant="crimsonSubdued" className="gap-1 font-mono text-[9px]">
+        <Badge variant="crimsonSubdued" className="gap-1 font-mono text-[11px]">
           <ShieldCheck className="h-2.5 w-2.5" /> Partner review
         </Badge>
       )}

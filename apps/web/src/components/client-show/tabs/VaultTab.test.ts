@@ -11,19 +11,27 @@ function boDocument(client: Client) {
   return cipc.files[0];
 }
 
-describe('BO vault document status follows the recorded scope', () => {
+describe('vault CIPC row follows the recorded scope', () => {
   const muse = CLIENTS.find((client) => client.code === 'MUS-875')!;
 
-  it('is signed when BO is in scope and filed', () => {
-    expect(boDocument(muse).status).toBe('Signed & Executed');
+  it('is recorded when BO is in scope and filed', () => {
+    expect(boDocument(muse).status).toBe('Recorded');
   });
 
   it('is pending when BO is in scope but not filed', () => {
-    expect(boDocument({ ...muse, beneficialOwnershipFiled: false }).status).toBe('Pending Signature');
+    expect(boDocument({ ...muse, beneficialOwnershipFiled: false }).status).toBe('Pending');
   });
 
   it('is out of scope when BO is not recorded as a service', () => {
     expect(boDocument({ ...muse, services: ['AFS', 'ITR14'] }).status).toBe('Not in scope');
     expect(boDocument({ ...muse, beneficialOwnershipFiled: null }).status).toBe('Not in scope');
+  });
+
+  it('claims no stored document anywhere in the tree', () => {
+    for (const folder of buildVaultFolders(muse)) {
+      for (const file of folder.files) {
+        expect(file.status).not.toMatch(/signed|accepted|executed/i);
+      }
+    }
   });
 });

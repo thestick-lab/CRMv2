@@ -70,7 +70,7 @@ export function InternalNotesPanel({
           </div>
         ) : notes ? (
           <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5">
-            <p className="mb-1 flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.14em] text-amber-700 dark:text-amber-400">
+            <p className="mb-1 flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-amber-700 dark:text-amber-400">
               <Lock className="h-2.5 w-2.5" aria-hidden="true" /> Internal
             </p>
             <p className="whitespace-pre-line text-xs leading-relaxed text-foreground">{notes}</p>

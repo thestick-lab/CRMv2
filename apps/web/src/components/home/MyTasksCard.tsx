@@ -132,7 +132,7 @@ export function MyTasksCard({
               )}
             >
               {entry.label}
-              <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+              <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                 {entry.count}
               </span>
             </button>

@@ -38,13 +38,13 @@ export function NextActionPanel({ task, onComplete, onViewAll }: NextActionPanel
             <div className="relative">
               <DateChip month={monthLabel.toLowerCase()} day={day} />
               {year && (
-                <span className="mt-1 block text-center font-mono text-[9px] text-muted-foreground">
+                <span className="mt-1 block text-center font-mono text-[11px] text-muted-foreground">
                   {year}
                 </span>
               )}
             </div>
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-dashed border-border font-mono text-[9px] text-muted-foreground">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-dashed border-border font-mono text-[11px] text-muted-foreground">
               TBC
             </div>
           )}
@@ -53,7 +53,7 @@ export function NextActionPanel({ task, onComplete, onViewAll }: NextActionPanel
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-mono text-xs font-semibold text-foreground">{task.service}</span>
               {task.part && (
-                <span className="font-mono text-[10px] text-muted-foreground">({task.part})</span>
+                <span className="font-mono text-[11px] text-muted-foreground">({task.part})</span>
               )}
               <Badge
                 variant={
@@ -63,13 +63,13 @@ export function NextActionPanel({ task, onComplete, onViewAll }: NextActionPanel
                     ? 'crimsonSubdued'
                     : 'outline'
                 }
-                className="px-1.5 py-0 text-[9px] font-mono uppercase tracking-wide"
+                className="px-1.5 py-0 text-[11px] font-mono uppercase tracking-wide"
               >
                 {task.urgency}
               </Badge>
             </div>
             <p className="mt-0.5 text-xs text-foreground">Filing period {task.period}</p>
-            <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+            <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
               {task.due ? `Due ${task.due}` : task.dueNote || 'Due date pending'}
               {task.needsPartnerReview ? ' · partner review' : ''}
             </p>

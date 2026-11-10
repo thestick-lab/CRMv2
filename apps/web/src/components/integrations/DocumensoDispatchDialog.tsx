@@ -41,7 +41,7 @@ export interface DocumensoDispatchDialogProps {
 }
 
 const FIELD_CLASS =
-  'h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[11px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40';
+  'h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[11px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40';
 
 export function DocumensoDispatchDialog({
   open,
@@ -106,7 +106,7 @@ export function DocumensoDispatchDialog({
                 <FileSignature className="h-4 w-4" />
               </span>
               <div className="space-y-0.5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                   Documenso · e-signature
                 </p>
                 <DialogPrimitive.Title className="font-serif text-lg leading-tight text-foreground">
@@ -159,18 +159,18 @@ export function DocumensoDispatchDialog({
                   </p>
                   <p className="truncate text-[11px] text-muted-foreground">{documentInfo.title}</p>
                 </div>
-                <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                <Badge variant="outline" className="shrink-0 font-mono text-[11px]">
                   PDF
                 </Badge>
               </div>
 
               <div className="space-y-2">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
                   Signing order
                 </p>
 
                 <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#c4161c]/25 bg-[#c4161c]/10 font-mono text-[10px] text-[#c4161c]">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#c4161c]/25 bg-[#c4161c]/10 font-mono text-[11px] text-[#c4161c]">
                     1
                   </span>
                   <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -182,13 +182,13 @@ export function DocumensoDispatchDialog({
                       {clientEmail}
                     </p>
                   </div>
-                  <Badge variant="crimsonSubdued" className="shrink-0 font-mono text-[10px]">
+                  <Badge variant="crimsonSubdued" className="shrink-0 font-mono text-[11px]">
                     Client signatory
                   </Badge>
                 </div>
 
                 <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted/50 font-mono text-[10px] text-muted-foreground">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted/50 font-mono text-[11px] text-muted-foreground">
                     2
                   </span>
                   <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -200,7 +200,7 @@ export function DocumensoDispatchDialog({
                       {envelope.recipients[1].email}
                     </p>
                   </div>
-                  <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                  <Badge variant="outline" className="shrink-0 font-mono text-[11px]">
                     Counter-signer
                   </Badge>
                 </div>
@@ -234,7 +234,7 @@ export function DocumensoDispatchDialog({
               </div>
 
               <footer className="flex items-center justify-between gap-2 border-t border-border pt-3">
-                <span className="font-mono text-[10px] text-muted-foreground">
+                <span className="font-mono text-[11px] text-muted-foreground">
                   {envelope.envelopeId}
                 </span>
                 <div className="flex items-center gap-2">

@@ -149,12 +149,12 @@ export function StatutoryActionForm({
           <span className="text-muted-foreground">Statutory due</span>
           <span className="font-semibold text-foreground">{task.due || 'Ad-hoc'}</span>
           {task.dueNote && (
-            <span className="text-[10px] font-normal text-amber-600 dark:text-amber-400">
+            <span className="text-[11px] font-normal text-amber-600 dark:text-amber-400">
               ({task.dueNote})
             </span>
           )}
         </div>
-        <Badge variant="secondary" className="text-[10px]">
+        <Badge variant="secondary" className="text-[11px]">
           {task.staffName}
         </Badge>
       </div>
@@ -215,7 +215,7 @@ export function StatutoryActionForm({
               </button>
             ))}
           </div>
-          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
             A payable provisional return needs partner review before it can be approved.
           </p>
         </div>
@@ -228,7 +228,7 @@ export function StatutoryActionForm({
               <ShieldCheck className="h-4 w-4 text-amber-500" />
               Partner review gate
             </span>
-            <Badge variant="outline" className="font-mono text-[10px]">
+            <Badge variant="outline" className="font-mono text-[11px]">
               CA(SA) required
             </Badge>
           </div>

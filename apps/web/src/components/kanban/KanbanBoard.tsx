@@ -230,7 +230,7 @@ export function KanbanBoard<T extends KanbanCardBase>({
                 <h3 className="min-w-0 flex-1 truncate text-xs font-semibold tracking-tight text-foreground">
                   {column.title}
                 </h3>
-                <span className="rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground">
+                <span className="rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] leading-none text-muted-foreground">
                   {cards.length}
                 </span>
                 {allowAdd && (
@@ -247,7 +247,7 @@ export function KanbanBoard<T extends KanbanCardBase>({
               </header>
 
               {column.hint && (
-                <p className="border-b border-border/60 px-3 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
+                <p className="border-b border-border/60 px-3 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
                   {column.hint}
                 </p>
               )}
@@ -322,7 +322,7 @@ export function KanbanBoard<T extends KanbanCardBase>({
                           onClick={(event) => event.stopPropagation()}
                           className="absolute right-1.5 top-7 z-20 w-52 overflow-hidden rounded-lg border border-border bg-card p-1 shadow-lg"
                         >
-                          <p className="px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                          <p className="px-2 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                             Move to
                           </p>
                           {columns
@@ -356,7 +356,7 @@ export function KanbanBoard<T extends KanbanCardBase>({
         })}
       </div>
 
-      <p className="flex items-center gap-1.5 px-1 text-[10px] text-muted-foreground">
+      <p className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">
         <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
         <span>
           Focus a card, then <kbd className="rounded border border-border px-1 font-mono">←</kbd>{' '}

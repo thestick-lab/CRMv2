@@ -192,7 +192,6 @@ export function DeadlinesDashboard({
   return (
     <div className="mx-auto max-w-7xl space-y-5 p-6">
       <PageHeader
-        eyebrow="Deadlines"
         title="Deadlines"
         subtitle={`${displayedTasks.length} statutory task${
           displayedTasks.length === 1 ? '' : 's'
@@ -325,13 +324,13 @@ export function DeadlinesDashboard({
               )}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                   {tile.label}
                 </span>
                 <Icon
                   className={cn(
                     'h-4 w-4',
-                    zero ? 'text-muted-foreground/60' : accentText[tile.accent]
+                    zero ? 'text-muted-foreground' : accentText[tile.accent]
                   )}
                 />
               </div>
@@ -355,7 +354,7 @@ export function DeadlinesDashboard({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center rounded-lg border border-border bg-background p-0.5 text-xs">
-            <span className="px-2 font-mono text-[10px] uppercase text-muted-foreground">
+            <span className="px-2 font-mono text-[11px] uppercase text-muted-foreground">
               Horizon
             </span>
             {(['30', '90', '365'] as const).map((h) => (

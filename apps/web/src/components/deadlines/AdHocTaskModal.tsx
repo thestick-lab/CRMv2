@@ -143,7 +143,7 @@ export function AdHocTaskModal({ open, onOpenChange, task, initialStatus }: AdHo
         <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 animate-in fade-in-0 zoom-in-95 space-y-4 rounded-xl border border-border bg-card p-5 shadow-2xl">
           <div className="flex items-start justify-between border-b border-border pb-3">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
                 Manual task
               </p>
               <DialogPrimitive.Title className="mt-0.5 flex items-center gap-2 text-base font-semibold text-foreground">

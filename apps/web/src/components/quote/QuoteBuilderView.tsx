@@ -582,19 +582,19 @@ export function QuoteBuilderView({
             <X className="h-4 w-4" />
           </button>
           <div className="min-w-0">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               Quote builder
             </p>
             <h1 className="truncate font-serif text-lg leading-tight text-foreground">
               {displayName || 'New prospect quote'}
             </h1>
           </div>
-          <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+          <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
             {number}
           </span>
           <span
             className={cn(
-              'rounded-full border px-2 py-0.5 font-mono text-[10px]',
+              'rounded-full border px-2 py-0.5 font-mono text-[11px]',
               stage === 'Closed Lost'
                 ? 'border-border bg-muted text-muted-foreground'
                 : 'border-[#c4161c]/25 bg-[#c4161c]/10 text-[#c4161c]'
@@ -604,7 +604,7 @@ export function QuoteBuilderView({
           </span>
         </div>
 
-        <ol className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+        <ol className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
           {CURRENT_STAGES.map((entry, index) => (
             <React.Fragment key={entry}>
               {index > 0 && <li aria-hidden="true">→</li>}
@@ -639,10 +639,10 @@ export function QuoteBuilderView({
                   )}
                   aria-current={index === step ? 'step' : undefined}
                 >
-                  <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                     <span
                       className={cn(
-                        'inline-flex h-4 w-4 items-center justify-center rounded-full border text-[9px]',
+                        'inline-flex h-4 w-4 items-center justify-center rounded-full border text-[11px]',
                         index === step
                           ? 'border-[#c4161c] bg-[#c4161c] text-white'
                           : 'border-border'
@@ -655,7 +655,7 @@ export function QuoteBuilderView({
                   <span className="mt-1 block text-xs font-semibold text-foreground">
                     {entry.title}
                   </span>
-                  <span className="block text-[10px] leading-snug text-muted-foreground">
+                  <span className="block text-[11px] leading-snug text-muted-foreground">
                     {entry.description}
                   </span>
                 </button>
@@ -773,10 +773,10 @@ export function QuoteBuilderView({
         <aside className="min-h-0 overflow-y-auto border-t border-border bg-muted/20 p-6 lg:border-l lg:border-t-0">
           <div className="mx-auto max-w-[560px]">
             <div className="mb-3 flex items-center justify-between">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                 Document preview
               </p>
-              <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#c4161c]" />
                 Live
               </span>
@@ -925,7 +925,7 @@ export function QuoteBuilderView({
             Download Excel
           </Button>
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           Stage rules are enforced: send needs a client and a fee line; accept needs sent; signature
           needs accepted. A signed quote converts to an active client from the Sales Pipeline board.
         </p>

@@ -109,7 +109,7 @@ export function EstimateTab({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Retainer excl. VAT */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>Smoothed Monthly Retainer</span>
             <Coins className="h-4 w-4 text-[#c4161c]" />
           </div>
@@ -123,7 +123,7 @@ export function EstimateTab({
 
         {/* 12-Month Total */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
             <span>12-Month Projected Value</span>
             <CalendarClock className="h-4 w-4 text-[#c4161c]" />
           </div>
@@ -138,13 +138,13 @@ export function EstimateTab({
         {/* March Escalation Info */}
         <div className="flex flex-col justify-between space-y-2 rounded-xl border border-border bg-card p-4">
           <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Annual Price Increase</span>
               <TrendingUp className="h-4 w-4 text-[#c4161c]" />
             </div>
             <div className="text-base font-semibold text-foreground mt-1 flex items-center gap-1.5">
               <span>+{rates.marchEscalationPct}% from {estimate.increaseFrom}</span>
-              <Badge variant="secondary" className="text-[10px] py-0 px-1 font-mono">
+              <Badge variant="secondary" className="text-[11px] py-0 px-1 font-mono">
                 Active
               </Badge>
             </div>
@@ -213,7 +213,7 @@ export function EstimateTab({
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left min-w-[900px]">
-            <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[10px] border-b border-border font-mono">
+            <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[11px] border-b border-border font-mono">
               <tr>
                 <th className="py-2.5 px-3 font-medium min-w-[200px]">Service Line</th>
                 {estimate.months.map((m) => {
@@ -239,7 +239,7 @@ export function EstimateTab({
                 <tr key={line.key} className="hover:bg-muted/30 transition-colors">
                   <td className="py-2 px-3 font-sans">
                     <div className="font-medium text-foreground">{line.label}</div>
-                    <div className="text-[10px] text-muted-foreground">{line.detail}</div>
+                    <div className="text-[11px] text-muted-foreground">{line.detail}</div>
                   </td>
 
                   {line.amounts.map((amt, idx) => (

@@ -16,7 +16,7 @@ export function TeamActivityCard({ activity, today }: TeamActivityCardProps) {
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold text-foreground">Team activity</h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
           Latest
         </span>
       </div>
@@ -36,7 +36,7 @@ export function TeamActivityCard({ activity, today }: TeamActivityCardProps) {
             </div>
             <time
               dateTime={event.at}
-              className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground"
+              className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground"
             >
               {relativeTime(event.at, today)}
             </time>

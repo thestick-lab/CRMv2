@@ -75,7 +75,7 @@ export function QuoteScopeStep({ input, onChange }: QuoteScopeStepProps) {
                     {group.note}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full border border-border bg-muted/60 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+                <span className="shrink-0 rounded-full border border-border bg-muted/60 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
                   {selectedCount} on
                 </span>
               </header>
@@ -109,7 +109,7 @@ export function QuoteScopeStep({ input, onChange }: QuoteScopeStepProps) {
                               {SERVICE_LABELS[key]}
                             </span>
                             {reason && (
-                              <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                                 <Info className="h-3 w-3" />
                                 {reason}
                               </span>
@@ -117,7 +117,7 @@ export function QuoteScopeStep({ input, onChange }: QuoteScopeStepProps) {
                           </span>
                         </span>
                         {note && (
-                          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                          <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                             {note}
                           </span>
                         )}

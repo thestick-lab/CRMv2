@@ -47,7 +47,7 @@ export function UserPopover({ collapsed = false, onNavigateSettings, defaultOpen
                 <span className="font-semibold text-xs text-foreground block truncate">
                   {currentUser.name}
                 </span>
-                <span className="text-[10px] text-muted-foreground block truncate font-mono">
+                <span className="text-[11px] text-muted-foreground block truncate font-mono">
                   {currentUser.email}
                 </span>
               </div>

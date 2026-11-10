@@ -28,7 +28,7 @@ export function AgingChip({ days }: { days: number }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[10px] leading-none',
+        'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[11px] leading-none',
         amber
           ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
           : 'border-border bg-muted/60 text-muted-foreground'
@@ -57,13 +57,13 @@ export function QuoteCard({ card }: { card: PipelineCard }) {
           >
             {card.name}
           </p>
-          <p className="font-mono text-[10px] text-muted-foreground">
+          <p className="font-mono text-[11px] text-muted-foreground">
             {card.number}
             {card.clientCode ? ` · ${card.clientCode}` : ''}
           </p>
         </div>
         {won && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#c4161c]/25 bg-[#c4161c]/10 px-1.5 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wide leading-none text-[#c4161c] dark:text-[#f87171]">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#c4161c]/25 bg-[#c4161c]/10 px-1.5 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide leading-none text-[#c4161c] dark:text-[#f87171]">
             <Trophy className="h-2.5 w-2.5" aria-hidden="true" />
             Won
           </span>
@@ -78,10 +78,10 @@ export function QuoteCard({ card }: { card: PipelineCard }) {
           )}
         >
           {formatZar(card.monthlyFee, 0)}
-          <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">/mo</span>
+          <span className="ml-0.5 text-[11px] font-normal text-muted-foreground">/mo</span>
         </p>
         <span className="flex min-w-0 items-center gap-1.5" title={card.ownerName}>
-          <span className="hidden truncate text-[10px] text-muted-foreground min-[1420px]:inline">
+          <span className="hidden truncate text-[11px] text-muted-foreground min-[1420px]:inline">
             {card.ownerName.split(/\s+/)[0]}
           </span>
           <AvatarChip initials={card.ownerInitials} tint={card.ownerTint} />
@@ -90,13 +90,13 @@ export function QuoteCard({ card }: { card: PipelineCard }) {
 
       <div className="flex flex-wrap items-center gap-1.5">
         {card.nextStep && (
-          <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+          <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground">
             {card.nextStep}
           </span>
         )}
         {!won && <AgingChip days={card.ageDays} />}
         {lost && (
-          <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide leading-none text-muted-foreground">
+          <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wide leading-none text-muted-foreground">
             Lost
           </span>
         )}

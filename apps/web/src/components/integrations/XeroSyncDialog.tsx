@@ -73,7 +73,7 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
                 <CloudUpload className="h-4 w-4" />
               </span>
               <div className="space-y-0.5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                   Xero · accounting
                 </p>
                 <DialogPrimitive.Title className="font-serif text-lg leading-tight text-foreground">
@@ -129,7 +129,7 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
             <div className="space-y-4 px-5 py-4 text-xs">
               <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5 sm:grid-cols-4">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     Contact
                   </p>
                   <p className="mt-0.5 truncate font-medium text-foreground">
@@ -137,19 +137,19 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     Reference
                   </p>
                   <p className="mt-0.5 truncate font-mono text-foreground">{draft.Reference}</p>
                 </div>
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     Type
                   </p>
                   <p className="mt-0.5 font-mono text-foreground">{draft.Type}</p>
                 </div>
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     Dates
                   </p>
                   <p className="mt-0.5 truncate font-mono text-foreground">
@@ -160,7 +160,7 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
 
               <div className="overflow-hidden rounded-lg border border-border">
                 <table className="w-full text-left text-xs">
-                  <thead className="border-b border-border bg-muted/40 font-mono text-[10px] uppercase text-muted-foreground">
+                  <thead className="border-b border-border bg-muted/40 font-mono text-[11px] uppercase text-muted-foreground">
                     <tr>
                       <th className="px-3 py-2 font-medium">Description</th>
                       <th className="px-2 py-2 text-right font-medium">Qty</th>
@@ -174,7 +174,7 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
                       <tr key={`${line.Description}-${index}`} className="hover:bg-muted/20">
                         <td className="max-w-[16rem] truncate px-3 py-2 text-foreground" title={line.Description}>
                           {line.Description}
-                          <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                          <span className="ml-1.5 font-mono text-[11px] text-muted-foreground">
                             {line.AccountCode}
                           </span>
                         </td>
@@ -184,7 +184,7 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
                         <td className="px-2 py-2 text-right font-mono tabular-nums text-muted-foreground">
                           {zar(line.UnitAmount)}
                         </td>
-                        <td className="px-2 py-2 font-mono text-[10px] text-muted-foreground">
+                        <td className="px-2 py-2 font-mono text-[11px] text-muted-foreground">
                           {line.TaxType}
                         </td>
                         <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
@@ -215,14 +215,14 @@ export function XeroSyncDialog({ open, onOpenChange, target, onSynced }: XeroSyn
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
                     API payload preview
                   </p>
-                  <Badge variant="outline" className="font-mono text-[10px]">
+                  <Badge variant="outline" className="font-mono text-[11px]">
                     POST /Invoices
                   </Badge>
                 </div>
-                <pre className="max-h-56 overflow-auto rounded-lg border border-border bg-muted/30 p-3 font-mono text-[10px] leading-relaxed text-foreground">
+                <pre className="max-h-56 overflow-auto rounded-lg border border-border bg-muted/30 p-3 font-mono text-[11px] leading-relaxed text-foreground">
                   {JSON.stringify(payload, null, 2)}
                 </pre>
               </div>

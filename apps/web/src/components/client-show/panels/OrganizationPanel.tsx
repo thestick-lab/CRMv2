@@ -75,7 +75,7 @@ export function OrganizationPanel({
 
         {expanded && groupMembers.length > 0 && (
           <div className="space-y-1.5 border-t border-border/60 pt-2.5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Group companies
             </p>
             <ul className="space-y-1">
@@ -83,7 +83,7 @@ export function OrganizationPanel({
                 <li key={member.code} className="flex items-center gap-2 text-xs">
                   <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
                   <span className="truncate text-foreground">{member.name}</span>
-                  <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground">
+                  <span className="ml-auto shrink-0 font-mono text-[11px] text-muted-foreground">
                     {member.code}
                   </span>
                 </li>
@@ -95,7 +95,7 @@ export function OrganizationPanel({
 
       <div className="border-t border-border/60 px-4 py-3">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             Directors &amp; contacts
           </p>
           {!adding && !readOnly && (
@@ -116,7 +116,7 @@ export function OrganizationPanel({
         <ul className="space-y-2">
           {visibleContacts.map((contact) => (
             <li key={contact.id} className="flex items-start gap-2">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[11px] text-muted-foreground">
                 {personInitials(contact.name)}
               </span>
               <div className="min-w-0 flex-1">
@@ -144,7 +144,7 @@ export function OrganizationPanel({
         </ul>
 
         {!expanded && contacts.length > 2 && (
-          <p className="pt-1 font-mono text-[10px] text-muted-foreground">
+          <p className="pt-1 font-mono text-[11px] text-muted-foreground">
             +{contacts.length - 2} more on the Organization tab
           </p>
         )}

@@ -142,7 +142,6 @@ export function GovernanceLogView() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <PageHeader
-        eyebrow="Admin"
         title="Governance Log"
         subtitle="Read-only audit trail of partner sign-offs, statutory submissions, quote decisions, invoices and permission changes — the practice's SAICA/IRBA engagement-quality record."
         actions={
@@ -182,7 +181,7 @@ export function GovernanceLogView() {
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="font-mono text-[10px] uppercase tracking-wider">Client</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider">Client</span>
             <select
               aria-label="Filter by client"
               className={FILTER_SELECT_CLASS}
@@ -199,7 +198,7 @@ export function GovernanceLogView() {
           </label>
 
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="font-mono text-[10px] uppercase tracking-wider">Actor</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider">Actor</span>
             <select
               aria-label="Filter by actor"
               className={FILTER_SELECT_CLASS}
@@ -216,7 +215,7 @@ export function GovernanceLogView() {
           </label>
 
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="font-mono text-[10px] uppercase tracking-wider">Action</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider">Action</span>
             <select
               aria-label="Filter by action"
               className={FILTER_SELECT_CLASS}
@@ -245,7 +244,7 @@ export function GovernanceLogView() {
             {exportState === 'saved' && 'Exported'}
             {exportState === 'failed' && <span className="text-primary">Export failed</span>}
           </span>
-          <Badge variant="outline" className="font-mono text-[10px]">
+          <Badge variant="outline" className="font-mono text-[11px]">
             {filtered.length}
             {hasFilters ? ` of ${entries.length}` : ''} {filtered.length === 1 ? 'entry' : 'entries'}
           </Badge>
@@ -269,7 +268,7 @@ export function GovernanceLogView() {
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left">
-              <thead className="border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <thead className="border-b border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-4 py-2.5 font-medium">
                     Timestamp
@@ -304,12 +303,12 @@ export function GovernanceLogView() {
                         <AvatarChip initials={personInitials(entry.actorName)} tint={actionTone(entry.action)} />
                         <div className="min-w-0">
                           <p className="truncate font-medium text-foreground">{entry.actorName}</p>
-                          <p className="truncate text-[10px] text-muted-foreground">{entry.actorRole}</p>
+                          <p className="truncate text-[11px] text-muted-foreground">{entry.actorRole}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={actionBadgeVariant(entry.action)} className="whitespace-nowrap text-[10px] font-medium">
+                      <Badge variant={actionBadgeVariant(entry.action)} className="whitespace-nowrap text-[11px] font-medium">
                         {entry.action}
                       </Badge>
                     </td>

@@ -62,7 +62,7 @@ export function TimerBar() {
             {formatElapsed(elapsedMs)}
           </span>
           {session.paused && (
-            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+            <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
               Paused
             </span>
           )}

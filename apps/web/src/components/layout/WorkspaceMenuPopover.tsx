@@ -60,7 +60,7 @@ export function WorkspaceMenuPopover({ onViewChange, className }: WorkspaceMenuP
 
           {/* Division Switcher */}
           <div className="space-y-1">
-            <div className="px-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <div className="px-1.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
               Practice Division
             </div>
 
@@ -77,7 +77,7 @@ export function WorkspaceMenuPopover({ onViewChange, className }: WorkspaceMenuP
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs truncate font-medium">FD on Call</div>
-                  <div className="text-[10px] text-muted-foreground truncate">Virtual FD & Advisory</div>
+                  <div className="text-[11px] text-muted-foreground truncate">Virtual FD & Advisory</div>
                 </div>
               </div>
               {isFd && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
@@ -96,7 +96,7 @@ export function WorkspaceMenuPopover({ onViewChange, className }: WorkspaceMenuP
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs truncate font-medium">Accountant on Call</div>
-                  <div className="text-[10px] text-muted-foreground truncate">Statutory & Bookkeeping</div>
+                  <div className="text-[11px] text-muted-foreground truncate">Statutory & Bookkeeping</div>
                 </div>
               </div>
               {!isFd && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}

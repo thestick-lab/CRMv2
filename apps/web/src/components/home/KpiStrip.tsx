@@ -36,10 +36,10 @@ export function KpiStrip({ kpis, onOpenDeadlines }: KpiStripProps) {
           className="group flex flex-col gap-2 px-4 py-3.5 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#c4161c]"
         >
           <span className="flex items-center justify-between gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               {label}
             </span>
-            <Icon className="h-3.5 w-3.5 text-muted-foreground/70 transition-colors group-hover:text-[#c4161c]" />
+            <Icon className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-[#c4161c]" />
           </span>
           <span className="font-mono text-2xl leading-none tabular-nums text-foreground">
             {kpis[key]}

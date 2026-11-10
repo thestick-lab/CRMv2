@@ -50,7 +50,7 @@ export function ProfilePane() {
           <div>
             <div className="text-sm font-semibold text-foreground flex items-center gap-2">
               {currentUser.name}
-              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary bg-primary/5">
+              <Badge variant="outline" className="text-[11px] font-mono border-primary/30 text-primary bg-primary/5">
                 {currentUser.role}
               </Badge>
             </div>

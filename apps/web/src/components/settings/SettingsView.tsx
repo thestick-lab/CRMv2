@@ -56,8 +56,8 @@ function NavButton({ label, icon: Icon, hint, active, nested, onSelect }: NavBut
         {hint && (
           <span
             className={cn(
-              'mt-0.5 block truncate text-[10px] font-normal',
-              active ? 'text-primary/70' : 'text-muted-foreground/70'
+              'mt-0.5 block truncate text-[11px] font-normal',
+              active ? 'text-primary/70' : 'text-muted-foreground'
             )}
           >
             {hint}
@@ -123,7 +123,6 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <PageHeader
-          eyebrow="Practice"
           title="Settings"
           subtitle="Settings belongs to the practice administrators for this role."
         />
@@ -140,11 +139,10 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <PageHeader
-        eyebrow="Practice"
         title="Settings"
         subtitle="Your profile and appearance, the practice team, statutory rules, connected services and notifications."
         actions={
-          <Badge variant="outline" className="font-mono text-[10px]">
+          <Badge variant="outline" className="font-mono text-[11px]">
             {currentUser.role}
           </Badge>
         }
@@ -163,7 +161,7 @@ export function SettingsView({ initialPane = 'profile' }: SettingsViewProps) {
               if (item.children) {
                 return (
                   <div key={item.label} className="pt-2">
-                    <div className="flex items-center gap-1.5 px-2.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 px-2.5 pb-1 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                       <item.icon className="h-3 w-3" />
                       <span>{item.label}</span>
                     </div>

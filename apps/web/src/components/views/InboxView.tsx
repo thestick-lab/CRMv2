@@ -23,13 +23,12 @@ export function InboxView({ onNavigate }: InboxViewProps) {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <PageHeader
-        eyebrow="Inbox"
         title="Partner Review Queue"
         subtitle="Statutory compliance review gates mandated by SAICA & SARS Tax Administration Act prior to final submission."
         actions={
           <Badge
             variant="crimsonSubdued"
-            className="h-6 px-2 font-mono text-[10px] font-medium uppercase tracking-wide"
+            className="h-6 px-2 font-mono text-[11px] font-medium uppercase tracking-wide"
           >
             {pendingCount} Pending Approvals
           </Badge>

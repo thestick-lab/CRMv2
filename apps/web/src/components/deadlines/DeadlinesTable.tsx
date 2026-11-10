@@ -77,7 +77,7 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
-          <thead className="select-none border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <thead className="select-none border-b border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-3 py-2.5 font-medium">
                 <button
@@ -163,7 +163,7 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
 
                     {/* Return */}
                     <td className="px-3 py-2.5">
-                      <Badge variant="outline" className="px-1.5 py-0 font-mono text-[10px]">
+                      <Badge variant="outline" className="px-1.5 py-0 font-mono text-[11px]">
                         {task.service}
                       </Badge>
                     </td>
@@ -179,7 +179,7 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
                       <Badge
                         variant={STATUS_VARIANT[status].variant}
                         className={cn(
-                          'whitespace-nowrap px-1.5 py-0 font-mono text-[10px]',
+                          'whitespace-nowrap px-1.5 py-0 font-mono text-[11px]',
                           STATUS_VARIANT[status].className
                         )}
                       >
@@ -195,7 +195,8 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
                           {task.dueNote && (
                             <span
                               className="font-sans text-[11px] font-bold text-[#c4161c]"
-                              title={`South African holiday rollback: ${task.dueNote}`}
+                              title={task.dueNote}
+                              aria-label={task.dueNote}
                             >
                               ↩
                             </span>
@@ -212,7 +213,7 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
                     {/* Partner Review Gate */}
                     <td className="px-3 py-2.5 font-sans">
                       {task.needsPartnerReview ? (
-                        <Badge variant="crimsonSubdued" className="gap-1 px-1.5 py-0 font-mono text-[10px]">
+                        <Badge variant="crimsonSubdued" className="gap-1 px-1.5 py-0 font-mono text-[11px]">
                           <UserCheck className="h-3 w-3" /> Gate
                         </Badge>
                       ) : (
@@ -232,7 +233,7 @@ export function DeadlinesTable({ tasks, onSelectClient }: DeadlinesTableProps) {
                                 ? 'warning'
                                 : 'outline'
                         }
-                        className="px-1.5 py-0 font-mono text-[10px] uppercase"
+                        className="px-1.5 py-0 font-mono text-[11px] uppercase"
                       >
                         {task.urgency}
                       </Badge>

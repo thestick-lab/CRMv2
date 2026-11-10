@@ -48,7 +48,7 @@ export function PriorityPill({ level }: PriorityPillProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none',
+        'inline-flex items-center rounded-full border px-1.5 py-0.5 font-mono text-[11px] font-medium leading-none',
         PRIORITY_STYLES[level]
       )}
     >
@@ -67,7 +67,7 @@ export interface DateChipProps {
 export function DateChip({ month, day }: DateChipProps) {
   return (
     <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-card">
-      <span className="font-mono text-[9px] uppercase leading-none tracking-wide text-muted-foreground">
+      <span className="font-mono text-[11px] uppercase leading-none tracking-wide text-muted-foreground">
         {month}
       </span>
       <span className="font-mono text-sm font-semibold leading-tight text-foreground">{day}</span>
@@ -92,7 +92,7 @@ export function AvatarChip({ initials, tint }: AvatarChipProps) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-medium',
+        'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-medium',
         AVATAR_TINTS[tint]
       )}
       aria-hidden="true"

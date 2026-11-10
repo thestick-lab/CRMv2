@@ -104,7 +104,7 @@ export function TaskDetailPanel({
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="border-primary/30 bg-primary/5 font-mono text-[10px] text-primary"
+                  className="border-primary/30 bg-primary/5 font-mono text-[11px] text-primary"
                 >
                   {task.service}
                 </Badge>
@@ -132,7 +132,7 @@ export function TaskDetailPanel({
             {/* Status + meta rows */}
             <div className="space-y-1.5 rounded-lg border border-border bg-muted/20 p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                   Lane
                 </span>
                 <span className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
@@ -156,22 +156,22 @@ export function TaskDetailPanel({
               <MetaRow
                 icon={CalendarDays}
                 label="Due"
-                value={task.due ? `${task.due}${task.dueNote ? ` (rollback ${task.dueNote})` : ''}` : 'Missing date'}
+                value={task.due ? `${task.due}${task.dueNote ? ` · ${task.dueNote}` : ''}` : 'Missing date'}
               />
               <div className="flex items-center justify-between gap-2 pt-0.5">
-                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                   Labels
                 </span>
                 <span className="flex flex-wrap items-center justify-end gap-1.5">
-                  <Badge variant="outline" className="font-mono text-[10px]">
+                  <Badge variant="outline" className="font-mono text-[11px]">
                     {URGENCY_LABEL[task.urgency]}
                   </Badge>
                   {task.needsPartnerReview ? (
-                    <Badge variant="crimsonSubdued" className="gap-1 font-mono text-[10px]">
+                    <Badge variant="crimsonSubdued" className="gap-1 font-mono text-[11px]">
                       <ShieldCheck className="h-3 w-3" /> Partner gate
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="font-mono text-[10px]">
+                    <Badge variant="secondary" className="font-mono text-[11px]">
                       Standard
                     </Badge>
                   )}
@@ -188,7 +188,7 @@ export function TaskDetailPanel({
                 className="flex items-center justify-between gap-2 rounded-lg border border-[#c4161c]/25 bg-[#c4161c]/5 px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     {session.paused ? 'Timer paused' : 'Timer running'}
                   </p>
                   <p
@@ -260,19 +260,19 @@ export function TaskDetailPanel({
 
             {/* Description */}
             <section>
-              <h4 className="mb-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              <h4 className="mb-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Description
               </h4>
               <p className="text-xs leading-relaxed text-foreground">
                 {task.service} return for {task.clientName} covering {task.period}
                 {task.part ? ` (${task.part})` : ''}. Due {task.due ?? 'once the master data is complete'}
-                {task.dueNote ? ` after the ${task.dueNote} holiday rollback` : ''}.
+                {task.dueNote ? ` ${task.dueNote}.` : ''}
               </p>
             </section>
 
             {/* Statutory controls (authoritative gate handling) */}
             <section className="border-t border-border pt-3">
-              <h4 className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Statutory action
               </h4>
               {canUpdateStatus ? (
@@ -293,7 +293,7 @@ export function TaskDetailPanel({
 
             {/* Activity */}
             <section className="border-t border-border pt-3">
-              <h4 className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              <h4 className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Activity
               </h4>
               <ul className="space-y-1.5">
@@ -327,7 +327,7 @@ export function TaskDetailPanel({
 
             {/* Comment box */}
             <section className="border-t border-border pt-3">
-              <h4 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              <h4 className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 <MessageSquare className="h-3 w-3" /> Comment
               </h4>
               <form onSubmit={submitComment} className="space-y-2">
@@ -349,10 +349,10 @@ export function TaskDetailPanel({
 
             {/* Keyboard shortcut hint */}
             <section className="rounded-lg border border-border bg-muted/20 p-3">
-              <h4 className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              <h4 className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Board shortcuts
               </h4>
-              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                 <kbd className="rounded border border-border bg-card px-1 font-mono">←</kbd>
                 <kbd className="rounded border border-border bg-card px-1 font-mono">→</kbd>
                 move lane
@@ -384,7 +384,7 @@ function MetaRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+      <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
         <Icon className="h-3 w-3" />
         {label}
       </span>

@@ -45,7 +45,7 @@ function SortHeader({
     <button
       type="button"
       onClick={onToggle}
-      className="flex items-center gap-1 font-mono uppercase text-[10px] text-muted-foreground hover:text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c] rounded px-0.5 cursor-pointer"
+      className="flex items-center gap-1 font-mono uppercase text-[11px] text-muted-foreground hover:text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c] rounded px-0.5 cursor-pointer"
     >
       <span>{title}</span>
       {isSorted === 'asc' ? (
@@ -106,7 +106,7 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
           {row.original.name}
         </div>
         {row.original.groupName && (
-          <div className="text-[10px] font-mono text-muted-foreground truncate">
+          <div className="text-[11px] font-mono text-muted-foreground truncate">
             {row.original.groupName}
           </div>
         )}
@@ -164,7 +164,7 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
         <span className="font-mono text-foreground">{row.original.yearEndLabel}</span>
         {row.original.yearEndAssumed && (
           <span
-            className="text-[10px] text-amber-500 font-mono"
+            className="text-[11px] text-amber-500 font-mono"
             title="Year-end was assumed (pending CIPC confirmation)"
           >
             *
@@ -180,7 +180,7 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
     cell: ({ row }) => (
       <span className="text-xs font-sans hidden md:inline-block">
         {row.original.vatCategory ? (
-          <Badge variant="outline" className="font-mono text-[10px] py-0 px-1">
+          <Badge variant="outline" className="font-mono text-[11px] py-0 px-1">
             Cat {row.original.vatCategory}
           </Badge>
         ) : (
@@ -209,14 +209,14 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
           <Badge
             key={s}
             variant="outline"
-            className="text-[9px] px-1 py-0 font-mono cursor-help"
+            className="text-[11px] px-1 py-0 font-mono cursor-help"
             title={STATUTORY_DESCRIPTIONS[s] || s}
           >
             {s}
           </Badge>
         ))}
         {row.original.services.length > 3 && (
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="text-[11px] text-muted-foreground font-mono">
             +{row.original.services.length - 3}
           </span>
         )}
@@ -236,7 +236,7 @@ export const CLIENT_COLUMNS: ColumnDef<EnrichedClientRow, any>[] = [
         <div className="flex items-center gap-1.5 font-mono text-xs">
           <Badge
             variant={deadline.urgency === 'overdue' ? 'destructive' : 'outline'}
-            className="text-[10px] px-1 py-0 font-mono cursor-help"
+            className="text-[11px] px-1 py-0 font-mono cursor-help"
             title={STATUTORY_DESCRIPTIONS[deadline.service] || deadline.service}
           >
             {deadline.service}
@@ -331,7 +331,7 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="select-none border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <thead className="select-none border-b border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -341,7 +341,7 @@ export function ClientsRegisterTable({ data, onRowClick }: ClientsRegisterTableP
                         : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
-                  <th className="px-3 py-2.5 text-right font-mono text-[10px] font-medium uppercase">Action</th>
+                  <th className="px-3 py-2.5 text-right font-mono text-[11px] font-medium uppercase">Action</th>
                 </tr>
               ))}
             </thead>

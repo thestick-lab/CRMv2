@@ -70,7 +70,7 @@ export function StaffEditDialog({
                 <Pencil className="h-4 w-4" />
               </span>
               <div>
-                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                   Team
                 </p>
                 <DialogPrimitive.Title className="font-serif text-lg leading-tight text-foreground">

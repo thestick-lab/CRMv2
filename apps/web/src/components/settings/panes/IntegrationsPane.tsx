@@ -55,7 +55,7 @@ const STATE_LABEL: Record<'empty' | 'partial' | 'ready', string> = {
 };
 
 const FIELD_CLASS =
-  'w-full rounded-lg border border-border bg-card px-3 py-1.5 font-mono text-[11px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40';
+  'w-full rounded-lg border border-border bg-card px-3 py-1.5 font-mono text-[11px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40';
 
 interface CredentialCardProps {
   icon: LucideIcon;
@@ -92,7 +92,7 @@ function CredentialCard({
         </div>
         <Badge
           variant={state === 'ready' ? 'crimsonSubdued' : 'outline'}
-          className="shrink-0 font-mono text-[10px] text-muted-foreground"
+          className="shrink-0 font-mono text-[11px] text-muted-foreground"
         >
           {STATE_LABEL[state]}
         </Badge>

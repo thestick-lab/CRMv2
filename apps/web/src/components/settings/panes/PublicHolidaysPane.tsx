@@ -171,7 +171,7 @@ export function PublicHolidaysPane() {
                     {h.name}
                   </td>
                   <td className="px-3.5 py-2">
-                    <Badge variant="outline" className="text-[10px] font-mono">
+                    <Badge variant="outline" className="text-[11px] font-mono">
                       {h.name.includes('observed')
                         ? 'Sunday Substituted'
                         : h.name.includes('Easter') || h.name.includes('Friday') || h.name.includes('Family')

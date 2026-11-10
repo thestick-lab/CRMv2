@@ -363,8 +363,14 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
     const result = simulateXeroSync(record);
     updateInvoice(record.id, { xeroSync: 'synced' });
     setXeroResult(result);
-    setFeedback({ tone: 'success', text: `${record.number} pushed to Xero as a draft` });
-    log(`Invoice ${record.number} pushed to Xero`, `Draft ACCREC · ${result.xeroInvoiceId}`);
+    setFeedback({
+      tone: 'success',
+      text: `${record.number} recorded as a simulated Xero draft`,
+    });
+    log(
+      `Invoice ${record.number} simulated Xero draft recorded`,
+      `Simulated — nothing sent · draft ACCREC · ${result.xeroInvoiceId}`
+    );
   };
 
   const handleMonthChange = (next: string) => {
@@ -504,7 +510,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
               <Receipt className="h-3.5 w-3.5 text-[#c4161c]" />
             </span>
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                 Invoice
               </p>
               <p className="truncate text-sm font-semibold text-foreground">{number}</p>
@@ -512,7 +518,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             <span
               data-invoice-editor-status={displayStatus}
               className={cn(
-                'ml-1 inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[10px] leading-none',
+                'ml-1 inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[11px] leading-none',
                 STATUS_PILL[displayStatus]
               )}
             >
@@ -535,14 +541,14 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             </div>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3 text-[11px]">
               <div>
-                <dt className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <dt className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Bill to
                 </dt>
                 <dd className="mt-0.5 font-medium text-foreground">{clientName}</dd>
-                <dd className="font-mono text-[10px] text-muted-foreground">{clientCode}</dd>
+                <dd className="font-mono text-[11px] text-muted-foreground">{clientCode}</dd>
               </div>
               <div>
-                <dt className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <dt className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Entity
                 </dt>
                 <dd className="mt-0.5 text-foreground">
@@ -550,13 +556,13 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 </dd>
               </div>
               <div>
-                <dt className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <dt className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Contact
                 </dt>
                 <dd className="mt-0.5 text-foreground">{contactName || '—'}</dd>
               </div>
               <div>
-                <dt className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <dt className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Email
                 </dt>
                 <dd className="mt-0.5 truncate text-foreground">{client?.email ?? '—'}</dd>
@@ -571,7 +577,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             </div>
             <div className="grid grid-cols-2 gap-3 px-4 py-3">
               <label className="block text-[11px]">
-                <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Number
                 </span>
                 <input
@@ -582,7 +588,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 />
               </label>
               <label className="block text-[11px]">
-                <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Billing month
                 </span>
                 {quote && !savedInvoice ? (
@@ -614,7 +620,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 )}
               </label>
               <label className="block text-[11px]">
-                <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Issue date
                 </span>
                 <input
@@ -630,7 +636,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 />
               </label>
               <label className="block text-[11px]">
-                <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Due date
                 </span>
                 <input
@@ -685,7 +691,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             {linesReadOnly && (
               <p
                 data-invoice-read-only
-                className="border-b border-border/60 bg-muted/30 px-4 py-2 text-[10px] leading-relaxed text-muted-foreground"
+                className="border-b border-border/60 bg-muted/30 px-4 py-2 text-[11px] leading-relaxed text-muted-foreground"
               >
                 This invoice has been issued ({status}) — line items are read-only. Send and Mark
                 Paid remain available; raise a correcting invoice for amount changes.
@@ -700,7 +706,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                         key={label || 'actions'}
                         scope="col"
                         className={cn(
-                          'px-2 py-1.5 font-mono text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground',
+                          'px-2 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground',
                           label === 'Qty' || label === 'Unit price' || label === 'Amount'
                             ? 'text-right'
                             : ''
@@ -764,7 +770,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                               taxType: event.target.value as InvoiceLine['taxType'],
                             })
                           }
-                          className="w-full rounded border border-border bg-background px-1 py-1 text-[10px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c]"
+                          className="w-full rounded border border-border bg-background px-1 py-1 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-[#c4161c]"
                         >
                           <option value="OUTPUT2">15%</option>
                           <option value="NONE">None</option>
@@ -820,14 +826,14 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 </tfoot>
               </table>
             </div>
-            <p className="border-t border-border/60 px-4 py-2 text-[10px] leading-relaxed text-muted-foreground">
+            <p className="border-t border-border/60 px-4 py-2 text-[11px] leading-relaxed text-muted-foreground">
               VAT is fixed at 15% and reconciled per line. Only CIPC fees paid on the client's
               behalf use <span className="font-mono">None</span>.
             </p>
             {unbilledTime && quote && (
               <p
                 data-time-feed-hint
-                className="border-t border-border/60 px-4 py-2 font-mono text-[10px] leading-relaxed text-muted-foreground"
+                className="border-t border-border/60 px-4 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground"
               >
                 {formatHours(unbilledTime.billableMinutes)} unbilled billable ·{' '}
                 {formatHours(unbilledTime.coveredMinutes)} inside the{' '}
@@ -848,7 +854,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
             </div>
             <div className="grid gap-3 px-4 py-3 sm:grid-cols-2">
               <label className="block text-[11px]">
-                <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Terms
                 </span>
                 <select
@@ -869,7 +875,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 </select>
               </label>
               <fieldset>
-                <legend className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+                <legend className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                   Methods
                 </legend>
                 <div className="mt-1 flex flex-wrap gap-3">
@@ -910,13 +916,13 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 <span
                   data-xero-sync={savedInvoice?.xeroSync ?? 'not-synced'}
                   className={cn(
-                    'inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide',
+                    'inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wide',
                     savedInvoice?.xeroSync === 'synced'
                       ? 'border-foreground/20 bg-foreground/[0.06] text-foreground'
                       : 'border-border bg-muted text-muted-foreground'
                   )}
                 >
-                  {savedInvoice?.xeroSync ?? 'Not pushed'}
+                  {savedInvoice?.xeroSync === 'synced' ? 'Simulated draft' : 'Not pushed'}
                 </span>
               </div>
               <Button
@@ -939,36 +945,41 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                 }
                 className="h-7 gap-1 px-2 text-[11px]"
               >
-                <Cloud className="h-3 w-3" />
-                Push to Xero (draft)
+                <Cloud className="h-3 w-3" aria-hidden="true" />
+                Push to Xero (simulated)
               </Button>
             </div>
             <div className="space-y-2 px-4 py-3 text-[11px]">
+              <p className="text-muted-foreground" role="note" data-xero-disclaimer>
+                Simulated sync — no network call. The payload below is the real request body; the
+                draft id is synthetic and recorded locally only.
+              </p>
               <p className="text-muted-foreground">
                 ACCREC draft · amounts exclusive · every revenue line{' '}
                 <span className="font-mono text-foreground">OUTPUT2</span>, CIPC disbursements{' '}
                 <span className="font-mono text-foreground">NONE</span>.
               </p>
               {xeroTotals && (
-                <p className="font-mono text-[10px] text-muted-foreground" data-xero-parity>
+                <p className="font-mono text-[11px] text-muted-foreground" data-xero-parity>
                   Xero totals: {formatZar(xeroTotals.exclusiveSubtotal)} +{' '}
                   {formatZar(xeroTotals.vat)} VAT = {formatZar(xeroTotals.total)}
                   {xeroTotals.total === totals.total ? ' · reconciled' : ' · differs from document'}
                 </p>
               )}
               {xeroResult && (
-                <p className="rounded-md border border-border bg-muted/40 px-2 py-1.5 font-mono text-[10px] text-foreground" data-xero-result>
-                  Synced draft {xeroResult.xeroInvoiceId} · {formatDate(xeroResult.at.slice(0, 10))}
+                <p className="rounded-md border border-border bg-muted/40 px-2 py-1.5 font-mono text-[11px] text-foreground" data-xero-result>
+                  Simulated draft {xeroResult.xeroInvoiceId} recorded ·{' '}
+                  {formatDate(xeroResult.at.slice(0, 10))}
                 </p>
               )}
               {xeroPayload ? (
                 <details>
-                  <summary className="cursor-pointer rounded-sm font-mono text-[10px] uppercase tracking-wide text-muted-foreground outline-none hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#c4161c]">
+                  <summary className="cursor-pointer rounded-sm font-mono text-[11px] uppercase tracking-wide text-muted-foreground outline-none hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#c4161c]">
                     Payload preview
                   </summary>
                   <pre
                     data-xero-payload
-                    className="mt-2 max-h-64 overflow-auto rounded-md border border-border bg-background p-2 font-mono text-[9px] leading-relaxed text-foreground"
+                    className="mt-2 max-h-64 overflow-auto rounded-md border border-border bg-background p-2 font-mono text-[11px] leading-relaxed text-foreground"
                   >
                     {JSON.stringify(xeroPayload, null, 2)}
                   </pre>
@@ -996,7 +1007,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                   <Clock className="h-4 w-4" />
                 </span>
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     Unbilled time
                   </p>
                   <DialogPrimitive.Title className="font-serif text-lg leading-tight text-foreground">
@@ -1047,7 +1058,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                     ] as const
                   ).map((cell) => (
                     <div key={cell.id} data-time-feed-cell={cell.id} className="px-3 py-2">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                      <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                         {cell.label}
                       </p>
                       <p className={cn('mt-0.5 font-mono text-sm tabular-nums', cell.tone)}>
@@ -1065,10 +1076,10 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                         className="flex items-center justify-between gap-3 px-3 py-1.5 text-[11px]"
                       >
                         <span className="min-w-0">
-                          <span className="font-mono text-[10px] text-muted-foreground">
+                          <span className="font-mono text-[11px] text-muted-foreground">
                             {formatDate(southAfricaDay(entry.startedAt))}
                           </span>
-                          <span className="mx-1.5 text-muted-foreground/50">·</span>
+                          <span className="mx-1.5 text-muted-foreground">·</span>
                           <span className="truncate text-foreground">{entry.description}</span>
                         </span>
                         <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
@@ -1077,7 +1088,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                       </li>
                     ))}
                     {unbilledTime.entries.length > 5 && (
-                      <li className="px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
+                      <li className="px-3 py-1.5 font-mono text-[11px] text-muted-foreground">
                         +{unbilledTime.entries.length - 5} more entries in the month
                       </li>
                     )}
@@ -1096,7 +1107,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                     <p className="text-[11px] font-medium text-foreground">
                       {unbilledTime.lines[0].description}
                     </p>
-                    <p className="mt-0.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+                    <p className="mt-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
                       {formatHours(unbilledTime.overageMinutes)} ×{' '}
                       {formatZar(quote.adHocHourlyRate)} ={' '}
                       <span className="text-foreground">
@@ -1124,7 +1135,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
                   </p>
                 )}
 
-                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
                   The invoice month follows the issue date ({formatMonthShort(month)}). Entries are
                   marked invoiced when this invoice is saved, so they can never be billed twice.
                 </p>
@@ -1169,7 +1180,7 @@ export function InvoiceEditor({ invoiceId, initialQuote, onClose }: InvoiceEdito
       )}
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-4 py-3">
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           Status changes save through <span className="font-mono">UPDATE_INVOICE</span> and appear in
           the Governance Log. Overdue is derived from the due date, never stored.
         </p>

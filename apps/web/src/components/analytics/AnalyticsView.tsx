@@ -82,7 +82,7 @@ function DeltaBadge({ metric, compareLabel }: { metric: MetricComparison; compar
       >
         {formatDelta(delta)}
       </span>
-      <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">vs previous</span>
+      <span className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">vs previous</span>
     </span>
   );
 }
@@ -157,7 +157,6 @@ export function AnalyticsView() {
   return (
     <div className="mx-auto max-w-[1240px] space-y-5 px-6 py-6">
       <PageHeader
-        eyebrow="Analytics"
         title="Overview"
         subtitle="Billed revenue, client activity, filings and billable hours for the selected period, measured against the previous period of equal length."
       />
@@ -231,7 +230,7 @@ export function AnalyticsView() {
                   {formatZar(analytics.revenue.value)}
                 </p>
                 {analytics.revenueByMonth.length > 1 && latestBucket && (
-                  <span className="rounded-md border border-border bg-muted/40 px-2 py-1 font-mono text-[10px] tabular-nums text-muted-foreground">
+                  <span className="rounded-md border border-border bg-muted/40 px-2 py-1 font-mono text-[11px] tabular-nums text-muted-foreground">
                     {latestBucket.label} · {formatZar(latestBucket.value)}
                   </span>
                 )}
@@ -279,7 +278,7 @@ export function AnalyticsView() {
         <section className="rounded-xl border border-border bg-card p-5 lg:col-span-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-foreground">Revenue by service group</h2>
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               VAT incl.
             </span>
           </div>
@@ -308,7 +307,7 @@ export function AnalyticsView() {
         <section className="rounded-xl border border-border bg-card p-5 lg:col-span-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-foreground">Hours by client</h2>
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Top 5 · rounded
             </span>
           </div>
@@ -335,7 +334,7 @@ export function AnalyticsView() {
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-foreground">Recent activity</h2>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             Latest
           </span>
         </div>
@@ -356,7 +355,7 @@ export function AnalyticsView() {
               </div>
               <time
                 dateTime={event.at}
-                className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground"
+                className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground"
               >
                 {relativeTime(event.at, today)}
               </time>

@@ -86,7 +86,7 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left">
-            <thead className="border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <thead className="border-b border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-2.5 font-medium">
                   Client Entity
@@ -151,7 +151,7 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
                     <td className="px-4 py-3">
                       <Badge
                         variant="outline"
-                        className="whitespace-nowrap px-1.5 py-0 font-mono text-[10px] font-medium text-foreground"
+                        className="whitespace-nowrap px-1.5 py-0 font-mono text-[11px] font-medium text-foreground"
                       >
                         {task.service}
                       </Badge>
@@ -173,7 +173,8 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
                           {task.dueNote && (
                             <span
                               className="font-sans text-[11px] font-bold text-[#c4161c] dark:text-[#f87171]"
-                              title={`South African holiday rollback: ${task.dueNote}`}
+                              title={task.dueNote}
+                              aria-label={task.dueNote}
                             >
                               ↩
                             </span>
@@ -228,7 +229,7 @@ export function PartnerReviewQueue({ onNavigateClient, className }: PartnerRevie
                         ) : (
                           <Badge
                             variant="crimsonSubdued"
-                            className="gap-1 px-1.5 py-0 font-mono text-[10px] font-medium"
+                            className="gap-1 px-1.5 py-0 font-mono text-[11px] font-medium"
                           >
                             <Lock className="h-3 w-3" aria-hidden="true" />
                             Partner Signature Required

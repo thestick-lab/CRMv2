@@ -133,12 +133,12 @@ export function CommandDialog({ open, onOpenChange, items, onSelect }: CommandDi
                       ) : null}
                       <span className="truncate">{item.label}</span>
                       {item.clientCode ? (
-                        <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                        <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
                           {item.clientCode}
                         </span>
                       ) : null}
                     </div>
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider shrink-0 ml-2">
+                    <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider shrink-0 ml-2">
                       {item.section}
                     </span>
                   </button>

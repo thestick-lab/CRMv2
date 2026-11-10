@@ -192,7 +192,7 @@ export function TeamRbacPane() {
 
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px] font-mono capitalize">
+                      <Badge variant="outline" className="text-[11px] font-mono capitalize">
                         {member.contractType}
                       </Badge>
                       {isSubcontractor && (
@@ -206,7 +206,7 @@ export function TeamRbacPane() {
                         onClick={() => setEditTarget(member)}
                         disabled={!canEditStaff}
                         title={canEditStaff ? 'Edit contract terms' : 'Your role cannot edit staff records'}
-                        className="ml-auto rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#c4161c] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="ml-auto rounded border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-[#c4161c] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Edit
                       </button>

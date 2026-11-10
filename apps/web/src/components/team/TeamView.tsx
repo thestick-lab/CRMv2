@@ -88,7 +88,6 @@ export function TeamView() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <PageHeader
-        eyebrow="TEAM"
         title="Team"
         subtitle="The internal staff register — role, employment kind, contact details and contract terms. Client directors live on each client's Organization tab."
         actions={
@@ -211,7 +210,7 @@ function StaffProfile({
                   <DetailRow label="Contract type">
                     <Badge
                       variant={row.contractType === 'subcontractor' ? 'crimsonSubdued' : 'outline'}
-                      className="font-mono text-[10px] capitalize"
+                      className="font-mono text-[11px] capitalize"
                     >
                       {row.contractType}
                     </Badge>
@@ -243,7 +242,7 @@ function StaffProfile({
                   {tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 font-mono text-[10px] leading-none text-muted-foreground"
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] leading-none text-muted-foreground"
                     >
                       <Tags aria-hidden="true" className="h-2.5 w-2.5" />
                       {tag}

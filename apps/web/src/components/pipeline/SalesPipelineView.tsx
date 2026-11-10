@@ -344,12 +344,11 @@ export function SalesPipelineView({
   return (
     <div className="mx-auto max-w-[1500px] space-y-5 p-6">
       <PageHeader
-        eyebrow="Sales Pipeline"
         title="Quotes and invoices"
         subtitle="Fee quotes moving from draft to active retainer, and the invoices raised against them."
         actions={
           <>
-            <label className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+            <label className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
               <span className="sr-only">Period</span>
               <select
                 value={period}
@@ -388,7 +387,7 @@ export function SalesPipelineView({
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,320px)]">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Booked
             </p>
             <Trophy className="h-3.5 w-3.5 text-[#c4161c]" aria-hidden="true" />
@@ -404,7 +403,7 @@ export function SalesPipelineView({
 
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Open pipeline value
             </p>
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
@@ -442,7 +441,7 @@ export function SalesPipelineView({
         </div>
       </section>
 
-      <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
+      <p className="px-1 text-[11px] leading-relaxed text-muted-foreground">
         Booked and open pipeline value are separate figures — an active client is never counted in
         the open pipeline.
       </p>
@@ -497,7 +496,7 @@ export function SalesPipelineView({
                     renderCard={(card) => <QuoteCard card={card} />}
                     keyboardEnabled
                   />
-                  <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
+                  <p className="px-1 text-[11px] leading-relaxed text-muted-foreground">
                     Stage rules are enforced for drag, the move menu and the keyboard: a quote is
                     sent only with a client and a fee line, accepted after it is sent, signed after
                     it is accepted, and an active client only after signature.
@@ -549,7 +548,7 @@ export function SalesPipelineView({
                   </div>
                 );
               })}
-              <p className="pt-1 text-[10px] leading-relaxed text-muted-foreground">
+              <p className="pt-1 text-[11px] leading-relaxed text-muted-foreground">
                 Days in stage. Amber from 15 days — the quote has gone quiet.
               </p>
             </div>
@@ -574,11 +573,11 @@ export function SalesPipelineView({
                       <span className="block truncate text-[11px] font-medium text-foreground">
                         {card.name}
                       </span>
-                      <span className="block truncate text-[10px] text-muted-foreground">
+                      <span className="block truncate text-[11px] text-muted-foreground">
                         {card.nextStep || card.stage}
                       </span>
                     </span>
-                    <span className="mt-0.5 shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+                    <span className="mt-0.5 shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
                       {card.ageDays}d
                     </span>
                   </button>

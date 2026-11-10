@@ -49,7 +49,7 @@ export function InvoiceDocumentPreview({
       {draft && (
         <p
           data-invoice-draft
-          className="mb-4 rounded-md border border-border bg-muted/50 px-2 py-1 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground"
+          className="mb-4 rounded-md border border-border bg-muted/50 px-2 py-1 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground"
         >
           Draft — not yet issued to the client
         </p>
@@ -64,20 +64,20 @@ export function InvoiceDocumentPreview({
           />
           <div>
             <p className="font-serif text-base leading-tight text-foreground">FD on Call</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Chartered Accountants (SA)
             </p>
           </div>
         </div>
         <div className="text-right">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
             Invoice
           </p>
           <p className="font-mono text-sm font-semibold text-[#c4161c]">{invoice.number}</p>
           <span
             data-invoice-status-pill
             className={cn(
-              'mt-1 inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[9px]',
+              'mt-1 inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[11px]',
               STATUS_PILL[status]
             )}
           >
@@ -88,14 +88,14 @@ export function InvoiceDocumentPreview({
 
       <div className="grid grid-cols-2 gap-4 border-b border-border py-4">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Bill to
           </p>
           <p className="mt-1 text-xs font-semibold text-foreground">{clientName}</p>
-          {clientCode && <p className="font-mono text-[10px] text-muted-foreground">{clientCode}</p>}
-          {contactName && <p className="mt-0.5 text-[10px] text-muted-foreground">Attn: {contactName}</p>}
+          {clientCode && <p className="font-mono text-[11px] text-muted-foreground">{clientCode}</p>}
+          {contactName && <p className="mt-0.5 text-[11px] text-muted-foreground">Attn: {contactName}</p>}
         </div>
-        <dl className="space-y-1 text-right font-mono text-[10px] text-muted-foreground">
+        <dl className="space-y-1 text-right font-mono text-[11px] text-muted-foreground">
           <div className="flex items-center justify-between gap-3">
             <dt>Issue date</dt>
             <dd className="text-foreground">{formatDate(invoice.issueDate)}</dd>
@@ -115,7 +115,7 @@ export function InvoiceDocumentPreview({
 
       <table className="w-full border-collapse text-left">
         <thead>
-          <tr className="border-y border-border bg-muted/40 font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <tr className="border-y border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             <th className="px-2 py-1.5">Service</th>
             <th className="px-2 py-1.5 text-right">Qty</th>
             <th className="px-2 py-1.5 text-right">Unit</th>
@@ -140,7 +140,7 @@ export function InvoiceDocumentPreview({
               <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono tabular-nums text-muted-foreground">
                 {formatZar(line.unitAmount)}
               </td>
-              <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono text-[9px] uppercase text-muted-foreground">
+              <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono text-[11px] uppercase text-muted-foreground">
                 {line.taxType === 'OUTPUT2' ? '15%' : 'None'}
               </td>
               <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono tabular-nums text-foreground">
@@ -164,7 +164,7 @@ export function InvoiceDocumentPreview({
           <span className="text-foreground">Total due</span>
           <span className="tabular-nums text-[#c4161c]">{formatZar(invoice.total)}</span>
         </div>
-        <p className="pt-1 text-[9px] leading-snug text-muted-foreground">
+        <p className="pt-1 text-[11px] leading-snug text-muted-foreground">
           CIPC fees paid on your behalf carry no VAT. Amounts are exclusive of VAT unless the line
           reads None.
         </p>
@@ -172,25 +172,25 @@ export function InvoiceDocumentPreview({
 
       <div className="mt-4 grid grid-cols-2 gap-4 border-t border-border py-3">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Payment terms
           </p>
           <p className="mt-0.5 text-foreground">{paymentTerms}</p>
         </div>
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
             Payment method
           </p>
           <p className="mt-0.5 text-foreground">{paymentMethods.join(' · ') || '—'}</p>
         </div>
       </div>
 
-      <p className="border-t border-border py-3 text-[10px] leading-relaxed text-muted-foreground">
+      <p className="border-t border-border py-3 text-[11px] leading-relaxed text-muted-foreground">
         Thank you for your business. Please quote <span className="font-mono">{invoice.number}</span>{' '}
         with your payment. Queries about this invoice are welcome within 14 days of the issue date.
       </p>
 
-      <footer className="mt-2 border-t border-border pt-3 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+      <footer className="mt-2 border-t border-border pt-3 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
         FD on Call · Chartered Accountants (SA) · fdoncall.co.za
       </footer>
     </article>

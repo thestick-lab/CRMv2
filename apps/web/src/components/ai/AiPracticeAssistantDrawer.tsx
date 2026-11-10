@@ -123,7 +123,7 @@ export function AiPracticeAssistantDrawer({
                   <Badge
                     variant="outline"
                     className={cn(
-                      'text-[10px] font-mono px-1 py-0 h-4',
+                      'text-[11px] font-mono px-1 py-0 h-4',
                       activeProvider.active
                         ? 'border-[#c4161c]/30 bg-[#c4161c]/5 text-[#c4161c] dark:text-[#f87171]'
                         : 'border-border text-muted-foreground'
@@ -137,7 +137,7 @@ export function AiPracticeAssistantDrawer({
                         onOpenChange(false);
                         onOpenSettings?.();
                       }}
-                      className="text-[10px] text-primary hover:underline flex items-center gap-0.5"
+                      className="text-[11px] text-primary hover:underline flex items-center gap-0.5"
                     >
                       <Key className="h-2.5 w-2.5" />
                       Add Key
@@ -223,7 +223,7 @@ export function AiPracticeAssistantDrawer({
                   <div className="whitespace-pre-line">{msg.content}</div>
                   <div
                     className={cn(
-                      'text-[9px] font-mono text-right',
+                      'text-[11px] font-mono text-right',
                       msg.sender === 'user' ? 'text-white/70' : 'text-muted-foreground'
                     )}
                   >

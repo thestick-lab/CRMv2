@@ -58,7 +58,7 @@ export function InvoicesList({
               <th
                 key={label}
                 scope="col"
-                className="whitespace-nowrap px-3 py-2 font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-muted-foreground"
+                className="whitespace-nowrap px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground"
               >
                 {label}
               </th>
@@ -99,7 +99,7 @@ export function InvoicesList({
                 </td>
                 <td className="max-w-[260px] px-3 py-2.5">
                   <p className="truncate text-foreground">{clientName}</p>
-                  <p className="font-mono text-[10px] text-muted-foreground">{invoice.clientCode}</p>
+                  <p className="font-mono text-[11px] text-muted-foreground">{invoice.clientCode}</p>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-muted-foreground">
                   {invoice.issueDate}
@@ -113,7 +113,7 @@ export function InvoicesList({
                 <td className="whitespace-nowrap px-3 py-2.5">
                   <span
                     className={cn(
-                      'inline-flex items-center rounded-full border px-1.5 py-0.5 font-mono text-[10px] leading-none',
+                      'inline-flex items-center rounded-full border px-1.5 py-0.5 font-mono text-[11px] leading-none',
                       STATUS_STYLES[displayStatus]
                     )}
                     data-invoice-list-status={displayStatus}

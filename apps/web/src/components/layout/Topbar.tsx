@@ -170,7 +170,7 @@ export function Topbar({
           const isLast = idx === breadcrumbs.length - 1;
           return (
             <React.Fragment key={crumb.label + idx}>
-              {idx > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/60 shrink-0" />}
+              {idx > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />}
               {crumb.view && !isLast ? (
                 <button
                   onClick={() => onNavigate(crumb.view!, crumb.clientCode)}
@@ -205,7 +205,7 @@ export function Topbar({
         >
           <Search className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
           <span className="hidden sm:inline">Search practice...</span>
-          <kbd className="font-mono text-[10px] bg-background/80 px-1 py-0.2 rounded border border-border/80 text-muted-foreground">
+          <kbd className="font-mono text-[11px] bg-background/80 px-1 py-0.2 rounded border border-border/80 text-muted-foreground">
             {isMac ? '⌘K' : 'Ctrl+K'}
           </kbd>
         </button>

@@ -112,21 +112,21 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
             <button
               type="button"
               onClick={() => handleFillDemo('erik@fdoncall.co.za')}
-              className="px-2 py-1 rounded bg-background hover:bg-muted border border-border text-[10px] font-mono transition-colors text-foreground cursor-pointer"
+              className="px-2 py-1 rounded bg-background hover:bg-muted border border-border text-[11px] font-mono transition-colors text-foreground cursor-pointer"
             >
               Fill Erik (Partner)
             </button>
             <button
               type="button"
               onClick={() => handleFillDemo('wouter@fdoncall.co.za')}
-              className="px-2 py-1 rounded bg-background hover:bg-muted border border-border text-[10px] font-mono transition-colors text-foreground cursor-pointer"
+              className="px-2 py-1 rounded bg-background hover:bg-muted border border-border text-[11px] font-mono transition-colors text-foreground cursor-pointer"
             >
               Fill Wouter (Partner)
             </button>
             <button
               type="button"
               onClick={() => handleFillDemo('andre@fdoncall.co.za')}
-              className="px-2 py-1 rounded bg-background hover:bg-muted border border-border text-[10px] font-mono transition-colors text-foreground cursor-pointer"
+              className="px-2 py-1 rounded bg-background hover:bg-muted border border-border text-[11px] font-mono transition-colors text-foreground cursor-pointer"
             >
               Fill André (Staff)
             </button>

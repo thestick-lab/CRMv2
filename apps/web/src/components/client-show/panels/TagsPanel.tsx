@@ -21,7 +21,7 @@ export function TagsPanel({ tags, onManage }: TagsPanelProps) {
           tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full border border-border bg-muted/50 px-2 py-0.5 font-mono text-[10px] leading-none text-muted-foreground"
+              className="rounded-full border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] leading-none text-muted-foreground"
             >
               {tag}
             </span>

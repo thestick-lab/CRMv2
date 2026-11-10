@@ -35,10 +35,10 @@ export interface TimeEntrySheetProps {
 }
 
 const FIELD_CLASS =
-  'h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[11px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40';
+  'h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[11px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40';
 
 const LABEL_CLASS =
-  'text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground';
+  'text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground';
 
 function localInputValue(iso?: string): string {
   if (!iso) return '';
@@ -184,7 +184,7 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
                 <Clock className="h-4 w-4" />
               </span>
               <div className="space-y-0.5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                   Time entry
                 </p>
                 <DialogPrimitive.Title className="font-serif text-lg leading-tight text-foreground">
@@ -298,7 +298,7 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
                   onChange={(event) => setRoundedInput(event.target.value)}
                   className={cn(FIELD_CLASS, 'w-20 text-right tabular-nums')}
                 />
-                <span className="text-[10px] text-muted-foreground">min</span>
+                <span className="text-[11px] text-muted-foreground">min</span>
               </label>
             </div>
 
@@ -370,7 +370,7 @@ export function TimeEntrySheet({ mode, entry, onClose, onSave, onDelete }: TimeE
                   </Button>
                 )
               ) : (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground">
                   {formatHours(roundedMinutes)} billable
                 </span>
               )}

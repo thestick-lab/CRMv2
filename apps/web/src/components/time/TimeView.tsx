@@ -41,7 +41,6 @@ export function TimeView() {
   return (
     <div className="mx-auto max-w-7xl space-y-5 p-6">
       <PageHeader
-        eyebrow="Time"
         title="Time tracking"
         subtitle="Log billable and non-billable work, then reconcile the practice report against the underlying entries."
         actions={
@@ -83,7 +82,7 @@ export function TimeView() {
                 <Icon className="h-3.5 w-3.5" />
                 {entry.label}
                 {entry.id === 'log' && (
-                  <span className="ml-0.5 rounded-full bg-muted px-1.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+                  <span className="ml-0.5 rounded-full bg-muted px-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
                     {visibleEntries.length}
                   </span>
                 )}
@@ -91,7 +90,7 @@ export function TimeView() {
             );
           })}
         </div>
-        <p className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground sm:block">
+        <p className="hidden font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:block">
           ZAR practice · quarter-hour billing
         </p>
       </div>

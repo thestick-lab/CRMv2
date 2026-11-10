@@ -117,7 +117,7 @@ export const FREQUENCY_OPTIONS: Array<{ value: Frequency; label: string }> = [
 
 export const FIELD_LABEL_CLASS = 'block text-[11px] font-medium text-foreground';
 export const FIELD_INPUT_CLASS =
-  'mt-1 w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40 disabled:cursor-not-allowed disabled:opacity-60';
+  'mt-1 w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-[#c4161c]/60 focus-visible:ring-1 focus-visible:ring-[#c4161c]/40 disabled:cursor-not-allowed disabled:opacity-60';
 
 /** The VAT201 months a category files in — used to count the first month's regular work. */
 const VAT_MONTHS: Record<VatCategory, (month: number) => boolean> = {

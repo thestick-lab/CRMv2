@@ -31,7 +31,7 @@ export function EngagementBanner({ banner, onOpenClient }: EngagementBannerProps
                 {banner.clientName}
               </h2>
               {isClient && (
-                <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
+                <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] tracking-wide text-muted-foreground">
                   {banner.code}
                 </span>
               )}
@@ -60,7 +60,7 @@ export function EngagementBanner({ banner, onOpenClient }: EngagementBannerProps
 
       <div className="mt-4">
         <div className="flex items-baseline justify-between gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             Compliance
           </span>
           <span className="font-mono text-[11px] tabular-nums text-foreground">

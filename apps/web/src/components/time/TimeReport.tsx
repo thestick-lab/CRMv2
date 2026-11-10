@@ -87,7 +87,7 @@ interface FilterSelectProps {
 function FilterSelect({ testId, label, value, options, onChange }: FilterSelectProps) {
   return (
     <label className="flex min-w-0 flex-col gap-1">
-      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </span>
       <select
@@ -228,7 +228,7 @@ export function TimeReport() {
       <section className="rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Range
             </span>
             <input
@@ -263,7 +263,7 @@ export function TimeReport() {
                   type="button"
                   onClick={() => setDraftRange(presetRange)}
                   className={cn(
-                    'rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wide transition-colors',
+                    'rounded-md border px-2 py-1 font-mono text-[11px] uppercase tracking-wide transition-colors',
                     active
                       ? 'border-[#c4161c]/30 bg-[#c4161c]/10 text-[#c4161c] dark:text-[#f87171]'
                       : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -360,7 +360,7 @@ export function TimeReport() {
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-foreground">Time by project</h2>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             Rounded · reconciles to entries
           </span>
         </div>
@@ -377,7 +377,7 @@ export function TimeReport() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <thead className="border-b border-border bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Project / person · task</th>
                   <th className="px-3 py-2.5 text-right font-medium">Billable</th>
@@ -406,7 +406,7 @@ export function TimeReport() {
                             <span
                               aria-hidden="true"
                               className={cn(
-                                'font-mono text-[10px] text-muted-foreground transition-transform',
+                                'font-mono text-[11px] text-muted-foreground transition-transform',
                                 isCollapsed ? '' : 'rotate-90'
                               )}
                             >
@@ -415,10 +415,10 @@ export function TimeReport() {
                             <span className="text-foreground">
                               {clientNames.get(group.clientCode) ?? group.clientCode}
                             </span>
-                            <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                            <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                               {group.clientCode}
                             </span>
-                            <span className="ml-auto font-mono text-[10px] tabular-nums text-muted-foreground">
+                            <span className="ml-auto font-mono text-[11px] tabular-nums text-muted-foreground">
                               {group.rows.length} {group.rows.length === 1 ? 'row' : 'rows'}
                             </span>
                           </button>
@@ -440,7 +440,7 @@ export function TimeReport() {
                               <span className="text-foreground">
                                 {staffNames.get(row.staffUserId) ?? row.staffUserId}
                               </span>
-                              <span className="mx-1.5 text-muted-foreground/60">·</span>
+                              <span className="mx-1.5 text-muted-foreground">·</span>
                               <span className="font-mono text-[11px] uppercase tracking-wide">
                                 {row.taskLabel}
                               </span>
@@ -484,7 +484,7 @@ export function TimeReport() {
         <section className="rounded-xl border border-border bg-card p-5 lg:col-span-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-foreground">Time by client</h2>
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Rounded
             </span>
           </div>
@@ -549,7 +549,7 @@ export function TimeReport() {
               </span>
             </li>
           </ul>
-          <p className="mt-3 border-t border-border pt-3 text-[10px] leading-relaxed text-muted-foreground/80">
+          <p className="mt-3 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
             Half-up to the nearest quarter hour; a stopped timer still bills the 15 minute floor.
           </p>
         </section>

@@ -189,14 +189,14 @@ export function ServicePricingMatrixPane() {
       <div className="p-4 rounded-xl border border-border bg-card space-y-3 shadow-xs">
         <div className="flex items-center justify-between pb-2 border-b border-border/70">
           <h3 className="font-semibold text-foreground">Service Catalogue (21 Practice Items)</h3>
-          <Badge variant="outline" className="font-mono text-[10px]">
+          <Badge variant="outline" className="font-mono text-[11px]">
             {SERVICE_TYPES.length} Active Services
           </Badge>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px]">
-            <thead className="bg-muted/40 border-b border-border text-[10px] font-mono uppercase text-muted-foreground">
+            <thead className="bg-muted/40 border-b border-border text-[11px] font-mono uppercase text-muted-foreground">
               <tr>
                 <th className="py-2.5 px-3">Service Name</th>
                 <th className="py-2.5 px-3">Xero Item</th>
@@ -259,7 +259,7 @@ export function ServicePricingMatrixPane() {
                           <ExternalLink className="h-3 w-3 shrink-0 opacity-70" />
                         </a>
                       ) : (
-                        <span className="text-muted-foreground/80">{s.basis}</span>
+                        <span className="text-muted-foreground">{s.basis}</span>
                       )}
                     </td>
                   </tr>
