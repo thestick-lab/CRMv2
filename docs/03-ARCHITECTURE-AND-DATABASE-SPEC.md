@@ -1,18 +1,137 @@
 # FD on Call CRM — Technical Architecture, Database Specification & API Plugin Topology
 
 **Document Reference:** `docs/03-ARCHITECTURE-AND-DATABASE-SPEC.md`  
-**Target System:** FD on Call Practice Ledger CRM (Native Twenty CRM Monorepo)  
-**Status:** Approved Technical Architecture Specification  
+**Target System:** FD on Call Practice Ledger CRM (`/home/hein/Projects/CRMv2`)  
+**Status:** Current implementation recorded 2026-11-10; §1–§5 are the planned production architecture, not deployed state.  
 
 ---
 
-## 1. System Topology & Monorepo Architecture
+## Current implementation (2026-11-10)
 
-The practice CRM is built on the official **Twenty CRM** monorepo located in `/home/hein/Projects/CRM/twenty/`. It runs on an Nx-managed monorepo with Yarn 4.18.1 and Node `v26.13.0`:
+The shipped product is a single-page React application. Everything a practitioner sees — clients, tasks, quotes, invoices, time, permissions, the governance trail — is read from and written to one in-browser practice store. There is **no application database**: no PostgreSQL instance is deployed, no practice-data schema or migration exists (the only Drizzle schema is the auth tables), and §3's DDL is a blueprint rather than a description of a live schema.
+
+### Runtime topology
+
+| Layer | Shipped implementation |
+|---|---|
+| UI | `apps/web` — React 19, Vite 7, Tailwind v4. No router library: the active screen is an in-memory `ViewKey` in `apps/web/src/App.tsx` (`dashboard`, `analytics`, `inbox`, `clients`, `client`, `team`, `deadlines`, `sales-pipeline`, `time`, `settings`, `govlog`). Deep links are navigation intents held in component state, not URLs. |
+| Practice data | One `PracticeStoreContext` (`apps/web/src/context/PracticeStoreContext.tsx`), a `useReducer` store persisted on every change to `localStorage` under `crmv2_practice_state`. |
+| Domain logic | `packages/domain` (npm name `fdoncall-practice`), imported as `fdoncall-practice/domain/*`: 7 rule modules (`catalogue`, `dates`, `estimate`, `pricing`, `rules`, `sars`, `types`) and 6 export modules (`logo`, `pdf`, `sheet`, `xlsx`, `zip`, `audit-pdf`). 52 domain unit tests. |
+| Server | Exactly one component: `apps/web/functions/api/[[route]].ts`, a Cloudflare Pages Function (Hono + better-auth + Drizzle) bound to D1 database `crmv2-auth` via binding `DB` in `apps/web/wrangler.toml`. It only serves `/api/auth/*`. |
+| Tests | 464 web tests across 48 files, plus the 52 domain tests; `npm test`, `npm run typecheck`, `npm run build` at the repo root. |
+
+The only network call in the client is `POST /api/auth/sign-in/email` from `src/lib/auth-client.ts`, attempted only after the local seeded-credential check fails.
+
+### Shipped practice data model
+
+The store's state shape is declared in `PracticeStoreContext.tsx`; the statutory record types live in `packages/domain/src/domain/types.ts`.
+
+| Type | Key fields | Notes |
+|---|---|---|
+| `Client` | `code`, `name`, `entityType`, `groupId`, `email`, `phone`, `location`, `timezone`, `contacts[]`, `services[]`, statutory profile (`vatCategory`, `yearEndMonth`, `yearEndAssumed`, `efilingProfile`, `payroll`, `incorporationDate`, `turnover`, `last*Afs/IncomeTax/AnnualReturnYear`), `staffId`, `subcontractorId`, `status` | `services` is the explicit statutory scope; absent means derive it from the client's attributes. `contacts` are directors/contact people owned by the record. `regOrIdNumber`/`taxNumber` are withheld in the prototype. |
+| `ClientContact` | `id`, `name`, `role`, `email?`, `phone?`, `notes?` | Backfilled on load from the seeded directors when a persisted client has no `contacts` key. |
+| `Task` | `clientCode`, `service`, `period`, `part`, `due`, `dueNote`, `estimated`, `likelyLate`, `info`, `missing`, `statutory`, `review`, `feeLabel`, `assigneeId` | Statutory obligations are derived from the client record + engine; the store persists only status/approval metadata in `taskStatusOverrides`. |
+| `TaskStatusOverride` | `status`, `sarsReference`, `partnerSignOff`, `submissionDate`, `approvedBy`, `service`, `clientName`, `period`, `irp6Outcome` | The only persisted task state; keyed by derived task id. |
+| `AdHocTask` | `clientCode`, `description`, `assigneeId`, `dueDate`, `status`, `blockedReason` | Practice-created work flowing through the same six deadlines lanes. |
+| `Quote` | `number` (`Q-<seq>`), `clientCode?`, `prospect?`, `estimateInput`, `monthlyRetainerHours`, `adHocHourlyRate`, `vatInclusive`, `paymentTerms`, `expiryDate`, `stage`, `ownerStaffId`, `nextStep`, `documensoEnvelopeId`, `signedBy`, `signedAt`, `stageChangedAt` | `estimateInput` is authoritative; the fee schedule is recomputed by `computeEstimate`. |
+| `QuoteProspect` | `name`, `contactPerson`, `entityType`, `turnover`, `payroll`, `employeeCount`, `vatCategory`, `yearEndMonth`, `incorporationDate`, `staffId` | Unregistered prospect captured before the quote converts to a client. |
+| `Invoice` | `number` (`INV-<seq>`), `quoteId`, `clientCode`, `lineItems[]`, `taxRate`, `subtotal`, `vat`, `total`, `status` (`Draft`/`Sent`/`Paid`), `billingMonth`, `issueDate`, `dueDate`, `paymentTerms`, `paymentMethods`, `xeroSync` | `Overdue` is derived at render time and never stored. `billingMonth` (`YYYY-MM`) is independent of `issueDate` so a month can never be billed twice. |
+| `InvoiceLine` | `description`, `quantity`, `unitAmount`, `accountCode`, `taxType` (`OUTPUT2`/`NONE`), `lineAmount` | `NONE` only for disbursements paid to CIPC on the client's behalf. |
+| `TimeEntry` | `clientCode`, `serviceCode`, `taskId`, `staffUserId`, `startedAt`, `endedAt`, `durationMinutes`, `roundedMinutes`, `billable`, `description`, `invoiceId` | `roundedMinutes` is the nearest 0.25 h with a 15-minute floor. |
+| `PermissionState` | `matrix` (role → row id → cell), `lastEditedBy`, `lastEditedAt` | Only overrides are stored; the default matrix in `src/lib/permissions.ts` is the fallback. |
+| `ActivityEvent` | `type`, `actorName`, `actorInitials`, `tint`, `text`, `subline`, `at`, `taskId?`, `quoteId?`, `invoiceId?` | Feed source for Home's Team activity card and the Governance Log. |
+| `PracticeSequences` | `quote`, `invoice` | Human-number counters behind `Q-n` and `INV-n`. |
+| `IntegrationConfig` | `documensoBaseUrl`, `documensoApiKey`, `xeroClientId`, `xeroClientSecret`, `xeroTenantId` | Local placeholders; the simulated adapters ignore them. |
+| `PracticeUser` / `PracticeContract` | `id`, `name`, `role`, `email`, `kind`, `contract` (`startDate`, `contractType`, `hourlyRate`, `phone`) | Signed-in user. `staffProfiles` holds the same contract terms plus internal `notes` for staff who are not the signed-in user. |
+| `PracticeRates` | `standardHourlyRate`, `marchEscalationPct`, `serviceFees`, `updatedBy`, `updatedAt` | Quote/estimate defaults. |
+| `AiApiKeys` | `anthropic`, `openai`, `gemini` | Stored beside integration credentials; unused by any network adapter. |
+
+Also persisted: `savedEstimates` (client code → `EstimateInput` from quote conversion) and `division` (`fd-on-call` / `accountant-on-call`).
+
+### Persistence contract: what a load does to stored state
+
+`loadPracticeState()` reads `crmv2_practice_state`, parses it, and passes it to `mergePracticeState()`. The merge is **idempotent** — running it twice produces the same state — and follows these rules:
+
+1. **Defaults fill gaps, persisted values win.** Missing top-level fields fall back to `getInitialPracticeState()`. The `rates`/`serviceFees`, `permissions` and `integrationConfig` maps merge one level over their defaults. Individual array records are *not* field-merged: a persisted client, quote, invoice or time entry is used as stored, except for the explicit migrations below.
+2. **Legacy leads become quotes.** A stored `leads[]` array is mapped through `LEAD_STAGE_TO_QUOTE_STAGE` by the `MIGRATE_LEADS` reducer action, numbered after the persisted quote sequence, then dropped from state. A state persisted before quotes existed starts with `quotes: []` so its leads are the only quote source; a pristine state keeps the seeded prospects.
+3. **Workflow statuses are normalised once.** Every `taskStatusOverrides` entry passes through `normalizeWorkflowStatus()` (`In review` → `Partner Review Gate`, `Done` → `Submitted`, `Not started` → `Not Started`, and so on) so all readers compare against the six lanes rather than a historical string.
+4. **`Client.contacts` is backfilled** from the seeded directors matching the client code. A record that already has a `contacts` array — even an empty one — keeps it as the source of truth.
+5. **`currentUser.contract` defaults from `kind`** (`subcontractor` or `employee`) without overwriting terms already on record.
+6. **`Quote.stageChangedAt` defaults to `updatedAt`, then `createdAt`,** so stage ageing never renders `undefined`. The quote sequence is recomputed as the maximum of the persisted sequence and the trailing number of every stored quote.
+7. **`Invoice.billingMonth` defaults to the first seven characters of `issueDate`,** so pre-`billingMonth` invoices still block a duplicate month.
+8. **Failure is non-fatal.** A parse/read error logs and falls back to the seeded defaults; a write error logs and leaves the session state intact.
+
+Consequence: clearing `localStorage` resets the practice to its seed data, and two browsers on the same machine do not share practice state. There is no server-side practice data to reconcile.
+
+### Auth & security (shipped)
+
+Authentication is the one server-side concern. `apps/web/functions/api/[[route]].ts` mounts better-auth over a Drizzle/D1 SQLite database (`binding = "DB"`, `database_name = "crmv2-auth"`, schema in `apps/web/src/db/auth-schema.ts`) and serves only `/api/auth/*`.
+
+- **Seeded accounts.** Ten accounts (`SEEDED_STAFF_ACCOUNTS`) cover the six roles — two Partners plus Compliance Officer, Accountant, three Team members, two Subcontractors and Support Tech. They are created server-side by `ensureSeeded()` through `auth.api.signUpEmail()` (never through the HTTP routes) when the `user` table is empty, all with the demo password `FDonCall2026!`.
+- **Login path.** `src/lib/auth-client.ts` first matches the entered credentials against the seeded list locally; only a miss falls through to `POST /api/auth/sign-in/email`. On success the returned `role`, `staffId` and `kind` seed `currentUser`.
+- **Privilege-field guard.** `role`, `staffId` and `kind` are better-auth `additionalFields`, so a request body could otherwise set them. `apps/web/functions/api/auth-guard.ts` closes that hole before `auth.handler` sees the request:
+  - every `/sign-up` path is refused with `403` (`Self-service sign-up is disabled for this practice.`) — account creation is a seeded/admin action, not a product path;
+  - for JSON `POST` bodies on other auth routes, `role`, `staffId` and `kind` are stripped before forwarding (the request is rebuilt without `content-length`); non-POST, non-JSON and unparseable bodies are forwarded unchanged;
+  - `sanitizeAuthRequest()` is pure and unit-tested independently of the Cloudflare runtime.
+- **Why.** Without the guard, any caller reaching the deployed function could `POST /api/auth/sign-up/email` with `{"role":"Partner"}` and be granted the highest privileges in the permission matrix. The guard makes the seeded/admin path the only way a privileged account can exist.
+
+Remaining hardening, all open:
+
+- Declare the three privilege fields as non-input `additionalFields` so the schema itself refuses them, rather than relying on the request guard.
+- Make account creation an admin-only server action with an audit entry, replacing both self-service sign-up and the demo-password seed.
+- Practice data is not protected at all beyond the browser: `localStorage` is readable by any script on the origin and is unaffected by the auth session. A production deployment must move practice state behind the authenticated API before multiple users can share it.
+- The demo password is compiled into the client bundle. It must not survive the move to real accounts.
+
+### Integration boundary (shipped)
+
+External systems are **seams, not connections**. `apps/web/src/lib/integrations/documenso.ts` and `xero.ts` build the exact request shapes the live services take, but no network call is made anywhere in the app; the payload builders are pure and the "sync" functions return clearly synthetic identifiers.
+
+**Documenso (`documenso.ts`).** The live adapter is documented in-file as `POST {baseUrl}/api/documents`, adding two recipients (`role: 'SIGNER'`, `signingOrder: 1` = client, `2` = practice counter-signer) and sending. The simulated adapter returns the same envelope shape:
+
+```ts
+interface DocumensoEnvelope {
+  envelopeId: string;        // `env-` + 12 synthetic characters
+  recipients: { name: string; email: string; role: 'SIGNER'; signingOrder: number }[];
+  sentAt: ISODate;
+}
+```
+
+`createDocumensoEnvelope(quote, context)` signs a fee quote; `createDocumensoSlaEnvelope(client, context)` signs a client's master services agreement; `documensoDocumentForQuote`/`documensoDocumentForSla` produce the displayed title and `.pdf` document name; `withRecipientEmail` records a corrected signatory address. The quote's `documensoEnvelopeId` is what unlocks the `Signed` stage; a board move with no recorded envelope is refused.
+
+**Xero (`xero.ts`).** `buildXeroDraftInvoicePayload(invoice, client)` returns the body `POST https://api.xero.com/api.xro/2.0/Invoices` accepts:
+
+```ts
+{
+  Invoices: [{
+    Type: 'ACCREC',
+    Status: 'DRAFT',
+    LineAmountTypes: 'Exclusive',
+    Contact: { Name: string },
+    LineItems: [{ Description, Quantity, UnitAmount, AccountCode, TaxType: 'OUTPUT2' | 'NONE' }],
+    Date: ISODate,
+    DueDate: ISODate,
+    Reference: string,   // invoice number
+  }],
+}
+```
+
+Line amounts are converted with `cents()`; account codes come from the line, else `310` for `NONE` disbursements and `200` for revenue (estimate groups map to `200`/`210`/`220`/`230`/`240`). `summariseXeroDraft` computes VAT the way Xero does — rounded to the cent per taxable line, not on the aggregate — matching the invoice document, `reconcileInvoice` and the retainer overage maths. `simulateXeroSync` returns a synthetic sync result; `buildXeroEstimateDraftPayload` produces the monthly-retainer draft preview. Invoices are always `DRAFT` so a partner reviews before dispatch.
+
+**Credentials.** `integrationConfig` holds `documensoBaseUrl`, `documensoApiKey`, `xeroClientId`, `xeroClientSecret` and `xeroTenantId`. They are local-only placeholders persisted in `localStorage`; the simulated adapters ignore them. Editing them configures nothing.
+
+Open: neither live instance is wired; the Documenso webhook and inbound REST endpoints in §4 are unimplemented; there is no token storage, retry, or sync reconciliation beyond the `xeroSync` status field.
+
+---
+
+## 1. System Topology & Monorepo Architecture (planned production architecture)
+
+> **Status: planned, not deployed.** The Twenty monorepo described below is the target production base. The shipped application runs entirely inside `apps/web` and does not import it.
+
+The practice CRM is *intended* to be built on the official **Twenty CRM** monorepo located in `/home/hein/Projects/CRM/twenty/` (planned target, separate from `/home/hein/Projects/CRMv2`). The target runs an Nx-managed monorepo with Yarn 4.18.1 and Node `v26.13.0`:
 
 ```
 /home/hein/Projects/CRM/
-├── twenty/                                 # Primary CRM Monorepo (Active Application Base)
+├── twenty/                                 # Target CRM base (planned production; not imported by CRMv2)
 │   ├── packages/
 │   │   ├── twenty-server/                  # NestJS API, PostgreSQL TypeORM, Redis/BullMQ, GraphQL Yoga
 │   │   ├── twenty-front/                   # React 19 Client, Jotai, Linaria, Vite 8, Apollo Client
@@ -26,9 +145,13 @@ The practice CRM is built on the official **Twenty CRM** monorepo located in `/h
 └── _archive/                               # Deprecated standalone prototypes (isolated from runtime)
 ```
 
+The shipped repo is `/home/hein/Projects/CRMv2` — an npm workspace whose only relevant packages are `apps/web` and `packages/domain`.
+
 ---
 
-## 2. API Plugin & Connector Architecture
+## 2. API Plugin & Connector Architecture (planned production architecture)
+
+> **Status: planned, not deployed.** No plugin connector exists in the shipped app; the simulated seams that the UI does call are described under "Integration boundary" above.
 
 Twenty CRM acts as the unified operational hub, communicating with four external services via dedicated plugin connectors:
 
@@ -93,9 +216,11 @@ Twenty CRM acts as the unified operational hub, communicating with four external
 
 ---
 
-## 3. Physical Database Schema & Object Extensions
+## 3. Physical Database Schema & Object Extensions (planned production schema — not deployed)
 
-Twenty CRM stores data in PostgreSQL 16 under the `core` schema. We extend Twenty's native standard objects with South African statutory attributes and introduce commercial tables for contracts and timekeeping.
+> **Status: planned production schema, future work.** No PostgreSQL database exists today. The DDL below is retained as the target schema for the Twenty deployment: it is not executed by any migration and no table described here is live. The shipped data model is the localStorage-backed state documented at the top of this document.
+
+In the planned deployment, Twenty CRM stores data in PostgreSQL 16 under the `core` schema. The extensions below add South African statutory attributes to Twenty's standard objects and introduce commercial tables for contracts and timekeeping. Nothing in this section exists in the shipped app.
 
 ### 3.1 Company Object Extensions (`core.company`)
 
@@ -280,7 +405,9 @@ CREATE TABLE core.sa_tax_brackets (
 
 ---
 
-## 4. Webhook & Inbound REST Payload Specifications
+## 4. Webhook & Inbound REST Payload Specifications (planned production endpoints)
+
+> **Status: planned, not implemented.** No webhook route exists in the shipped Pages Function, which serves only `/api/auth/*`.
 
 ### 4.1 Documenso Webhook Endpoint (`POST /api/webhooks/documenso`)
 - **Headers Required:**
@@ -319,7 +446,9 @@ CREATE TABLE core.sa_tax_brackets (
 
 ---
 
-## 5. Security & POPIA Compliance Architecture
+## 5. Security & POPIA Compliance Architecture (planned production controls)
+
+> **Status: planned, not implemented.** Field encryption, database guards and Graph credentials described here belong to the target Twenty deployment. The shipped app's actual controls — and their gaps — are in "Auth & security (shipped)" above.
 
 1. **Protection of Personal Information Act (POPIA No. 4 of 2013):**
    - South African National ID numbers and SARS Tax Reference Numbers are encrypted at rest using AES-256-GCM authenticated encryption.

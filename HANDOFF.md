@@ -15,8 +15,8 @@
 
 ### The CRMv2 Solution:
 * **The Look & Feel:** Twenty CRM's exact aesthetic (collapsible dark/light sidebar, top-bar breadcrumbs, `Cmd+K` search, clean table grids, and Lucide icons).
-* **The Architecture:** A clean, lightning-fast modern stack (React 19 + Vite + Tailwind CSS + shadcn/ui + Better-Auth + Drizzle ORM + PostgreSQL 16) with **0.05-second HMR** and **100% control**.
-* **The Domain Logic:** Direct, zero-drift import of the 19 mathematically verified TypeScript modules from `packages/domain/` (Easter Computus holiday rollbacks, SARS IRP6/ITR14 rules, 12-month fee matrix, and client-side PDF/XLSX generation).
+* **The Architecture:** A clean, lightning-fast modern stack (React 19 + Vite + Tailwind CSS + shadcn-style primitives + Better-Auth + Drizzle ORM) with **0.05-second HMR** and **100% control**. As built, practice data is client-side in one persisted store and the only server component is the auth function on Cloudflare D1 — see §5.1; the original plan's PostgreSQL service is not deployed.
+* **The Domain Logic:** Direct, zero-drift import of the domain modules from `packages/domain/` — 7 domain modules and 6 export modules (Easter Computus holiday rollbacks, SARS IRP6/ITR14 rules, 12-month fee matrix, and client-side PDF/XLSX generation).
 
 ---
 
@@ -37,10 +37,10 @@ Every requirement in this repository is structured according to the 4-layer spec
 │         │ Epics 1–7, & Database Schemas │ docs/03-ARCHITECTURE-AND-DATABASE-SPEC.md    │
 ├─────────┼───────────────────────────────┼──────────────────────────────────────────────┤
 │ 3. WHERE│ Information Architecture,     │ docs/05-UI-INFORMATION-ARCHITECTURE-AND-     │
-│         │ 4-Tab Record Show, & Wireflow │ SCREEN-FLOWS.md & Diagram 09 (HTML/SVG)      │
+│         │ 11 views, 7-tab record show   │ SCREEN-FLOWS.md & Diagram 09 (HTML/SVG)      │
 ├─────────┼───────────────────────────────┼──────────────────────────────────────────────┤
-│ 4. HOW  │ Tech Stack, Better-Auth RBAC, │ packages/domain/ (33 pure TypeScript source  │
-│         │ Drizzle DDL, & Components     │ modules) & HANDOFF.md                        │
+│ 4. HOW  │ Tech Stack, permission matrix,│ packages/domain/ (7 domain + 6 export        │
+│         │ auth guard, & components      │ modules) & HANDOFF.md                        │
 └─────────┴───────────────────────────────┴──────────────────────────────────────────────┘
 ```
 
@@ -52,8 +52,8 @@ Every requirement in this repository is structured according to the 4-layer spec
 /home/hein/Projects/CRMv2/
 ├── docs/                                 # Complete Technical & Functional Specs
 │   ├── 01-REVERSE-ENGINEERING-AND-GAP-ANALYSIS.md
-│   ├── 02-PRD-AND-OPEN-QUESTIONS.md      # Epics 1–7 with Screen Cross-References
-│   ├── 03-ARCHITECTURE-AND-DATABASE-SPEC.md # PostgreSQL DDL & Cloud Architecture
+│   ├── 02-PRD-AND-OPEN-QUESTIONS.md      # Epics 1–11 with status and open questions
+│   ├── 03-ARCHITECTURE-AND-DATABASE-SPEC.md # Current architecture + planned production schema
 │   ├── 04-BASELINE-CHANGELOG-AND-WORKFLOW-AUDIT.md
 │   ├── 05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md # The Master UI Spec
 │   ├── design.md                         # Color Tokens, Typography, WCAG AA/AAA
@@ -81,14 +81,14 @@ Every requirement in this repository is structured according to the 4-layer spec
 │   ├── CIPC AR & BENEFICIAL OWNERSHIP.md
 │   └── XERO SA & SIMPLEPAY PRICING.md
 ├── packages/
-│   └── domain/                           # 33 Pure TypeScript Domain Modules
+│   └── domain/                           # 7 domain modules + 6 export modules, 52 unit tests
 │       ├── src/domain/                   # SARS rules, dates, pricing, estimate
 │       │   ├── dates.ts                  # Computus Easter & SA public holiday rollback
 │       │   ├── sars.ts                   # Filing seasons (IRP6, ITR14, VAT201, EMP201)
-│       │   ├── pricing.ts & catalogue.ts # 21 services, turnover & payroll bands
+│       │   ├── pricing.ts & catalogue.ts # 10 services, turnover & payroll bands
 │       │   ├── estimate.ts               # 12-month rolling projection math
 │       │   └── rules.ts & types.ts       # Governance review rules & entity types
-│       ├── src/export/                   # PDF, Excel (.xlsx), and ZIP exporters
+│       ├── src/export/                   # PDF, Excel (.xlsx), ZIP and audit-PDF exporters
 │       │   ├── pdf.ts                    # Streaming A4 Landscape PDF quote generator
 │       │   ├── xlsx.ts & sheet.ts        # Live formula Excel assembly (SUM, ROUND)
 │       │   └── logo.ts
@@ -99,54 +99,51 @@ Every requirement in this repository is structured according to the 4-layer spec
 
 ---
 
-## 4. The 4-Tab Information Architecture (Where Everything Lives)
+## 4. Shell, Navigation & Client Record (Where Everything Lives)
 
 ```
-[PERSISTENT TOPBAR: Brand Mark "FD on Call" (Static) | 🔍 Search Cmd+K | Breadcrumbs]
-───────────────────────────────────────────────────────────────────────────────────
-[SIDEBAR]                 [CLIENT RECORD SHOW VIEW (/clients/:code)]
-🏠 Home (Dashboard)        Header: [← Clients]  Muse 1399  [MUS-875]  Company  Partner: Erik
-📥 Inbox (Review Queue)   ─────────────────────────────────────────────────────────────────
-⚙️ Settings               [📋 Statutory Profile] [📅 Deadlines] [🧮 12-Mo Estimate] [📁 Vault]
-                          ┌───────────────────────────────────────────────────────────────┐
-PRACTICE DATA             │ TAB 1: OVERVIEW & STATUTORY PROFILE                           │
-🏢 Clients (13)           │ • Financial Year-End (Feb*) & CIPC Incorporation Date         │
-👥 People & Directors (18)│ • Turnover (R4M) & VAT Registration (Category B)              │
-                          │ • SARS eFiling Profile (Firm Profile vs Client Profile)       │
-STATUTORY OPS             ├───────────────────────────────────────────────────────────────┤
-📅 Deadlines (4)          │ TAB 2: DEADLINES & TASKS                                      │
-🧮 New Quote Calculator   │ • Generated filing calendar with SA Holiday Rollback tags     │
-🎯 Onboarding Pipeline (5)│ • Partner Review Gate on AFS, ITR14, and Payable IRP6         │
-                          ├───────────────────────────────────────────────────────────────┤
-FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE                          │
-[EW] Erik (Partner) ➔     │ • Dynamic Columns (Dec 2026 – Nov 2027) with March +6%        │
-• Profile Settings        │ • Smoothed Monthly Retainer: R 3,840 excl. VAT (R 4,416 incl) │
-• Change Password         │ • Actions: [Download PDF Quote] [Download Excel] [Save]       │
-• Log out                 ├───────────────────────────────────────────────────────────────┤
-                          │ TAB 4: SHAREPOINT VAULT & SLAS                                │
-                          │ • /Clients/MUS-875/Contracts/ (Dual-Signed Documenso SLA)     │
-                          │ • /Clients/MUS-875/Tax_Returns/ (IRP6 & ITR14 Filing Packs)   │
-                          └───────────────────────────────────────────────────────────────┘
+[TOPBAR 48px: Breadcrumbs | ⌘K search | + New (quote / client / time) | theme toggle | avatar]
+───────────────────────────────────────────────────────────────────────────────────────────
+[SIDEBAR 240px / 56px]      [CLIENT RECORD (/clients/:code)]
+PRACTICE                    ‹ Clients   Muse 1399  [MUS-875]   Company · Group
+  🏠 Home                   Tag pills   [ + Add Action ▾ ]   [ Export PDF ] [ Export Excel ]
+  📊 Analytics              ─────────────────────────────────────────────────────────────────
+  📥 Inbox (badge)          Overview │ Organization │ History │ Tasks │ Estimate │ Vault │ Notes
+WORK                        ┌───────────────────────┬──────────────────────┬───────────────┐
+  🏢 Clients (13)           │ Contact Details       │ Organization         │ Next Action   │
+  👥 Team (9 staff)         │ Missing Information   │ Relationship History │ Internal Notes│
+  📅 Deadlines (badge)      │                       │                      │ Tags          │
+  🎯 Sales Pipeline         └───────────────────────┴──────────────────────┴───────────────┘
+  ⏱ Time
+ADMIN                       • Estimate tab hidden without `Clients — view billing`
+  ⚙️ Settings               • Tasks = the client's statutory deadlines; Vault = SharePoint/Documenso panes
+  🛡 Governance Log         • History = the governance trail filtered to this client
+FOOTER USER
+  [ER] Erik (Partner) ▾
 ```
+
+**Groups:** Practice = Home, Analytics, Inbox · Work = Clients, Team, Deadlines, Sales Pipeline, Time · Admin = Settings, Governance Log. Every item, ⌘K result and deep link is filtered by the permission matrix; a blocked route renders a `NoAccess` card.
+
+**Boards:** Deadlines has six lanes (`Not Started`, `In Progress`, `Awaiting Client`, `Partner Review Gate`, `Approved (Ready to Lodge)`, `Submitted`); Sales Pipeline has six quote stages (`Draft Quote`, `Quote Sent`, `Accepted`, `Signed`, `Active Client`, `Closed Lost`). Both render through the shared `KanbanBoard` with drag, hover menu and keyboard (←/→ column, ↑/↓ reorder, 1–9 jump), refusing illegal moves with feedback.
 
 ---
 
-## 5. Technical Stack & Implementation Guide
+## 5. Technical Stack & Implementation Guide (as implemented)
 
-### 5.1 Recommended Application Stack
+### 5.1 Application Stack
 1. **Frontend App (`apps/web`):**
-   * **Framework:** React 19 + Vite 8.
-   * **Styling & Components:** Tailwind CSS v4 + **shadcn/ui** (Sidebar, Table, Tabs, Dialog, DropdownMenu, Command Palette `Cmd+K`, Badge, Card).
-   * **Icons:** `lucide-react` or `@tabler/icons-react` (matching Twenty CRM 1:1).
-   * **Tables & Forms:** `@tanstack/react-table` + `react-hook-form` + `zod`.
-2. **Backend & API (`apps/api`):**
-   * **Framework:** Node.js with **Hono** (ultralight, Web Standards, type-safe RPC client).
-   * **Authentication:** **Better-Auth** (email/password, sessions, role middleware: `partner`, `compliance_officer`, `accountant`).
-3. **Database & ORM (`packages/db`):**
-   * **Engine:** PostgreSQL 16 (local Docker or Neon/Supabase).
-   * **ORM:** **Drizzle ORM** (type-safe SQL schema with simple migrations).
-4. **Domain Engine (`packages/domain`):**
-   * Directly import from `/home/hein/Projects/CRMv2/packages/domain/src/domain/`.
+   * **Framework:** React 19 + Vite 7, TypeScript 5.8+.
+   * **Styling & Components:** Tailwind CSS v4 with `@theme inline` tokens; shadcn-style primitives on Radix (`Dialog`, `Popover`, `Tabs`, `Slot`), `@tanstack/react-table`, `lucide-react`.
+   * **Routing:** none — an in-memory `ViewKey` union in `apps/web/src/App.tsx`, with `NavigateOptions` carrying filters/pane targets.
+   * **State:** one `PracticeStoreContext` (`useReducer` + `localStorage` key `crmv2_practice_state`). `loadPracticeState` merges persisted state over defaults: missing fields default, persisted values win, legacy `leads` migrate to quotes, legacy workflow statuses normalise, `Client.contacts` and `Invoice.billingMonth` backfill.
+2. **Auth & Server (`apps/web/functions/api/[[route]].ts`):**
+   * **Framework:** Hono on Cloudflare Pages Functions.
+   * **Auth:** better-auth (email/password) with Drizzle over D1, database `crmv2-auth` (binding `DB`).
+   * **Accounts:** ten seeded staff (`SEEDED_STAFF_ACCOUNTS`) created server-side by `ensureSeeded()`.
+   * **Guard:** `functions/api/auth-guard.ts` refuses HTTP self-service sign-up with `403` and strips `role`/`staffId`/`kind` from other auth POST bodies, so a client cannot self-assign `Partner`.
+3. **Practice data:** client-side only. No PostgreSQL / `packages/db` is deployed; `docs/03` documents the planned production schema as future work.
+4. **Domain Engine (`packages/domain`):** 7 domain modules + 6 export modules, imported as `fdoncall-practice/domain/*`; 52 unit tests.
+5. **Integrations:** simulated Documenso and Xero seams in `apps/web/src/lib/integrations/` — real payload shapes, no network calls, credentials in the local `integrationConfig` field.
 
 ### 5.2 Brand Identity Tokens (from `docs/design.md`)
 * **Backgrounds:** Canvas `#141414` (dark) / `#f6f5f3` (light) | Surface `#181818` (dark) / `#ffffff` (light).
@@ -160,7 +157,9 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
 
 ---
 
-## 6. Phase-by-Phase Execution Checklist
+## 6. Phase History (what was built, in order)
+
+> Phases 1–8 describe earlier iterations. Items they mention that no longer exist — the `People & Directors` directory, the standalone `Estimator`, the `Onboarding Pipeline`, the 4-lane and 5-lane boards — were replaced in Phase 9; see §7 for the current state.
 
 - [x] **Phase 1: Project Scaffolding**
   - Configured npm multi-package workspace (`apps/*`, `packages/*`).
@@ -204,6 +203,52 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
   - Built dedicated Partner Review Queue (`/inbox`) for Erik & Wouter with 1-click statutory approval (`Approved (Ready to Lodge)`) and revision requests.
   - Built 2-tab Unified Fee Estimator (`/estimator`) combining prospective/client 12-month retainer calculator (PDF/Excel exports + Documenso SLA dispatch) and Sent Quotes onboarding pipeline.
   - Built Twenty-CRM-style Settings (`/settings`) with User Profile/Security, Workspace AI, and Admin Panel (`Team & Staff Database`, `Service Catalogue & Pricing Matrix` with live SARS filing season sync, and immutable `SAICA Governance Log`).
+- [x] **Phase 9: Full Redesign & Feature Expansion (2026-11-09, 22 planned tasks, 44 commits)**
+  - Foundation: extended store shape with `quotes` / `invoices` / `timeEntries` / `permissions` / `activity` / `adhocTasks` / `sequences`, an idempotent load-time migration, grouped navigation (`Practice` / `Work` / `Admin`) with the 11 shipped views, and shared `PageHeader` + list primitives.
+  - Screens: Home workspace dashboard, Analytics (range + compare, explicit empty states, `—` for a zero-denominator Δ%), client contact record (7 tabs, 3-column Overview, Missing Information), staff-only Team, 6-lane Deadlines board with docked detail panel + ad-hoc tasks, restyled Inbox, grouped Settings, and the Governance Log as its own read-only view.
+  - Quotes → signature → invoice: `Quote` with authoritative `estimateInput`, `canTransitionQuote` gating, simulated Documenso/Xero seams, three-step builder with live preview, Sales Pipeline board (Booked vs Open), invoice builder with stored `billingMonth`, cent-exact per-line 15% VAT, derived `Overdue`, read-only issued invoices, and quote→client conversion writing `Client.services`.
+  - Time tracking: `TimeEntry` with quarter-hour rounding (15-minute floor), session-only timer, timesheet + reconciling report, retainer-overage invoice feed with release-on-delete.
+  - Permissions & governance: six roles over six groups and 18 rows (`Allowed`/`Not allowed`/`Limited` stored, `Inherited`/`Custom` derived), assigned-scope for Subcontractors, locked partner sign-off, `Settings — manage` for invites and role changes, nav/⌘K/deep-link enforcement, matrix UI, and an audit trail extended to quotes, invoices, time and permission changes with a per-client history.
+  - Cutovers: `leads` → quotes (idempotent migration), Estimator calculator → quote builder fee step, People directory → Team + `Client.contacts`, `isPartnerOrAdmin` → `can()`, SAICA settings pane → Governance Log view.
+- [x] **Phase 10: Auth hardening (2026-11-10, `fe075f1`)**
+  - Added `apps/web/functions/api/auth-guard.ts`: HTTP self-service sign-up now returns `403`, and `role` / `staffId` / `kind` are stripped from every other `POST /api/auth/*` body, because better-auth `additionalFields` previously let a caller sign up as `Partner` and inherit the permission matrix. Seeded accounts (created server-side via `auth.api.signUpEmail`) are unaffected.
+
 ---
 
-*Verified & approved for immediate development in `/home/hein/Projects/CRMv2`.*
+## 7. Current State & Verification (2026-11-10)
+
+**Views (11):** Home, Analytics, Inbox, Clients, Client record, Team, Deadlines, Sales Pipeline, Time, Settings, Governance Log.
+
+**Data:** `localStorage` (`crmv2_practice_state`) via `PracticeStoreContext`; 13 seeded clients, 9 staff, 4 quotes migrated from the old leads. No application database.
+
+**Capabilities:** quote → signature → invoice with lifecycle gating and simulated Documenso/Xero; six-stage sales pipeline; six-lane deadlines board with detail panel, keyboard moves and ad-hoc tasks; retainer time tracking and overage billing; six-role permission matrix; derived governance log with CSV/PDF export.
+
+**Commands (from the repo root):**
+
+```bash
+npm test          # 464 web tests (48 files) + 52 domain tests
+npm run typecheck
+npm run build
+npm run dev       # Vite on :3000 — IPv6 bind, use `localhost`, not 127.0.0.1
+```
+
+**Verified at merge:** full suite, typecheck and build green; all 11 views walked on a cleared store and on a persisted legacy store; quote → accept → invoice produced `INV-1` at R7 200 + R1 080 VAT = R8 280 with a stored billing month; client creation from `+ New`; PDF export download; ⌘K; AI assistant drawer; division switcher; holiday rollback tags (`↩`); and `POST /api/auth/sign-up/email` with `role: "Partner"` returning `403`.
+
+## 8. Known Limitations & Open Product Decisions
+
+Recorded so nobody re-discovers them as bugs:
+
+1. **Fee visibility** — *Team member* holds `Quotes — view/create/send = Allowed` while `Clients — view billing = Not allowed`, so fees are visible in pipeline cards/KPIs and the quote builder's PDF/Excel. Aligning the rows is a matrix + product decision.
+2. **`Mark Paid` from `Draft`** — allowed; no invoice transition rule was pinned.
+3. **Audit dedupe** — submissions key on `submission:<taskId>`, so a genuine re-submission replaces the earlier milestone; the sign-off milestone folds into the submission row.
+4. **Billing month vs issue date** — `billingMonth` is stored and drives billing, while document dates still come from `issueDate`.
+5. **Running timer is session-only** — completed entries persist.
+6. **Sign-off authority is Partner-only** — PRD Q2.5 (senior tax specialist) is still unanswered; lifting it touches `lib/permissions.ts` + the matrix UI.
+7. **Documenso and Xero are simulated** — no network calls; credentials are local placeholders.
+8. **Account creation is seed-only** — open sign-up is now closed; an admin-only create endpoint does not exist yet, and the privilege fields should also be marked non-inputtable at the schema level.
+9. **`Add Action → New Quote`** is offered even where the role cannot use it (lands on the access-denied card).
+10. **New clients assume prior filing history** (mirrors the seed convention), so a brand-new client may start without catch-up cards for prior years.
+
+---
+
+*Achieved and verified in `/home/hein/Projects/CRMv2`.*

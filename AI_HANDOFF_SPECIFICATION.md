@@ -9,7 +9,9 @@
 ## 1. Executive Summary & End Goal
 
 The end goal is a high-velocity, production-grade practice operating system (**CRMv2**) for **FD on Call** in Durbanville, South Africa. 
-Unlike generic global CRMs (Salesforce, HubSpot, upstream Twenty CRM) that lack South African statutory tax logic, CRMv2 embeds verified South African statutory compliance rules (Companies Act s30(1), SARS Tax Administration Act s25, Easter Computus holiday rollback), 12-month rolling fee projections, dual-signature digital SLAs (Documenso), Xero 15% VAT draft invoice synchronization, and SharePoint document vaults inside Twenty CRM's modern aesthetic (`#141414` dark canvas / `#f6f5f3` light canvas, `Instrument Serif`, `Geist`, and `Geist Mono`).
+Unlike generic global CRMs (Salesforce, HubSpot, upstream Twenty CRM) that lack South African statutory tax logic, CRMv2 embeds verified South African statutory compliance rules (Companies Act s30(1), SARS Tax Administration Act s25, Easter Computus holiday rollback), 12-month rolling fee projections, a quote → signature → invoice pipeline, retainer-based time tracking, a six-role permission matrix, a derived governance audit log, dual-signature digital SLAs (Documenso), Xero 15% VAT draft invoice synchronization, and SharePoint document vaults inside Twenty CRM's modern aesthetic (`#141414` dark canvas / `#f6f5f3` light canvas, `Instrument Serif`, `Geist`, and `Geist Mono`).
+
+**Status as of 2026-11-10 (44-commit redesign merged to `main`):** eleven views ship (Home, Analytics, Inbox, Clients, Client record, Team, Deadlines, Sales Pipeline, Time, Settings, Governance Log); practice data is client-side in one persisted store; Documenso and Xero are simulated seams, not live connections. The authoritative current-state description lives in [`docs/03-ARCHITECTURE-AND-DATABASE-SPEC.md`](docs/03-ARCHITECTURE-AND-DATABASE-SPEC.md) and [`docs/05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md`](docs/05-UI-INFORMATION-ARCHITECTURE-AND-SCREEN-FLOWS.md); this document is the orientation map.
 
 ---
 
@@ -18,7 +20,7 @@ Unlike generic global CRMs (Salesforce, HubSpot, upstream Twenty CRM) that lack 
 ```
 /home/hein/Projects/CRMv2/
 ├── apps/web/                               # React 19 + Vite + Tailwind v4 + shadcn/ui
-├── packages/domain/                        # 33 Pure TypeScript Domain & Compliance Modules
+├── packages/domain/                        # 7 domain modules + 6 export modules (52 unit tests)
 ├── docs/                                   # Complete Technical & Functional Specifications
 │   ├── 01-REVERSE-ENGINEERING-AND-GAP-ANALYSIS.md
 │   ├── 02-PRD-AND-OPEN-QUESTIONS.md
@@ -29,11 +31,12 @@ Unlike generic global CRMs (Salesforce, HubSpot, upstream Twenty CRM) that lack 
 └── assets/                                 # Official FD on Call logos and badges
 ```
 
-### Stack Specifications:
-- **Frontend:** React 19, Vite 7/8, Tailwind CSS v4, shadcn/ui primitives, Lucide React, TypeScript 5.8+.
-- **Backend / API:** Node.js with Hono (Web Standards, type-safe RPC client).
-- **Database / ORM:** PostgreSQL 16 + Drizzle ORM.
-- **Domain Engine:** Zero-dependency TypeScript modules in `packages/domain/` handling calendar computations, SARS filing seasons, pricing matrices, and PDF/XLSX streaming exports.
+### Stack Specifications (as implemented):
+- **Frontend:** React 19, Vite 7, Tailwind CSS v4, shadcn-style primitives on Radix, Lucide React, TypeScript 5.8+. **No router library** — in-memory `ViewKey` routing in `apps/web/src/App.tsx`.
+- **State:** a single `PracticeStoreContext` persisted to `localStorage` under `crmv2_practice_state`, with an idempotent load-time migration (missing fields default, persisted values win, legacy `leads` migrate to quotes, workflow statuses normalize, `Client.contacts` / `Invoice.billingMonth` backfill). **No PostgreSQL is deployed**; the planned production schema is documented in `docs/03`.
+- **Auth / server:** a Cloudflare Pages Function, `apps/web/functions/api/[[route]].ts` (Hono + better-auth + Drizzle), backed by D1 (`crmv2-auth`, bound as `DB` in `apps/web/wrangler.toml`). Ten seeded staff accounts; the login screen matches seeded credentials locally in `src/lib/auth-client.ts`.
+- **Domain Engine:** zero-dependency TypeScript modules in `packages/domain/` — 7 domain modules (`catalogue`, `dates`, `estimate`, `pricing`, `rules`, `sars`, `types`) plus 6 export modules (`pdf`, `sheet`, `xlsx`, `zip`, `logo`, `audit-pdf`) — handling calendar computations, SARS filing seasons, pricing matrices, and PDF/XLSX streaming exports. Imported as `fdoncall-practice/domain/*`; 52 unit tests.
+- **Integrations:** `apps/web/src/lib/integrations/{documenso,xero}.ts` are simulated seams — synthetic `env-…` envelopes with two `SIGNER` recipients, and the real Xero `ACCREC` / `DRAFT` / `LineAmountTypes: Exclusive` / per-line `OUTPUT2|NONE` payload — with **no network calls**. Credentials live in the local `integrationConfig` store field.
 
 ---
 
@@ -51,54 +54,50 @@ Unlike generic global CRMs (Salesforce, HubSpot, upstream Twenty CRM) that lack 
 
 ---
 
-## 4. The 4-Tab Client Information Architecture (`/clients/:code`)
+## 4. Shell, Navigation & Client Record (`/clients/:code`)
 
 ```
-[PERSISTENT TOPBAR: Brand Mark "FD on Call" | 🔍 Search Cmd+K | Breadcrumbs]
-─────────────────────────────────────────────────────────────────────────────
-[SIDEBAR]                 [CLIENT RECORD SHOW VIEW (/clients/:code)]
-🏠 Home (Dashboard)        Header: [← Clients]  Muse 1399  [MUS-875]  Company  Partner: Erik
-📥 Inbox (Review Queue)   ─────────────────────────────────────────────────────────
-⚙️ Settings               [📋 Statutory Profile] [📅 Deadlines] [🧮 12-Mo Estimate] [📁 Vault]
-                          ┌─────────────────────────────────────────────────────────┐
-PRACTICE DATA             │ TAB 1: OVERVIEW & STATUTORY PROFILE                     │
-🏢 Clients (13)           │ • Financial Year-End (Feb*) & CIPC Incorporation Date   │
-👥 People & Directors (18)│ • Turnover (R4M) & VAT Registration (Category B)        │
-                          │ • SARS eFiling Profile (Firm Profile vs Client Profile) │
-STATUTORY OPS             ├─────────────────────────────────────────────────────────┤
-📅 Deadlines (4)          │ TAB 2: DEADLINES & TASKS                                │
-🧮 New Quote Calculator   │ • Generated filing calendar with SA Holiday Rollback    │
-🎯 Onboarding Pipeline (5)│ • Partner Review Gate on AFS, ITR14, and Payable IRP6   │
-                          ├─────────────────────────────────────────────────────────┤
-FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE                    │
-[EW] Erik (Partner) ➔     │ • Dynamic Columns (Dec 2026 – Nov 2027) + March +6%     │
-• Profile Settings        │ • Smoothed Monthly Retainer: R 3,840 excl. VAT          │
-• Change Password         │ • Actions: [Download PDF] [Download Excel] [Save]       │
-• Log out                 ├─────────────────────────────────────────────────────────┤
-                          │ TAB 4: SHAREPOINT VAULT & SLAS                          │
-                          │ • /Clients/MUS-875/Contracts/ (Dual-Signed Documenso)   │
-                          │ • /Clients/MUS-875/Tax_Returns/ (IRP6 & ITR14 Packs)    │
-                          └─────────────────────────────────────────────────────────┘
+PERSISTENT TOPBAR: Breadcrumbs | ⌘K search | + New (quote / client / time) | theme | avatar
+──────────────────────────────────────────────────────────────────────────────────────────
+[SIDEBAR]                        [CLIENT RECORD]
+PRACTICE                         Header: ‹ Clients   Muse 1399  [MUS-875]
+  Home                           Subtitle: Company · Group · Partner
+  Analytics                      Tag pills (services)   + Add Action ▾
+  Inbox (pending approvals)      ─────────────────────────────────────────────────────────
+WORK                             Overview | Organization | History | Tasks | Estimate | Vault | Notes
+  Clients                        ┌────────────────────────┬───────────────────────┬──────────────┐
+  Team                           │ Contact Details        │ Organization          │ Next Action  │
+  Deadlines (overdue badge)       │ Missing Information    │ Relationship History  │ Internal Notes│
+  Sales Pipeline                 │                        │                       │ Tags         │
+  Time                           └────────────────────────┴───────────────────────┴──────────────┘
+ADMIN
+  Settings                       Notes:
+  Governance Log                 • Overview = 3-column grid (contact + gaps | org + history | next action + notes + tags)
+FOOTER USER                      • Estimate tab is hidden when the role lacks `Clients — view billing`
+  [ER] Erik (Partner) ▾          • Tasks / Vault / Notes reuse the existing statutory and vault panes
 ```
+
+**Sidebar groups:** Practice = Home, Analytics, Inbox · Work = Clients, Team, Deadlines, Sales Pipeline, Time · Admin = Settings, Governance Log. Items are filtered by the permission matrix, and a blocked deep link renders a `NoAccess` card rather than the view.
+
+**Views (11):** Home, Analytics, Inbox, Clients, Client record, Team, Deadlines, Sales Pipeline, Time, Settings, Governance Log.
+
+**Interactive contracts:** boards share one `KanbanBoard` (drag, hover menu, keyboard ←/→ column, ↑/↓ reorder, 1–9 jump; illegal moves refused with feedback); quote and invoice buttons disable themselves with a visible reason when a transition is illegal; the permissions matrix stores only `Allowed | Not allowed | Limited` and derives the `Inherited`/`Custom` legend states for display.
 
 ---
 
-## 5. Epics & Functional Requirements (1–7)
+## 5. Epics & Functional Requirements (status as of 2026-11-10)
 
-1. **Epic 1: Project Scaffolding & Design System (`SPEC-01`)**
-   - Workspace setup, Tailwind v4 tokens, shadcn UI integration, and dark/light mode synchronization.
-2. **Epic 2: Shell, Collapsible Navigation & Command Palette (`SPEC-02`)**
-   - Twenty CRM 240px/56px collapsible sidebar, 48px topbar, static `[FD on Call]` brand mark, user popover for Partner Erik, and `Cmd+K` command search modal.
-3. **Epic 3: Clients Register & Filtering (`SPEC-03`)**
-   - TanStack Table displaying 9 statutory columns (`Code`, `Client`, `Type`, `Responsible`, `Year End`, `VAT`, `Payroll`, `Services`, `Next Filing`), multi-column sorting, global search, and entity filters.
-4. **Epic 4: Client Record Show & 4-Tab Layout (`SPEC-04`)**
-   - Top breadcrumb navigation, Tab 1 Statutory Profile, Tab 2 Deadlines & Tasks, Tab 3 12-Month Fee Estimate matrix, and Tab 4 SharePoint Vault & SLAs.
-5. **Epic 5: Statutory Deadlines Dashboard & Linear Kanban (`SPEC-05`)**
-   - 4 KPI tiles (`Overdue Filings`, `Due in 7 Days`, `Due in 30 Days`, `Missing a Date`), 5-lane Kanban workflow (`Not Started` ➔ `In Progress` ➔ `Partner Review Gate` ➔ `Approved (Ready to Lodge)` ➔ `Submitted`), and SA holiday rollback tags (`↩`).
-6. **Epic 6: Timekeeping, Billable Retainers & Xero Invoicing (`SPEC-06`)**
-   - Retainer hour depletion tracking, overage flagging, and Xero API v2 `DRAFT` invoice synchronization with 15% South African VAT (`OUTPUT2`).
-7. **Epic 7: Single Practice Workspace & Admin Settings (`SPEC-07`)**
-   - Single tenant lock (`FD on Call`), pruned external SaaS links (pointing to `docs/spec-handbook.html`), Team RBAC, and Admin Panel for Practice Rules, Service Catalogue pricing matrix, and immutable SAICA Governance Log.
+1. **Epic 1: Project Scaffolding & Design System — delivered.** Workspace, Tailwind v4 tokens, shadcn-style primitives, dark/light parity.
+2. **Epic 2: Shell, Collapsible Navigation & Command Palette — delivered.** Collapsible sidebar with grouped nav (Practice / Work / Admin), 48px topbar with breadcrumbs, ⌘K searching views + clients + quotes + time entries, `+ New` menu, user popover. The `People` directory and the standalone `Estimator` entry are gone (see Epics 8–9).
+3. **Epic 3: Clients Register & Filtering — delivered.** TanStack table with the statutory columns, sorting, global search, entity filters, and a **New client** dialog that creates a client and materialises its statutory calendar.
+4. **Epic 4: Client Record — delivered, restructured.** Seven tabs (Overview, Organization, History, Tasks, Estimate, Vault, Notes) with a 3-column Overview panel grid; the Estimate tab is gated by `Clients — view billing`.
+5. **Epic 5: Statutory Deadlines — delivered.** Four KPI tiles + horizon/staff/return filters, board and table views, SA holiday rollback tags (`↩`), a **six-lane** workflow (Not Started → In Progress → Awaiting Client → Partner Review Gate → Approved (Ready to Lodge) → Submitted), a docked detail panel built on the authoritative statutory form, keyboard moves, and ad-hoc tasks (`+ Add`).
+6. **Epic 6: Billable Retainers & Xero Invoicing — delivered with simulated Xero.** Retainer hours and an ad-hoc hourly rate are stored on the quote; hours inside the allowance produce no line, overage becomes one priced `Time overage — <month>` line with 15% VAT; deleting that line releases the entries. The Xero draft payload is real in shape, the sync is simulated.
+7. **Epic 7: Practice Workspace & Admin Settings — delivered.** Grouped settings panes (Profile, Appearance, Team & Staff, Practice Rules, Integrations, Notifications, Roles & Permissions), service/pricing matrix, SA public holidays, AI keys, integration credentials, and the governance trail moved to its own view.
+8. **Epic 8: Quote → Signature → Invoice — delivered.** Three-step builder (client → scope → fee schedule) with a live branded document preview, PDF/XLSX export, enforced lifecycle (`Draft Quote → Quote Sent → Accepted → Signed → Active Client`, plus `Closed Lost`), signing requiring a recorded Documenso envelope, invoice creation from an accepted quote with a stored billing month, cent-exact per-line VAT, derived `Overdue`, read-only issued invoices, and quote→client conversion that writes the quoted service scope.
+9. **Epic 9: Sales Pipeline — delivered.** Six quote stages with `Booked` and `Open pipeline value` kept separate, stage-value donut, ageing chips (amber from 15 days), card detail via the builder, and Pipeline / Quotes / Invoices tabs.
+10. **Epic 10: Time Tracking — delivered.** Quarter-hour rounding (15-minute floor), session-only topbar timer, timesheet Log tab, and a Report tab whose KPIs, bars and grouped rows reconcile to the entries.
+11. **Epic 11: Permissions & Governance — delivered.** Six roles over six groups and 18 rows (`Allowed`/`Not allowed`/`Limited` stored; `Inherited`/`Custom` derived), assigned-scope for Subcontractors, locked partner sign-off, `Settings — manage` for invites and role changes, nav/⌘K/deep-link enforcement, and a read-only derived audit trail with CSV/PDF export and a per-client history.
 
 ---
 
@@ -121,6 +120,19 @@ FOOTER USER               │ TAB 3: 12-MONTH FEE ESTIMATE & QUOTE              
 
 ## 7. Instructions for the Receiving LLM
 
-1. **Verify Domain Imports:** Always import statutory date calculation functions (Easter Computus, SA public holiday rollback) directly from `packages/domain/src/domain/dates.ts`. Never hardcode statutory deadlines or tax calculation formulas in UI components.
-2. **Adhere to Twenty CRM Aesthetic:** Maintain hairline borders (`#262626` / `rgba(27,24,23,0.12)`), compact table rows, Lucide icons, and explicit dark/light color tokens.
-3. **Run Test Suites:** Before finalizing any changes or extensions, run `npm test` across the workspace to ensure all 50+ domain and UI tests pass successfully.
+1. **Verify Domain Imports:** Always import statutory date calculation functions (Easter Computus, SA public holiday rollback) directly from `packages/domain/src/domain/dates.ts`, and fee maths from `estimate.ts`. Never hardcode statutory deadlines, tax rules or pricing in UI components.
+2. **Respect the store contract:** practice data lives in `PracticeStoreContext` and persists to `localStorage`. New state must be **additive and defaulted**, and any rename or shape change needs a rule in `loadPracticeState`'s merge (the merge already migrates `leads` → quotes, normalises legacy workflow statuses, and backfills `Client.contacts` and `Invoice.billingMonth`). Never break an existing persisted state.
+3. **Check permissions, not roles:** call `can(role, group, action, matrix)` from `lib/permissions.ts`; the coarse `isPartnerOrAdmin` gate no longer exists. Partner sign-off is locked (`canSignOff`), and anything that grants authority (invites, staff role changes) requires `Settings — manage`.
+4. **Never write auth privilege fields from a client:** `role`, `staffId` and `kind` are better-auth `additionalFields`; `functions/api/auth-guard.ts` refuses HTTP sign-up and strips those fields, and that guard must stay in front of `auth.handler`.
+5. **Adhere to the FD on Call aesthetic:** hairline borders, compact rows, Lucide icons, existing CSS tokens only (crimson `#c4161c`, amber for warnings, no blue/green/mint), and both themes working.
+6. **Run the suites:** `npm test` (464 web + 52 domain), `npm run typecheck`, `npm run build` from the repository root before declaring anything done. Money paths also have cent-exactness tests — keep the shared `cents()` basis.
+
+---
+
+## 8. Security Posture (2026-11-10)
+
+* **Self-service sign-up is closed.** `apps/web/functions/api/auth-guard.ts` returns `403` for `POST /api/auth/sign-up/email`, and strips `role`, `staffId` and `kind` from every other `POST /api/auth/*` body before `auth.handler` sees it. Reason: those are better-auth `additionalFields`, so without the guard a caller could sign up as `Partner` and inherit the whole permission matrix. Seeded accounts are created server-side by `ensureSeeded()` via `auth.api.signUpEmail()` and never pass through the HTTP route, so provisioning is unaffected.
+* **Account creation is seed-only today.** There is no admin endpoint yet; until one exists, new accounts come from `SEEDED_STAFF_ACCOUNTS`. Open hardening: mark the privilege fields non-inputtable at the schema level, and/or expose an admin-only create endpoint that assigns roles server-side.
+* **Demo credentials.** All seeded accounts share `DEMO_PASSWORD` for the local demo; a production instance must replace this and move sessions to server-side storage.
+* **Integration secrets are placeholders.** `integrationConfig` / `aiKeys` hold non-functional credentials in localStorage for the simulated Documenso/Xero seams; wiring live instances requires server-side secret storage.
+* **Audit trail is derived, not append-only.** The governance log is computed from current overrides plus the activity feed, so revoking a sign-off removes its row. If an append-only record is required for external review, add a dedicated event model.
